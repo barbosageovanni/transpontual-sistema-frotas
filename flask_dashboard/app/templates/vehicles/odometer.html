@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block title %}Lançamento de Odômetro{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">Lançamento de Odômetro</h1>
+            <p class="text-muted">Atualize a quilometragem dos veículos</p>
+        </div>
+        <div>
+            <a href="{{ url_for('vehicles_list') }}" class="btn btn-outline-primary">
+                <i class="bi bi-arrow-left me-2"></i>Voltar aos Veículos
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <!-- Formulário de Lançamento -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-speedometer2 me-2"></i>
+                        Atualizar Quilometragem
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form action="{{ url_for('vehicles_odometer_update') }}" method="POST">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="veiculo_id" class="form-label">Veículo *</label>
+                                    <select name="veiculo_id" id="veiculo_id" class="form-select" required>
+                                        <option value="">Selecione um veículo...</option>
+                                        {% for veiculo in veiculos %}
+                                        <option value="{{ veiculo.id }}" data-km="{{ veiculo.km_atual or 0 }}">
+                                            {{ veiculo.placa }} - {{ veiculo.modelo }} ({{ veiculo.marca }})
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="km_atual" class="form-label">Nova Quilometragem (KM) *</label>
+                                    <input type="number" name="km_atual" id="km_atual" class="form-control"
+                                           placeholder="Ex: 125000" min="0" step="1" required>
+                                    <div class="form-text">
+                                        <span id="km_atual_info"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="observacoes" class="form-label">Observações</label>
+                            <textarea name="observacoes" id="observacoes" class="form-control" rows="2"
+                                      placeholder="Observações sobre a leitura (opcional)"></textarea>
+                        </div>
+
+                        <div class="d-flex justify-content-end">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle me-2"></i>
+                                Atualizar Odômetro
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <!-- Últimas Atualizações -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-clock-history me-2"></i>
+                        Últimas Leituras
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if veiculos %}
+                        {% for veiculo in veiculos[:5] %}
+                        <div class="d-flex justify-content-between align-items-center py-2 {% if not loop.last %}border-bottom{% endif %}">
+                            <div>
+                                <strong>{{ veiculo.placa }}</strong>
+                                <br>
+                                <small class="text-muted">{{ veiculo.modelo }}</small>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-light text-dark">
+                                    {{ "{:,}".format(veiculo.km_atual or 0).replace(',', '.') }} km
+                                </span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted mb-0">Nenhum veículo encontrado</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Dicas -->
+            <div class="card mt-4">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Dicas Importantes
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2">
+                            <i class="bi bi-check2 text-success me-2"></i>
+                            Sempre use a quilometragem mais recente
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-check2 text-success me-2"></i>
+                            Verifique se os números estão corretos
+                        </li>
+                        <li class="mb-0">
+                            <i class="bi bi-check2 text-success me-2"></i>
+                            Atualizações afetam os alertas de manutenção
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const veiculoSelect = document.getElementById('veiculo_id');
+    const kmInput = document.getElementById('km_atual');
+    const kmInfo = document.getElementById('km_atual_info');
+
+    veiculoSelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        const kmAtual = selectedOption.getAttribute('data-km') || '0';
+
+        if (this.value) {
+            kmInfo.innerHTML = `<strong>KM atual no sistema:</strong> ${parseInt(kmAtual).toLocaleString('pt-BR')} km`;
+            kmInput.min = kmAtual;
+            kmInput.placeholder = `Mínimo: ${parseInt(kmAtual).toLocaleString('pt-BR')} km`;
+        } else {
+            kmInfo.innerHTML = '';
+            kmInput.min = '0';
+            kmInput.placeholder = 'Ex: 125000';
+        }
+    });
+
+    // Validação para não permitir km menor que o atual
+    kmInput.addEventListener('blur', function() {
+        const selectedOption = veiculoSelect.options[veiculoSelect.selectedIndex];
+        const kmAtual = parseInt(selectedOption.getAttribute('data-km') || '0');
+        const kmNovo = parseInt(this.value || '0');
+
+        if (kmNovo < kmAtual) {
+            alert(`A nova quilometragem (${kmNovo.toLocaleString('pt-BR')}) não pode ser menor que a atual (${kmAtual.toLocaleString('pt-BR')})`);
+            this.focus();
+        }
+    });
+});
+</script>
+{% endblock %}

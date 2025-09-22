@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>DEBUG - Lista de Ordens</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .debug { background-color: #ffeeee; padding: 10px; margin: 10px 0; border: 1px solid red; }
+    </style>
+</head>
+<body>
+    <h1>🚨 DEBUG - Lista de Ordens de Serviço</h1>
+
+    <div class="debug">
+        <strong>DEBUG INFO:</strong><br>
+        Ordens recebidas: {{ ordens|length if ordens else 0 }}<br>
+        Tipo de ordens: {{ ordens.__class__.__name__ if ordens else "None" }}<br>
+        Veículos recebidos: {{ veiculos|length if veiculos else 0 }}
+    </div>
+
+    {% if ordens %}
+        <div class="debug">
+            ✅ ORDENS ENCONTRADAS: {{ ordens|length }}
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Número OS</th>
+                    <th>Veículo</th>
+                    <th>Tipo</th>
+                    <th>Status</th>
+                    <th>Oficina</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ordem in ordens %}
+                <tr>
+                    <td>{{ ordem.id if ordem.id else "SEM ID" }}</td>
+                    <td>{{ ordem.numero_os if ordem.numero_os else "SEM NUMERO" }}</td>
+                    <td>{{ ordem.veiculo_placa if ordem.veiculo_placa else "SEM PLACA" }}</td>
+                    <td>{{ ordem.tipo_servico if ordem.tipo_servico else "SEM TIPO" }}</td>
+                    <td>{{ ordem.status if ordem.status else "SEM STATUS" }}</td>
+                    <td>{{ ordem.oficina if ordem.oficina else "SEM OFICINA" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div class="debug">
+            ❌ NENHUMA ORDEM ENCONTRADA!<br>
+            Variável ordens: {{ ordens }}<br>
+            Tipo: {{ type(ordens) }}
+        </div>
+    {% endif %}
+
+    <hr>
+    <h2>RAW DATA:</h2>
+    <pre>{{ ordens }}</pre>
+</body>
+</html>

@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block title %}Nova Ordem de Serviço{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h4 mb-0 text-gray-800">Nova Ordem de Serviço</h1>
+        <a href="{{ url_for('service_orders_list') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Voltar à Lista
+        </a>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 fw-bold text-primary">Informações da Ordem de Serviço</h6>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="ordemForm">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="veiculo_id" class="form-label">Veículo *</label>
+                                <select class="form-select" id="veiculo_id" name="veiculo_id" required>
+                                    <option value="">Selecione um veículo</option>
+                                    {% for veiculo in veiculos %}
+                                    <option value="{{ veiculo.id }}">
+                                        {{ veiculo.placa }} - {{ veiculo.marca }} {{ veiculo.modelo }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="tipo_servico" class="form-label">Tipo de Serviço *</label>
+                                <select class="form-select" id="tipo_servico" name="tipo_servico" required>
+                                    <option value="">Selecione o tipo</option>
+                                    <option value="Manutenção Preventiva">Manutenção Preventiva</option>
+                                    <option value="Manutenção Corretiva">Manutenção Corretiva</option>
+                                    <option value="Revisão">Revisão</option>
+                                    <option value="Reparo">Reparo</option>
+                                    <option value="Troca de Óleo">Troca de Óleo</option>
+                                    <option value="Alinhamento/Balanceamento">Alinhamento/Balanceamento</option>
+                                    <option value="Funilaria/Pintura">Funilaria/Pintura</option>
+                                    <option value="Elétrica">Elétrica</option>
+                                    <option value="Outros">Outros</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="numero_os" class="form-label">Número da OS</label>
+                                <input type="text" class="form-control" id="numero_os" name="numero_os"
+                                       placeholder="Deixe em branco para gerar automaticamente"
+                                       pattern="^[A-Z0-9-]*$" title="Apenas letras maiúsculas, números e hífens">
+                                <small class="form-text text-muted">Será gerado automaticamente se não preenchido</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <!-- Espaço vazio para alinhamento -->
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="status" class="form-label">Status</label>
+                                <select class="form-select" id="status" name="status">
+                                    <option value="Aberta" selected>Aberta</option>
+                                    <option value="Em Andamento">Em Andamento</option>
+                                    <option value="Aguardando Peças">Aguardando Peças</option>
+                                    <option value="Concluída">Concluída</option>
+                                    <option value="Cancelada">Cancelada</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="data_prevista" class="form-label">Data Prevista</label>
+                                <input type="date" class="form-control" id="data_prevista" name="data_prevista">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="odometro" class="form-label">Odômetro (km)</label>
+                                <input type="number" class="form-control" id="odometro" name="odometro" min="0">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="oficina" class="form-label">Oficina</label>
+                                <input type="text" class="form-control" id="oficina" name="oficina"
+                                       placeholder="Nome da oficina">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="valor_total" class="form-label">Valor Total (R$)</label>
+                                <input type="number" class="form-control" id="valor_total" name="valor_total"
+                                       step="0.01" min="0" placeholder="0.00">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="descricao_problema" class="form-label">Descrição do Problema</label>
+                            <textarea class="form-control" id="descricao_problema" name="descricao_problema"
+                                      rows="3" placeholder="Descreva o problema relatado..."></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="descricao_servico" class="form-label">Descrição do Serviço</label>
+                            <textarea class="form-control" id="descricao_servico" name="descricao_servico"
+                                      rows="3" placeholder="Descreva o serviço a ser realizado..."></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="observacoes" class="form-label">Observações</label>
+                            <textarea class="form-control" id="observacoes" name="observacoes"
+                                      rows="2" placeholder="Observações adicionais..."></textarea>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('service_orders_list') }}" class="btn btn-secondary me-md-2">
+                                <i class="bi bi-x-circle"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> Criar Ordem de Serviço
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('ordemForm').addEventListener('submit', function(e) {
+    const veiculo = document.getElementById('veiculo_id').value;
+    const tipoServico = document.getElementById('tipo_servico').value;
+
+    if (!veiculo) {
+        e.preventDefault();
+        alert('Por favor, selecione um veículo.');
+        return;
+    }
+
+    if (!tipoServico) {
+        e.preventDefault();
+        alert('Por favor, selecione o tipo de serviço.');
+        return;
+    }
+});
+
+// Auto-completar data prevista com próxima semana
+document.addEventListener('DOMContentLoaded', function() {
+    const dataField = document.getElementById('data_prevista');
+    if (!dataField.value) {
+        const nextWeek = new Date();
+        nextWeek.setDate(nextWeek.getDate() + 7);
+        dataField.value = nextWeek.toISOString().split('T')[0];
+    }
+});
+</script>
+{% endblock %}

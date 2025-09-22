@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Editar Veículo' if veiculo else 'Novo Veículo' }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            {{ 'Editar Veículo' if veiculo else 'Novo Veículo' }}
+        </h1>
+        <div>
+            <a href="{{ url_for('vehicles_list') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Voltar
+            </a>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        {{ 'Dados do Veículo' if veiculo else 'Cadastrar Novo Veículo' }}
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="placa" class="form-label">
+                                        Placa <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="text"
+                                           class="form-control"
+                                           id="placa"
+                                           name="placa"
+                                           value="{{ veiculo.placa if veiculo else '' }}"
+                                           placeholder="ABC-1234"
+                                           required>
+                                    <div class="form-text">Formato: ABC-1234</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="renavam" class="form-label">RENAVAM</label>
+                                    <input type="text"
+                                           class="form-control"
+                                           id="renavam"
+                                           name="renavam"
+                                           value="{{ veiculo.renavam if veiculo else '' }}"
+                                           placeholder="12345678901"
+                                           maxlength="11">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="marca" class="form-label">Marca</label>
+                                    <input type="text"
+                                           class="form-control"
+                                           id="marca"
+                                           name="marca"
+                                           value="{{ veiculo.marca if veiculo else '' }}"
+                                           placeholder="Volkswagen, Ford, etc.">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="modelo" class="form-label">Modelo</label>
+                                    <input type="text"
+                                           class="form-control"
+                                           id="modelo"
+                                           name="modelo"
+                                           value="{{ veiculo.modelo if veiculo else '' }}"
+                                           placeholder="Gol, Fiesta, etc.">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="ano" class="form-label">Ano</label>
+                                    <input type="number"
+                                           class="form-control"
+                                           id="ano"
+                                           name="ano"
+                                           value="{{ veiculo.ano if veiculo else '' }}"
+                                           min="1900"
+                                           max="2030"
+                                           placeholder="2020">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="tipo" class="form-label">Tipo de Veículo</label>
+                                    <select class="form-select" id="tipo" name="tipo">
+                                        <option value="">Selecione o tipo</option>
+                                        <option value="carro" {{ 'selected' if veiculo and veiculo.tipo == 'carro' }}>Carro</option>
+                                        <option value="moto" {{ 'selected' if veiculo and veiculo.tipo == 'moto' }}>Moto</option>
+                                        <option value="van" {{ 'selected' if veiculo and veiculo.tipo == 'van' }}>Van</option>
+                                        <option value="caminhaotoco" {{ 'selected' if veiculo and veiculo.tipo == 'caminhaotoco' }}>Caminhão Toco</option>
+                                        <option value="caminhaotruck" {{ 'selected' if veiculo and veiculo.tipo == 'caminhaotruck' }}>Caminhão Truck</option>
+                                        <option value="cavalomecanico" {{ 'selected' if veiculo and veiculo.tipo == 'cavalomecanico' }}>Cavalo Mecânico</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="km_atual" class="form-label">Quilometragem Atual</label>
+                                    <input type="number"
+                                           class="form-control"
+                                           id="km_atual"
+                                           name="km_atual"
+                                           value="{{ veiculo.km_atual if veiculo else 0 }}"
+                                           min="0"
+                                           placeholder="150000">
+                                    <div class="form-text">Em quilômetros</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input"
+                                               type="checkbox"
+                                               id="ativo"
+                                               name="ativo"
+                                               {{ 'checked' if not veiculo or veiculo.ativo }}>
+                                        <label class="form-check-label" for="ativo">
+                                            Veículo ativo na frota
+                                        </label>
+                                    </div>
+                                    <div class="form-text">Desmarque se o veículo não estiver mais em uso</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input"
+                                               type="checkbox"
+                                               id="em_manutencao"
+                                               name="em_manutencao"
+                                               {{ 'checked' if veiculo and veiculo.em_manutencao }}>
+                                        <label class="form-check-label" for="em_manutencao">
+                                            Veículo em manutenção
+                                        </label>
+                                    </div>
+                                    <div class="form-text">Marque se o veículo estiver em manutenção</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row" id="manutencao_details" style="display: none;">
+                            <div class="col-12">
+                                <div class="mb-3">
+                                    <label for="observacoes_manutencao" class="form-label">
+                                        Descrição da Manutenção
+                                    </label>
+                                    <textarea class="form-control"
+                                              id="observacoes_manutencao"
+                                              name="observacoes_manutencao"
+                                              rows="3"
+                                              placeholder="Descreva a manutenção que está sendo realizada...">{{ veiculo.observacoes_manutencao if veiculo else '' }}</textarea>
+                                    <div class="form-text">Informe os detalhes da manutenção em andamento</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('vehicles_list') }}" class="btn btn-outline-secondary me-md-2">
+                                <i class="fas fa-times"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i>
+                                {{ 'Atualizar' if veiculo else 'Cadastrar' }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Normalização da placa (apenas maiúsculas, sem formatação obrigatória)
+    $('#placa').on('input', function() {
+        this.value = this.value.toUpperCase();
+    });
+
+    // Máscara para RENAVAM (somente números)
+    $('#renavam').on('input', function() {
+        this.value = this.value.replace(/[^0-9]/g, '');
+    });
+
+    // Mostrar/ocultar campo de observações de manutenção
+    function toggleManutencaoDetails() {
+        if ($('#em_manutencao').is(':checked')) {
+            $('#manutencao_details').show();
+            $('#observacoes_manutencao').attr('required', true);
+        } else {
+            $('#manutencao_details').hide();
+            $('#observacoes_manutencao').attr('required', false).val('');
+        }
+    }
+
+    // Verificar estado inicial
+    toggleManutencaoDetails();
+
+    // Adicionar evento de mudança
+    $('#em_manutencao').on('change', toggleManutencaoDetails);
+});
+</script>
+{% endblock %}

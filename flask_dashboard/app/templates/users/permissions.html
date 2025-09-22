@@ -1,0 +1,281 @@
+{% extends "base.html" %}
+
+{% block title %}Permissões - {{ usuario.nome }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h4 mb-0 text-gray-800">Permissões - {{ usuario.nome }}</h1>
+        <div>
+            <a href="{{ url_for('user_edit', user_id=usuario.id) }}" class="btn btn-warning">
+                <i class="bi bi-pencil"></i> Editar Usuário
+            </a>
+            <a href="{{ url_for('users_list') }}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar à Lista
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 fw-bold text-primary">Permissões Específicas por Módulo</h6>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="permissions-form">
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Módulo</th>
+                                        <th class="text-center">Visualizar</th>
+                                        <th class="text-center">Criar</th>
+                                        <th class="text-center">Editar</th>
+                                        <th class="text-center">Excluir</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% set modulos = [
+                                        {'nome': 'usuarios', 'label': 'Usuários'},
+                                        {'nome': 'veiculos', 'label': 'Veículos'},
+                                        {'nome': 'motoristas', 'label': 'Motoristas'},
+                                        {'nome': 'checklists', 'label': 'Checklists'},
+                                        {'nome': 'abastecimentos', 'label': 'Abastecimentos'},
+                                        {'nome': 'ordens_servico', 'label': 'Ordens de Serviço'},
+                                        {'nome': 'financeiro', 'label': 'Financeiro'},
+                                        {'nome': 'fiscal', 'label': 'Fiscal'},
+                                        {'nome': 'relatorios', 'label': 'Relatórios'}
+                                    ] %}
+
+                                    {% set acoes = ['visualizar', 'criar', 'editar', 'excluir'] %}
+
+                                    {% for modulo in modulos %}
+                                    <tr>
+                                        <td class="fw-bold">{{ modulo.label }}</td>
+                                        {% for acao in acoes %}
+                                        <td class="text-center">
+                                            {% set perm_key = modulo.nome + '_' + acao %}
+                                            {% set tem_permissao_perfil = perfil_permite(usuario.papel, modulo.nome, acao) %}
+                                            {% set permissao_especifica = permissoes_especificas.get(modulo.nome, {}).get(acao) %}
+
+                                            <div class="form-check form-switch d-flex justify-content-center">
+                                                <input class="form-check-input permission-switch"
+                                                       type="checkbox"
+                                                       id="{{ perm_key }}"
+                                                       name="{{ perm_key }}"
+                                                       data-modulo="{{ modulo.nome }}"
+                                                       data-acao="{{ acao }}"
+                                                       {% if permissao_especifica is not none %}
+                                                           {{ 'checked' if permissao_especifica else '' }}
+                                                       {% elif tem_permissao_perfil %}
+                                                           checked disabled title="Permitido pelo perfil {{ usuario.papel }}"
+                                                       {% endif %}>
+                                                <label class="form-check-label visually-hidden" for="{{ perm_key }}">
+                                                    {{ acao }} {{ modulo.label }}
+                                                </label>
+                                            </div>
+
+                                            {% if tem_permissao_perfil and permissao_especifica is none %}
+                                                <small class="text-success">Perfil</small>
+                                            {% elif permissao_especifica is not none %}
+                                                <small class="text-primary">Específica</small>
+                                            {% endif %}
+                                        </td>
+                                        {% endfor %}
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <h6><i class="bi bi-info-circle"></i> Legenda:</h6>
+                            <ul class="mb-0">
+                                <li><strong>Perfil:</strong> Permissão concedida pelo papel/perfil do usuário</li>
+                                <li><strong>Específica:</strong> Permissão personalizada para este usuário</li>
+                                <li><strong>Switches desabilitados:</strong> Já permitidos pelo perfil</li>
+                            </ul>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-check-circle"></i> Salvar Permissões
+                                </button>
+                                <button type="button" class="btn btn-warning" onclick="resetarPermissoes()">
+                                    <i class="bi bi-arrow-clockwise"></i> Resetar para Padrão do Perfil
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Informações do Usuário -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 fw-bold text-primary">Informações do Usuário</h6>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <i class="bi bi-person-circle display-4 text-primary"></i>
+                    </div>
+                    <p><strong>Nome:</strong> {{ usuario.nome }}</p>
+                    <p><strong>Email:</strong> {{ usuario.email }}</p>
+                    <p><strong>Papel:</strong>
+                        {% set papel_classes = {
+                            'admin': 'danger',
+                            'gestor': 'warning',
+                            'fiscal': 'info',
+                            'financeiro': 'success',
+                            'operacional': 'primary',
+                            'estagiario': 'secondary'
+                        } %}
+                        <span class="badge bg-{{ papel_classes.get(usuario.papel, 'secondary') }}">
+                            {{ usuario.papel|title }}
+                        </span>
+                    </p>
+                    <p><strong>Status:</strong>
+                        {% if not usuario.ativo %}
+                            <span class="badge bg-secondary">Inativo</span>
+                        {% elif usuario.bloqueado_ate and usuario.bloqueado_ate > now() %}
+                            <span class="badge bg-danger">Bloqueado</span>
+                        {% else %}
+                            <span class="badge bg-success">Ativo</span>
+                        {% endif %}
+                    </p>
+
+                    {% if usuario.ultimo_acesso %}
+                    <hr>
+                    <p class="small mb-0"><strong>Último acesso:</strong><br>{{ usuario.ultimo_acesso|datetime }}</p>
+                    {% if usuario.ultimo_ip %}
+                    <p class="small mb-0"><strong>Último IP:</strong> {{ usuario.ultimo_ip }}</p>
+                    {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Restrições de Acesso -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 fw-bold text-warning">Restrições de Acesso</h6>
+                </div>
+                <div class="card-body">
+                    {% if usuario.horario_inicio and usuario.horario_fim %}
+                    <p><i class="bi bi-clock text-info"></i>
+                       <strong>Horário:</strong> {{ usuario.horario_inicio|datetime('%H:%M') }} - {{ usuario.horario_fim|datetime('%H:%M') }}
+                    </p>
+                    {% endif %}
+
+                    {% if usuario.dias_semana %}
+                    <p><i class="bi bi-calendar-week text-info"></i>
+                       <strong>Dias:</strong>
+                       {% set dias_nomes = ['', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'] %}
+                       {% set dias = usuario.dias_semana.split(',') %}
+                       {{ ', '.join([dias_nomes[d|int] for d in dias if d.strip().isdigit() and d|int <= 7]) }}
+                    </p>
+                    {% endif %}
+
+                    {% if usuario.ips_permitidos %}
+                    <p><i class="bi bi-geo-alt text-warning"></i>
+                       <strong>IPs permitidos:</strong><br>
+                       <small>{{ usuario.ips_permitidos|replace(',', '<br>')|safe }}</small>
+                    </p>
+                    {% endif %}
+
+                    {% if usuario.data_validade %}
+                    <p><i class="bi bi-calendar-x text-danger"></i>
+                       <strong>Válido até:</strong> {{ usuario.data_validade|date }}
+                    </p>
+                    {% endif %}
+
+                    {% if usuario.max_sessoes and usuario.max_sessoes > 1 %}
+                    <p><i class="bi bi-person-lines-fill text-info"></i>
+                       <strong>Máx sessões:</strong> {{ usuario.max_sessoes }}
+                    </p>
+                    {% endif %}
+
+                    {% if not (usuario.horario_inicio or usuario.dias_semana or usuario.ips_permitidos or usuario.data_validade) %}
+                    <p class="text-muted">Nenhuma restrição configurada</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Ações Rápidas -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 fw-bold text-secondary">Ações Rápidas</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        {% if usuario.bloqueado_ate and usuario.bloqueado_ate > now() %}
+                        <a href="{{ url_for('user_unblock', user_id=usuario.id) }}" class="btn btn-success btn-sm">
+                            <i class="bi bi-unlock"></i> Desbloquear Usuário
+                        </a>
+                        {% endif %}
+
+                        <a href="{{ url_for('user_reset_password', user_id=usuario.id) }}" class="btn btn-warning btn-sm">
+                            <i class="bi bi-key"></i> Resetar Senha
+                        </a>
+
+                        <a href="{{ url_for('user_access_log', user_id=usuario.id) }}" class="btn btn-info btn-sm">
+                            <i class="bi bi-clock-history"></i> Log de Acesso
+                        </a>
+
+                        {% if usuario.ativo %}
+                        <a href="{{ url_for('user_deactivate', user_id=usuario.id) }}" class="btn btn-secondary btn-sm">
+                            <i class="bi bi-pause"></i> Desativar
+                        </a>
+                        {% else %}
+                        <a href="{{ url_for('user_activate', user_id=usuario.id) }}" class="btn btn-success btn-sm">
+                            <i class="bi bi-play"></i> Ativar
+                        </a>
+                        {% endif %}
+
+                        <hr>
+                        <form method="POST" action="{{ url_for('user_delete', user_id=usuario.id) }}"
+                              onsubmit="return confirm('ATENÇÃO: Esta ação não pode ser desfeita! Tem certeza que deseja excluir o usuário {{ usuario.nome }}?')">
+                            <button type="submit" class="btn btn-danger btn-sm w-100">
+                                <i class="bi bi-trash"></i> Excluir Usuário
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function resetarPermissoes() {
+    if (confirm('Tem certeza que deseja resetar todas as permissões específicas? O usuário ficará apenas com as permissões do perfil.')) {
+        // Desmarcar todos os switches que não estão desabilitados
+        document.querySelectorAll('.permission-switch:not(:disabled)').forEach(function(checkbox) {
+            checkbox.checked = false;
+        });
+    }
+}
+
+$(document).ready(function() {
+    // Destacar mudanças nas permissões
+    $('.permission-switch').on('change', function() {
+        const row = $(this).closest('tr');
+        if (row.find('.permission-switch:checked:not(:disabled)').length > 0) {
+            row.addClass('table-warning');
+        } else {
+            row.removeClass('table-warning');
+        }
+    });
+
+    // Inicializar destaque para permissões já modificadas
+    $('.permission-switch:checked:not(:disabled)').each(function() {
+        $(this).closest('tr').addClass('table-warning');
+    });
+});
+</script>
+{% endblock %}

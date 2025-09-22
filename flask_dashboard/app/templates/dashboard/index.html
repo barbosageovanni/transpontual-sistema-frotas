@@ -1,0 +1,1028 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Transpontual{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dashboard-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 30px;
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+    }
+
+    .metric-card {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        border: none;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .metric-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #667eea, #764ba2);
+    }
+
+    .metric-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+
+    .metric-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        color: white;
+        margin-bottom: 15px;
+    }
+
+    .metric-value {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin: 0;
+        color: #2d3436;
+    }
+
+    .metric-label {
+        color: #636e72;
+        font-size: 0.9rem;
+        font-weight: 500;
+        margin-bottom: 10px;
+    }
+
+    .metric-change {
+        display: flex;
+        align-items: center;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    .metric-change.positive { color: #00b894; }
+    .metric-change.negative { color: #e17055; }
+    .metric-change.neutral { color: #636e72; }
+
+    .chart-card {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        border: none;
+        height: 100%;
+    }
+
+    .chart-container {
+        position: relative;
+        height: 300px;
+    }
+
+    .chart-controls {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
+
+    .chart-controls .btn {
+        border-radius: 20px;
+        padding: 8px 16px;
+        font-size: 0.85rem;
+    }
+
+    .quick-actions {
+        background: linear-gradient(135deg, #74b9ff, #0984e3);
+        color: white;
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 20px;
+    }
+
+    .quick-action-btn {
+        background: rgba(255,255,255,0.2);
+        border: 2px solid rgba(255,255,255,0.3);
+        color: white;
+        border-radius: 10px;
+        padding: 15px;
+        text-decoration: none;
+        display: block;
+        transition: all 0.3s ease;
+        margin-bottom: 10px;
+    }
+
+    .quick-action-btn:hover {
+        background: rgba(255,255,255,0.3);
+        color: white;
+        border-color: rgba(255,255,255,0.5);
+        transform: translateX(5px);
+    }
+
+    .recent-activity {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .activity-item {
+        padding: 15px 0;
+        border-bottom: 1px solid #f1f3f4;
+        display: flex;
+        align-items: center;
+        transition: background 0.2s ease;
+    }
+
+    .activity-item:hover { background: #f8f9fa; border-radius: 8px; padding-left: 10px; }
+
+    .activity-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 15px;
+        color: white;
+        font-size: 16px;
+    }
+
+    .activity-content h6 { margin: 0; font-size: 0.9rem; }
+    .activity-content small { color: #636e72; }
+
+    .weather-widget {
+        background: linear-gradient(135deg, #a29bfe, #6c5ce7);
+        color: white;
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+
+    .alert-item {
+        background: linear-gradient(135deg, #fd79a8, #fdcb6e);
+        color: white;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 10px;
+        border: none;
+    }
+
+    .status-indicator {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 8px;
+    }
+
+    .status-online { background: #00b894; animation: pulse 2s infinite; }
+    .status-warning { background: #fdcb6e; }
+    .status-offline { background: #e17055; }
+
+    @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.5; }
+        100% { opacity: 1; }
+    }
+
+    .loading-placeholder {
+        background: #f8f9fa;
+        border-radius: 8px;
+        height: 20px;
+        margin: 10px 0;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .loading-placeholder::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        height: 100%;
+        width: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+        animation: loading 1.5s infinite;
+    }
+
+    @keyframes loading {
+        0% { left: -100%; }
+        100% { left: 100%; }
+    }
+
+    @media (max-width: 768px) {
+        .metric-value { font-size: 2rem; }
+        .chart-container { height: 250px; }
+        .quick-action-btn { text-align: center; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Dashboard Header -->
+<div class="dashboard-header">
+    <div class="row align-items-center">
+        <div class="col-md-8">
+            <h1 class="mb-2">
+                <i class="bi bi-speedometer2 me-2"></i>
+                Dashboard Operacional
+            </h1>
+            <p class="mb-0 opacity-75">
+                <span class="status-indicator status-online"></span>
+                Sistema Online - Última atualização: <span id="last-update">carregando...</span>
+            </p>
+        </div>
+        <div class="col-md-4 text-end">
+            <div class="d-flex justify-content-end gap-2">
+                <button class="btn btn-light btn-sm" onclick="refreshData()">
+                    <i class="bi bi-arrow-clockwise me-1"></i>Atualizar
+                </button>
+                <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#filtersModal">
+                    <i class="bi bi-funnel me-1"></i>Filtros
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- KPIs Row -->
+<div class="row mb-4" id="kpis-row">
+    <div class="col-xl-3 col-lg-6 col-md-6 mb-4">
+        <div class="metric-card">
+            <div class="d-flex justify-content-between">
+                <div class="flex-grow-1">
+                    <p class="metric-label">Total de Checklists</p>
+                    <h2 class="metric-value" id="total-checklists">
+                        <div class="loading-placeholder"></div>
+                    </h2>
+                    <div class="metric-change" id="total-change">
+                        <div class="loading-placeholder"></div>
+                    </div>
+                </div>
+                <div class="metric-icon" style="background: linear-gradient(135deg, #74b9ff, #0984e3);">
+                    <i class="bi bi-clipboard-data"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-lg-6 col-md-6 mb-4">
+        <div class="metric-card">
+            <div class="d-flex justify-content-between">
+                <div class="flex-grow-1">
+                    <p class="metric-label">Taxa de Aprovação</p>
+                    <h2 class="metric-value" id="approval-rate">
+                        <div class="loading-placeholder"></div>
+                    </h2>
+                    <div class="metric-change" id="approval-change">
+                        <div class="loading-placeholder"></div>
+                    </div>
+                </div>
+                <div class="metric-icon" style="background: linear-gradient(135deg, #00b894, #00a085);">
+                    <i class="bi bi-check-circle"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-lg-6 col-md-6 mb-4">
+        <div class="metric-card">
+            <div class="d-flex justify-content-between">
+                <div class="flex-grow-1">
+                    <p class="metric-label">Veículos Bloqueados</p>
+                    <h2 class="metric-value" id="blocked-vehicles">
+                        <div class="loading-placeholder"></div>
+                    </h2>
+                    <div class="metric-change" id="blocked-change">
+                        <div class="loading-placeholder"></div>
+                    </div>
+                </div>
+                <div class="metric-icon" style="background: linear-gradient(135deg, #e17055, #d63031);">
+                    <i class="bi bi-shield-exclamation"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-lg-6 col-md-6 mb-4">
+        <div class="metric-card">
+            <div class="d-flex justify-content-between">
+                <div class="flex-grow-1">
+                    <p class="metric-label">Defeitos Encontrados</p>
+                    <h2 class="metric-value" id="defects-found">
+                        <div class="loading-placeholder"></div>
+                    </h2>
+                    <div class="metric-change" id="defects-change">
+                        <div class="loading-placeholder"></div>
+                    </div>
+                </div>
+                <div class="metric-icon" style="background: linear-gradient(135deg, #fdcb6e, #f39c12);">
+                    <i class="bi bi-exclamation-triangle"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row mb-4">
+    <!-- Gráfico de Evolução Temporal -->
+    <div class="col-xl-8 col-lg-7 mb-4">
+        <div class="chart-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">
+                    <i class="bi bi-graph-up me-2"></i>Evolução dos Checklists
+                </h5>
+                <div class="chart-controls">
+                    <button class="btn btn-outline-primary btn-sm active" onclick="changeTimePeriod('7d')">7 dias</button>
+                    <button class="btn btn-outline-primary btn-sm" onclick="changeTimePeriod('30d')">30 dias</button>
+                    <button class="btn btn-outline-primary btn-sm" onclick="changeTimePeriod('90d')">90 dias</button>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="evolutionChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráfico de Status Distribution -->
+    <div class="col-xl-4 col-lg-5 mb-4">
+        <div class="chart-card">
+            <h5 class="mb-3">
+                <i class="bi bi-pie-chart me-2"></i>Distribuição por Status
+            </h5>
+            <div class="chart-container">
+                <canvas id="statusChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Gráficos Secundários -->
+<div class="row mb-4">
+    <!-- Top Defeitos -->
+    <div class="col-xl-6 col-lg-6 mb-4">
+        <div class="chart-card">
+            <h5 class="mb-3">
+                <i class="bi bi-list-ol me-2"></i>Top 10 Defeitos Mais Comuns
+            </h5>
+            <div class="chart-container">
+                <canvas id="defectsChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Performance por Motorista -->
+    <div class="col-xl-6 col-lg-6 mb-4">
+        <div class="chart-card">
+            <h5 class="mb-3">
+                <i class="bi bi-person-check me-2"></i>Performance dos Motoristas
+            </h5>
+            <div class="chart-container">
+                <canvas id="driversChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Ações Rápidas -->
+    <div class="col-xl-4 col-lg-6 mb-4">
+        <div class="quick-actions">
+            <h5 class="mb-4">
+                <i class="bi bi-lightning me-2"></i>Ações Rápidas
+            </h5>
+
+            <a href="{{ url_for('checklist_new') }}" class="quick-action-btn">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-plus-circle me-3 fs-5"></i>
+                    <div>
+                        <strong>Novo Checklist</strong>
+                        <br><small>Iniciar novo checklist veicular</small>
+                    </div>
+                </div>
+            </a>
+
+            <a href="{{ url_for('checklists_list') }}?status=em_andamento" class="quick-action-btn">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-clock-history me-3 fs-5"></i>
+                    <div>
+                        <strong>Checklists Pendentes</strong>
+                        <br><small>Ver checklists em andamento</small>
+                    </div>
+                </div>
+            </a>
+
+            <a href="{{ url_for('vehicles_list') }}" class="quick-action-btn">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-truck me-3 fs-5"></i>
+                    <div>
+                        <strong>Gerenciar Veículos</strong>
+                        <br><small>Cadastrar e editar veículos</small>
+                    </div>
+                </div>
+            </a>
+
+            <a href="{{ url_for('reports') }}" class="quick-action-btn">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-file-earmark-bar-graph me-3 fs-5"></i>
+                    <div>
+                        <strong>Relatórios</strong>
+                        <br><small>Gerar relatórios e análises</small>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <!-- Widget de Clima -->
+        <div class="weather-widget" id="weather-widget">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="mb-1">
+                        <i class="bi bi-cloud-sun me-2"></i>Condições Climáticas
+                    </h6>
+                    <p class="mb-0" id="weather-info">Carregando...</p>
+                </div>
+                <div class="text-end">
+                    <h3 class="mb-0" id="temperature">--°C</h3>
+                    <small id="location">--</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Atividades Recentes -->
+    <div class="col-xl-4 col-lg-6 mb-4">
+        <div class="chart-card">
+            <h5 class="mb-3">
+                <i class="bi bi-clock-history me-2"></i>Atividades Recentes
+            </h5>
+
+            <div class="recent-activity" id="recent-activity">
+                <!-- Placeholder loading -->
+                <div class="activity-item">
+                    <div class="activity-icon" style="background: #f8f9fa;">
+                        <div class="loading-placeholder" style="height: 16px; width: 16px; margin: 0;"></div>
+                    </div>
+                    <div class="activity-content flex-grow-1">
+                        <div class="loading-placeholder" style="height: 16px; width: 200px;"></div>
+                        <div class="loading-placeholder" style="height: 12px; width: 120px; margin-top: 5px;"></div>
+                    </div>
+                </div>
+                <!-- Repetir placeholder algumas vezes -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Alertas e Notificações -->
+    <div class="col-xl-4 col-lg-12 mb-4">
+        <div class="chart-card">
+            <h5 class="mb-3">
+                <i class="bi bi-bell me-2"></i>Alertas e Notificações
+            </h5>
+
+            <div id="alerts-container">
+                <div class="alert-item">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <div class="flex-grow-1">
+                            <small><strong>Veículos com Manutenção Vencida</strong></small>
+                            <br><small>3 veículos precisam de atenção</small>
+                        </div>
+                        <span class="badge bg-light text-dark">3</span>
+                    </div>
+                </div>
+
+                <div class="alert-item" style="background: linear-gradient(135deg, #fd79a8, #e84393);">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-shield-exclamation me-2"></i>
+                        <div class="flex-grow-1">
+                            <small><strong>Checklists Bloqueantes</strong></small>
+                            <br><small>2 veículos bloqueados para uso</small>
+                        </div>
+                        <span class="badge bg-light text-dark">2</span>
+                    </div>
+                </div>
+
+                <div class="alert-item" style="background: linear-gradient(135deg, #74b9ff, #0984e3);">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <div class="flex-grow-1">
+                            <small><strong>Sistema Atualizado</strong></small>
+                            <br><small>Nova versão disponível</small>
+                        </div>
+                        <span class="badge bg-light text-dark">!</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Filtros -->
+<div class="modal fade" id="filtersModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-funnel me-2"></i>Filtros do Dashboard
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="dashboard-filters">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Período</label>
+                            <select class="form-select" name="periodo">
+                                <option value="7">Últimos 7 dias</option>
+                                <option value="30" selected>Últimos 30 dias</option>
+                                <option value="90">Últimos 90 dias</option>
+                                <option value="365">Último ano</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Veículo</label>
+                            <select class="form-select" name="veiculo_id">
+                                <option value="">Todos os veículos</option>
+                                <!-- Populado via JavaScript -->
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Tipo de Checklist</label>
+                            <select class="form-select" name="tipo">
+                                <option value="">Todos os tipos</option>
+                                <option value="pre">Pré-viagem</option>
+                                <option value="pos">Pós-viagem</option>
+                                <option value="manutencao">Manutenção</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Status</label>
+                            <select class="form-select" name="status">
+                                <option value="">Todos os status</option>
+                                <option value="aprovado">Aprovado</option>
+                                <option value="reprovado">Reprovado</option>
+                                <option value="em_andamento">Em Andamento</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="applyDashboardFilters()">Aplicar Filtros</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+let charts = {};
+let dashboardData = {};
+let currentFilters = { periodo: 30 };
+
+// Inicialização
+document.addEventListener('DOMContentLoaded', function() {
+    initDashboard();
+    loadWeatherData();
+
+    // Auto-refresh a cada 2 minutos
+    setInterval(refreshData, 120000);
+
+    // Atualizar timestamp
+    setInterval(updateLastUpdateTime, 1000);
+});
+
+// Inicializar dashboard
+async function initDashboard() {
+    try {
+        await loadDashboardData();
+        initCharts();
+        loadRecentActivity();
+    } catch (error) {
+        console.error('Erro ao inicializar dashboard:', error);
+        showError('Erro ao carregar dados do dashboard');
+    }
+}
+
+// Carregar dados do dashboard
+async function loadDashboardData() {
+    try {
+        const params = new URLSearchParams(currentFilters);
+
+        const [kpis, evolution, distribution, defects, drivers] = await Promise.all([
+            fetch(`/api/kpis?${params}`).then(r => r.json()),
+            fetch(`/api/charts/evolution?${params}`).then(r => r.json()),
+            fetch(`/api/charts/status-distribution?${params}`).then(r => r.json()),
+            fetch(`/api/charts/top-defects?${params}`).then(r => r.json()),
+            fetch(`/api/charts/drivers-performance?${params}`).then(r => r.json())
+        ]);
+
+        dashboardData = { kpis, evolution, distribution, defects, drivers };
+
+        updateKPIs(kpis);
+
+    } catch (error) {
+        console.error('Erro ao carregar dados:', error);
+        throw error;
+    }
+}
+
+// Atualizar KPIs
+function updateKPIs(kpis) {
+    const updates = [
+        { id: 'total-checklists', value: kpis.total_checklists || 0, change: kpis.total_change },
+        { id: 'approval-rate', value: (kpis.taxa_aprovacao || 0).toFixed(1) + '%', change: kpis.approval_change },
+        { id: 'blocked-vehicles', value: kpis.veiculos_bloqueados || 0, change: kpis.blocked_change },
+        { id: 'defects-found', value: kpis.defeitos_encontrados || 0, change: kpis.defects_change }
+    ];
+
+    updates.forEach(update => {
+        const element = document.getElementById(update.id);
+        const changeElement = document.getElementById(update.id.replace(/(total|approval|blocked|defects)/, '$1-change'));
+
+        if (element) {
+            element.innerHTML = update.value;
+        }
+
+        if (changeElement && update.change !== undefined) {
+            const changeValue = update.change > 0 ? `+${update.change}%` : `${update.change}%`;
+            const changeClass = update.change > 0 ? 'positive' : update.change < 0 ? 'negative' : 'neutral';
+            const icon = update.change > 0 ? 'bi-arrow-up' : update.change < 0 ? 'bi-arrow-down' : 'bi-dash';
+
+            changeElement.innerHTML = `
+                <i class="bi ${icon} me-1"></i>
+                ${changeValue} vs período anterior
+            `;
+            changeElement.className = `metric-change ${changeClass}`;
+        }
+    });
+}
+
+// Inicializar gráficos
+function initCharts() {
+    initEvolutionChart();
+    initStatusChart();
+    initDefectsChart();
+    initDriversChart();
+}
+
+// Gráfico de evolução
+function initEvolutionChart() {
+    const ctx = document.getElementById('evolutionChart').getContext('2d');
+
+    if (charts.evolution) {
+        charts.evolution.destroy();
+    }
+
+    const evolutionData = dashboardData.evolution || [];
+
+    charts.evolution = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: evolutionData.map(d => new Date(d.data).toLocaleDateString('pt-BR')),
+            datasets: [
+                {
+                    label: 'Aprovados',
+                    data: evolutionData.map(d => d.aprovados),
+                    borderColor: '#00b894',
+                    backgroundColor: 'rgba(0, 184, 148, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                },
+                {
+                    label: 'Reprovados',
+                    data: evolutionData.map(d => d.reprovados),
+                    borderColor: '#e17055',
+                    backgroundColor: 'rgba(225, 112, 85, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                intersect: false,
+                mode: 'index'
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+// Gráfico de status
+function initStatusChart() {
+    const ctx = document.getElementById('statusChart').getContext('2d');
+
+    if (charts.status) {
+        charts.status.destroy();
+    }
+
+    const distributionData = dashboardData.distribution || {};
+
+    charts.status = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Aprovados', 'Reprovados', 'Em Andamento', 'Bloqueados'],
+            datasets: [{
+                data: [
+                    distributionData.aprovados || 0,
+                    distributionData.reprovados || 0,
+                    distributionData.em_andamento || 0,
+                    distributionData.bloqueados || 0
+                ],
+                backgroundColor: ['#00b894', '#e17055', '#fdcb6e', '#fd79a8'],
+                borderWidth: 2,
+                borderColor: '#ffffff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 15,
+                        usePointStyle: true
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Gráfico de defeitos
+function initDefectsChart() {
+    const ctx = document.getElementById('defectsChart').getContext('2d');
+
+    if (charts.defects) {
+        charts.defects.destroy();
+    }
+
+    const defectsData = dashboardData.defects || [];
+
+    charts.defects = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: defectsData.map(d => d.descricao?.substring(0, 30) + '...' || 'N/A'),
+            datasets: [{
+                label: 'Ocorrências',
+                data: defectsData.map(d => d.count || 0),
+                backgroundColor: '#fd79a8',
+                borderColor: '#e84393',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            indexAxis: 'y',
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                x: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+// Gráfico de motoristas
+function initDriversChart() {
+    const ctx = document.getElementById('driversChart').getContext('2d');
+
+    if (charts.drivers) {
+        charts.drivers.destroy();
+    }
+
+    const driversData = dashboardData.drivers || [];
+
+    charts.drivers = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: driversData.map(d => d.nome || 'N/A'),
+            datasets: [{
+                label: 'Taxa de Aprovação (%)',
+                data: driversData.map(d => d.taxa_aprovacao || 0),
+                backgroundColor: '#74b9ff',
+                borderColor: '#0984e3',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100
+                }
+            }
+        }
+    });
+}
+
+// Carregar atividade recente
+async function loadRecentActivity() {
+    try {
+        const response = await fetch('/api/recent-activity');
+        const activities = await response.json();
+
+        const container = document.getElementById('recent-activity');
+        container.innerHTML = '';
+
+        activities.forEach(activity => {
+            const iconClass = getActivityIcon(activity.type);
+            const iconColor = getActivityColor(activity.type);
+
+            const item = document.createElement('div');
+            item.className = 'activity-item';
+            item.innerHTML = `
+                <div class="activity-icon" style="background: ${iconColor};">
+                    <i class="bi ${iconClass}"></i>
+                </div>
+                <div class="activity-content flex-grow-1">
+                    <h6>${activity.title}</h6>
+                    <small>${activity.description} • ${formatTimeAgo(activity.timestamp)}</small>
+                </div>
+            `;
+
+            container.appendChild(item);
+        });
+
+    } catch (error) {
+        console.error('Erro ao carregar atividades:', error);
+    }
+}
+
+// Carregar dados meteorológicos
+async function loadWeatherData() {
+    try {
+        // Simulação de dados meteorológicos (em produção, usar API real)
+        const weatherData = {
+            temperature: Math.round(Math.random() * 15 + 20),
+            condition: 'Ensolarado',
+            location: 'São Paulo, SP'
+        };
+
+        document.getElementById('temperature').textContent = `${weatherData.temperature}°C`;
+        document.getElementById('weather-info').textContent = weatherData.condition;
+        document.getElementById('location').textContent = weatherData.location;
+
+    } catch (error) {
+        console.error('Erro ao carregar dados meteorológicos:', error);
+        document.getElementById('weather-info').textContent = 'Indisponível';
+    }
+}
+
+// Funções utilitárias
+function getActivityIcon(type) {
+    const icons = {
+        'checklist_created': 'bi-plus-circle',
+        'checklist_completed': 'bi-check-circle',
+        'vehicle_blocked': 'bi-shield-exclamation',
+        'maintenance_scheduled': 'bi-tools',
+        'defect_reported': 'bi-exclamation-triangle'
+    };
+    return icons[type] || 'bi-info-circle';
+}
+
+function getActivityColor(type) {
+    const colors = {
+        'checklist_created': '#74b9ff',
+        'checklist_completed': '#00b894',
+        'vehicle_blocked': '#e17055',
+        'maintenance_scheduled': '#fdcb6e',
+        'defect_reported': '#fd79a8'
+    };
+    return colors[type] || '#636e72';
+}
+
+function formatTimeAgo(timestamp) {
+    const now = new Date();
+    const time = new Date(timestamp);
+    const diffInMinutes = Math.floor((now - time) / 60000);
+
+    if (diffInMinutes < 1) return 'agora';
+    if (diffInMinutes < 60) return `${diffInMinutes}min`;
+    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h`;
+    return `${Math.floor(diffInMinutes / 1440)}d`;
+}
+
+function updateLastUpdateTime() {
+    const now = new Date();
+    document.getElementById('last-update').textContent = now.toLocaleTimeString('pt-BR');
+}
+
+// Controles de período
+function changeTimePeriod(period) {
+    // Atualizar botões ativos
+    document.querySelectorAll('.chart-controls .btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.classList.add('active');
+
+    // Atualizar filtros
+    const days = period === '7d' ? 7 : period === '30d' ? 30 : 90;
+    currentFilters.periodo = days;
+
+    // Recarregar dados
+    loadDashboardData().then(() => {
+        initEvolutionChart();
+    });
+}
+
+// Aplicar filtros do dashboard
+function applyDashboardFilters() {
+    const form = document.getElementById('dashboard-filters');
+    const formData = new FormData(form);
+
+    currentFilters = {};
+    for (let [key, value] of formData.entries()) {
+        if (value.trim()) {
+            currentFilters[key] = value;
+        }
+    }
+
+    // Fechar modal
+    bootstrap.Modal.getInstance(document.getElementById('filtersModal')).hide();
+
+    // Recarregar dados
+    refreshData();
+}
+
+// Refresh completo dos dados
+async function refreshData() {
+    try {
+        // Mostrar indicadores de loading
+        showLoadingState();
+
+        await loadDashboardData();
+        initCharts();
+        loadRecentActivity();
+
+    } catch (error) {
+        console.error('Erro ao atualizar dados:', error);
+        showError('Erro ao atualizar dados');
+    } finally {
+        hideLoadingState();
+    }
+}
+
+function showLoadingState() {
+    // Implementar indicadores de loading se necessário
+}
+
+function hideLoadingState() {
+    // Remover indicadores de loading
+}
+
+function showError(message) {
+    // Implementar exibição de erro
+    console.error(message);
+}
+
+// Função global para refresh (usada pelo auto-refresh do template base)
+window.refreshData = refreshData;
+</script>
+{% endblock %}

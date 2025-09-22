@@ -1,0 +1,676 @@
+{% extends "base.html" %}
+
+{% block title %}Relatório do Gestor - KPIs{% endblock %}
+
+{% block extra_css %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    .kpi-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 30px;
+        margin-bottom: 30px;
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+    }
+
+    .kpi-card {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 25px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .kpi-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+
+    .kpi-number {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 10px;
+    }
+
+    .kpi-label {
+        font-size: 0.9rem;
+        color: #6c757d;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .kpi-icon {
+        font-size: 3rem;
+        opacity: 0.8;
+        margin-bottom: 15px;
+    }
+
+    .alert-card {
+        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+
+    .success-card {
+        background: linear-gradient(135deg, #51cf66 0%, #40c057 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+
+    .warning-card {
+        background: linear-gradient(135deg, #ffd43b 0%, #fab005 100%);
+        color: #212529;
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+
+    .info-card {
+        background: linear-gradient(135deg, #74c0fc 0%, #339af0 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+
+    .secondary-card {
+        background: linear-gradient(135deg, #ced4da 0%, #adb5bd 100%);
+        color: #212529;
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+
+    .progress-bar {
+        height: 8px;
+        border-radius: 4px;
+        background: #e9ecef;
+        overflow: hidden;
+        margin-top: 10px;
+    }
+
+    .progress-fill {
+        height: 100%;
+        border-radius: 4px;
+        transition: width 0.5s ease;
+    }
+
+    .table-responsive {
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+
+    .refresh-btn {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        color: white;
+        padding: 15px;
+        border-radius: 50%;
+        font-size: 1.2rem;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        transition: transform 0.3s ease;
+    }
+
+    .refresh-btn:hover {
+        transform: scale(1.1);
+        color: white;
+    }
+
+    .metric-subtitle {
+        font-size: 0.8rem;
+        color: #6c757d;
+        margin-top: 5px;
+    }
+
+    .chart-container {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 25px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        height: 400px;
+    }
+
+    .chart-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin-bottom: 20px;
+        color: #374151;
+    }
+
+    .charts-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+        gap: 25px;
+        margin-bottom: 30px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="kpi-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-graph-up fs-2 me-3"></i>
+                    <div>
+                        <h1 class="mb-1">Relatório do Gestor</h1>
+                        <p class="mb-0 opacity-75">KPIs e métricas importantes do sistema</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 text-end">
+                <div class="d-flex justify-content-end gap-2">
+                    <button class="btn btn-light" onclick="window.print()">
+                        <i class="bi bi-printer me-1"></i>Imprimir
+                    </button>
+                    <button class="btn btn-light" onclick="location.reload()">
+                        <i class="bi bi-arrow-clockwise me-1"></i>Atualizar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if error %}
+    <div class="alert alert-danger">
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        Erro ao carregar dados: {{ error }}
+    </div>
+    {% endif %}
+
+    {% if kpis %}
+    <!-- KPIs Principais -->
+    <div class="stats-grid">
+        <!-- Veículos -->
+        <div class="kpi-card success-card">
+            <i class="bi bi-truck kpi-icon"></i>
+            <div class="kpi-number">{{ kpis.veiculos.total or 0 }}</div>
+            <div class="kpi-label">Total de Veículos</div>
+            <div class="metric-subtitle">
+                {{ kpis.veiculos.ativos or 0 }} ativos • {{ kpis.veiculos.em_manutencao or 0 }} em manutenção
+            </div>
+        </div>
+
+        <!-- Motoristas -->
+        <div class="kpi-card info-card">
+            <i class="bi bi-people kpi-icon"></i>
+            <div class="kpi-number">{{ kpis.motoristas.total or 0 }}</div>
+            <div class="kpi-label">Total de Motoristas</div>
+            <div class="metric-subtitle">
+                {{ kpis.motoristas.ativos or 0 }} ativos • {{ kpis.motoristas.inativos or 0 }} inativos
+            </div>
+        </div>
+
+        <!-- Checklists (30 dias) -->
+        <div class="kpi-card warning-card">
+            <i class="bi bi-check-circle kpi-icon"></i>
+            <div class="kpi-number">{{ kpis.checklists.total or 0 }}</div>
+            <div class="kpi-label">Checklists (30 dias)</div>
+            <div class="metric-subtitle">
+                {{ kpis.checklists.aprovados or 0 }} aprovados • {{ kpis.checklists.pendentes or 0 }} pendentes
+            </div>
+        </div>
+
+        <!-- Usuários Ativos -->
+        <div class="kpi-card secondary-card">
+            <i class="bi bi-person-check kpi-icon"></i>
+            <div class="kpi-number">{{ kpis.usuarios.ativos_semana or 0 }}</div>
+            <div class="kpi-label">Usuários Ativos (7 dias)</div>
+            <div class="metric-subtitle">
+                {{ kpis.usuarios.total or 0 }} total • {{ kpis.usuarios.ativos or 0 }} ativos
+            </div>
+        </div>
+    </div>
+
+    <!-- Seção Financeira e Operacional -->
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="kpi-card">
+                <h5 class="mb-4"><i class="bi bi-currency-dollar me-2 text-danger"></i>Multas</h5>
+                <div class="row">
+                    <div class="col-6">
+                        <div class="text-center">
+                            <h3 class="text-danger">R$ {{ "{:,.2f}".format(kpis.multas.valor_pendente or 0) }}</h3>
+                            <small class="text-muted">Valor Pendente</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-center">
+                            <h3 class="text-success">{{ kpis.multas.pagas or 0 }}</h3>
+                            <small class="text-muted">Multas Pagas</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="progress-bar mt-3">
+                    {% set total_multas = (kpis.multas.total or 1) %}
+                    {% set percentual_pagas = ((kpis.multas.pagas or 0) * 100 / total_multas) %}
+                    <div class="progress-fill bg-success" style="width: {{ percentual_pagas }}%"></div>
+                </div>
+                <small class="text-muted">{{ "%.1f"|format(percentual_pagas) }}% das multas foram pagas</small>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="kpi-card">
+                <h5 class="mb-4"><i class="bi bi-fuel-pump me-2 text-primary"></i>Abastecimentos (Mês Atual)</h5>
+                <div class="row">
+                    <div class="col-6">
+                        <div class="text-center">
+                            <h3 class="text-primary">R$ {{ "{:,.2f}".format(kpis.abastecimentos.valor_total or 0) }}</h3>
+                            <small class="text-muted">Valor Total</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-center">
+                            <h3 class="text-info">{{ "{:,.1f}".format(kpis.abastecimentos.litros_total or 0) }}L</h3>
+                            <small class="text-muted">Litros Total</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-3 text-center">
+                    <strong>Preço Médio: R$ {{ "{:.2f}".format(kpis.abastecimentos.preco_medio_litro or 0) }}/L</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ordens de Serviço -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="kpi-card">
+                <h5 class="mb-4"><i class="bi bi-wrench me-2 text-warning"></i>Ordens de Serviço (30 dias)</h5>
+                <div class="row">
+                    <div class="col-3">
+                        <div class="text-center">
+                            <h4 class="text-danger">{{ kpis.ordens_servico.abertas or 0 }}</h4>
+                            <small class="text-muted">Abertas</small>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="text-center">
+                            <h4 class="text-warning">{{ kpis.ordens_servico.em_andamento or 0 }}</h4>
+                            <small class="text-muted">Em Andamento</small>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="text-center">
+                            <h4 class="text-success">{{ kpis.ordens_servico.concluidas or 0 }}</h4>
+                            <small class="text-muted">Concluídas</small>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="text-center">
+                            <h4 class="text-primary">R$ {{ "{:,.0f}".format(kpis.ordens_servico.valor_total or 0) }}</h4>
+                            <small class="text-muted">Valor Total</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Alertas Importantes -->
+            {% if kpis.alertas.cnh_vencida > 0 or kpis.alertas.cnh_vencendo > 0 or kpis.alertas.multas_vencendo > 0 %}
+            <div class="alert-card">
+                <h6><i class="bi bi-exclamation-triangle me-2"></i>Alertas Importantes</h6>
+                {% if kpis.alertas.cnh_vencida > 0 %}
+                <div class="mb-2">
+                    <strong>{{ kpis.alertas.cnh_vencida }} CNHs vencidas!</strong>
+                </div>
+                {% endif %}
+                {% if kpis.alertas.cnh_vencendo > 0 %}
+                <div class="mb-2">
+                    {{ kpis.alertas.cnh_vencendo }} CNHs vencendo em 30 dias
+                </div>
+                {% endif %}
+                {% if kpis.alertas.multas_vencendo > 0 %}
+                <div class="mb-2">
+                    {{ kpis.alertas.multas_vencendo }} multas vencendo em 7 dias
+                </div>
+                {% endif %}
+            </div>
+            {% else %}
+            <div class="success-card">
+                <h6><i class="bi bi-check-circle me-2"></i>Situação OK</h6>
+                <p class="mb-0">Nenhum alerta crítico no momento</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Top Veículos Performance -->
+    {% if top_veiculos %}
+    <div class="kpi-card">
+        <h5 class="mb-4"><i class="bi bi-trophy me-2 text-warning"></i>Top 5 Veículos - Performance de Checklists</h5>
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Placa</th>
+                        <th>Modelo</th>
+                        <th>Total Checklists</th>
+                        <th>Aprovados</th>
+                        <th>% Aprovação</th>
+                        <th>Performance</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for veiculo in top_veiculos %}
+                    <tr>
+                        <td><span class="badge bg-primary">{{ veiculo[0] }}</span></td>
+                        <td>{{ veiculo[1] }}</td>
+                        <td>{{ veiculo[2] }}</td>
+                        <td>{{ veiculo[3] }}</td>
+                        <td><strong>{{ veiculo[4] }}%</strong></td>
+                        <td>
+                            <div class="progress-bar">
+                                {% set color = 'bg-success' if veiculo[4] >= 90 else 'bg-warning' if veiculo[4] >= 70 else 'bg-danger' %}
+                                <div class="progress-fill {{ color }}" style="width: {{ veiculo[4] }}%"></div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Seção de Gráficos -->
+    <div class="charts-grid">
+        <!-- Gráfico de Checklists Timeline -->
+        <div class="chart-container">
+            <h6 class="chart-title"><i class="bi bi-graph-up me-2 text-primary"></i>Checklists - Últimos 30 Dias</h6>
+            <canvas id="checklistChart"></canvas>
+        </div>
+
+        <!-- Gráfico de Distribuição de Veículos -->
+        <div class="chart-container">
+            <h6 class="chart-title"><i class="bi bi-pie-chart me-2 text-success"></i>Distribuição de Veículos</h6>
+            <canvas id="veiculosChart"></canvas>
+        </div>
+
+        <!-- Gráfico de Abastecimentos -->
+        <div class="chart-container">
+            <h6 class="chart-title"><i class="bi bi-fuel-pump me-2 text-warning"></i>Abastecimentos - Últimos 30 Dias</h6>
+            <canvas id="abastecimentoChart"></canvas>
+        </div>
+
+        <!-- Gráfico de Multas por Mês -->
+        <div class="chart-container">
+            <h6 class="chart-title"><i class="bi bi-exclamation-triangle me-2 text-danger"></i>Multas - Últimos 6 Meses</h6>
+            <canvas id="multasChart"></canvas>
+        </div>
+    </div>
+
+    {% else %}
+    <div class="kpi-card text-center">
+        <i class="bi bi-graph-up fs-1 text-muted mb-3"></i>
+        <h5>Carregando KPIs...</h5>
+        <p class="text-muted">Os dados estão sendo processados.</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Botão flutuante de refresh -->
+<button class="refresh-btn" onclick="location.reload()" title="Atualizar dados">
+    <i class="bi bi-arrow-clockwise"></i>
+</button>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-refresh dos dados a cada 5 minutos
+    setInterval(function() {
+        location.reload();
+    }, 300000); // 5 minutos
+
+    // Animação de entrada para os KPIs
+    const kpiCards = document.querySelectorAll('.kpi-card');
+    kpiCards.forEach((card, index) => {
+        setTimeout(() => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+
+            setTimeout(() => {
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, 100);
+        }, index * 100);
+    });
+
+    // Tooltip para informações adicionais
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+
+    // Configuração dos gráficos
+    {% if kpis %}
+
+    // Dados dos gráficos do backend
+    const checklistData = {{ checklist_timeline|tojson if checklist_timeline else "[]" }};
+    const abastecimentoData = {{ abastecimento_timeline|tojson if abastecimento_timeline else "[]" }};
+    const multasData = {{ multas_timeline|tojson if multas_timeline else "[]" }};
+    const veiculosData = {{ veiculos_distribuicao|tojson if veiculos_distribuicao else "[]" }};
+
+    // Gráfico de Checklists (Linha)
+    const checklistCtx = document.getElementById('checklistChart');
+    if (checklistCtx && checklistData.length > 0) {
+        new Chart(checklistCtx, {
+            type: 'line',
+            data: {
+                labels: checklistData.map(item => new Date(item[0]).toLocaleDateString('pt-BR')),
+                datasets: [{
+                    label: 'Total',
+                    data: checklistData.map(item => item[1]),
+                    borderColor: '#667eea',
+                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }, {
+                    label: 'Aprovados',
+                    data: checklistData.map(item => item[2]),
+                    borderColor: '#51cf66',
+                    backgroundColor: 'rgba(81, 207, 102, 0.1)',
+                    tension: 0.4
+                }, {
+                    label: 'Reprovados',
+                    data: checklistData.map(item => item[3]),
+                    borderColor: '#ff6b6b',
+                    backgroundColor: 'rgba(255, 107, 107, 0.1)',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+
+    // Gráfico de Distribuição de Veículos (Pizza)
+    const veiculosCtx = document.getElementById('veiculosChart');
+    if (veiculosCtx && veiculosData.length > 0) {
+        new Chart(veiculosCtx, {
+            type: 'doughnut',
+            data: {
+                labels: veiculosData.map(item => item[0]),
+                datasets: [{
+                    data: veiculosData.map(item => item[1]),
+                    backgroundColor: [
+                        '#51cf66',
+                        '#ffd43b',
+                        '#ff6b6b'
+                    ],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+
+    // Gráfico de Abastecimentos (Barras)
+    const abastecimentoCtx = document.getElementById('abastecimentoChart');
+    if (abastecimentoCtx && abastecimentoData.length > 0) {
+        new Chart(abastecimentoCtx, {
+            type: 'bar',
+            data: {
+                labels: abastecimentoData.map(item => new Date(item[0]).toLocaleDateString('pt-BR')),
+                datasets: [{
+                    label: 'Valor (R$)',
+                    data: abastecimentoData.map(item => item[1]),
+                    backgroundColor: 'rgba(102, 126, 234, 0.8)',
+                    borderColor: '#667eea',
+                    borderWidth: 1,
+                    yAxisID: 'y'
+                }, {
+                    label: 'Litros',
+                    data: abastecimentoData.map(item => item[2]),
+                    backgroundColor: 'rgba(255, 212, 59, 0.8)',
+                    borderColor: '#ffd43b',
+                    borderWidth: 1,
+                    yAxisID: 'y1'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top'
+                    }
+                },
+                scales: {
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Valor (R$)'
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Litros'
+                        },
+                        grid: {
+                            drawOnChartArea: false,
+                        },
+                    }
+                }
+            }
+        });
+    }
+
+    // Gráfico de Multas por Mês (Barras)
+    const multasCtx = document.getElementById('multasChart');
+    if (multasCtx && multasData.length > 0) {
+        new Chart(multasCtx, {
+            type: 'bar',
+            data: {
+                labels: multasData.map(item => new Date(item[0]).toLocaleDateString('pt-BR', { year: 'numeric', month: 'short' })),
+                datasets: [{
+                    label: 'Quantidade',
+                    data: multasData.map(item => item[1]),
+                    backgroundColor: 'rgba(255, 107, 107, 0.8)',
+                    borderColor: '#ff6b6b',
+                    borderWidth: 1,
+                    yAxisID: 'y'
+                }, {
+                    label: 'Valor (R$)',
+                    data: multasData.map(item => item[2]),
+                    backgroundColor: 'rgba(255, 212, 59, 0.8)',
+                    borderColor: '#ffd43b',
+                    borderWidth: 1,
+                    yAxisID: 'y1'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top'
+                    }
+                },
+                scales: {
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Quantidade'
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Valor (R$)'
+                        },
+                        grid: {
+                            drawOnChartArea: false,
+                        },
+                    }
+                }
+            }
+        });
+    }
+
+    {% endif %}
+});
+</script>
+{% endblock %}

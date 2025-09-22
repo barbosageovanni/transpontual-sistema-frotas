@@ -1,0 +1,286 @@
+{% extends "base.html" %}
+
+{% block title %}Novo Abastecimento{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h4 mb-0 text-gray-800">Novo Abastecimento</h1>
+        <div>
+            <a href="{{ url_for('abastecimentos_list') }}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar à Lista
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 fw-bold text-primary">Dados do Abastecimento</h6>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="abastecimento-form">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="veiculo_id" class="form-label">Veículo *</label>
+                                <select class="form-select" id="veiculo_id" name="veiculo_id" required>
+                                    <option value="">Selecione um veículo</option>
+                                    {% for veiculo in veiculos %}
+                                    <option value="{{ veiculo.id }}"
+                                            data-km="{{ veiculo.km_atual }}"
+                                            {{ 'selected' if request.form.get('veiculo_id') == veiculo.id|string }}>
+                                        {{ veiculo.placa }} - {{ veiculo.marca }} {{ veiculo.modelo }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text">Selecione o veículo abastecido</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="motorista_id" class="form-label">Motorista *</label>
+                                <select class="form-select" id="motorista_id" name="motorista_id" required>
+                                    <option value="">Selecione um motorista</option>
+                                    {% for motorista in motoristas %}
+                                    <option value="{{ motorista.id }}"
+                                            {{ 'selected' if request.form.get('motorista_id') == motorista.id|string }}>
+                                        {{ motorista.nome }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text">Motorista responsável pelo abastecimento</div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="data_abastecimento" class="form-label">Data e Hora *</label>
+                                <input type="datetime-local" class="form-control" id="data_abastecimento"
+                                       name="data_abastecimento" value="{{ request.form.get('data_abastecimento') }}" required>
+                                <div class="form-text">Data e hora do abastecimento</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="odometro" class="form-label">Odômetro (km) *</label>
+                                <input type="number" class="form-control" id="odometro" name="odometro"
+                                       value="{{ request.form.get('odometro') }}" min="0" required>
+                                <div class="form-text">Quilometragem atual do veículo</div>
+                                <div id="km-warning" class="text-warning" style="display: none;">
+                                    <small><i class="bi bi-exclamation-triangle"></i> Verifique a quilometragem informada</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label for="litros" class="form-label">Litros *</label>
+                                <input type="number" class="form-control" id="litros" name="litros"
+                                       value="{{ request.form.get('litros') }}" step="0.01" min="0" required>
+                                <div class="form-text">Quantidade de combustível</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="valor_litro" class="form-label">Valor por Litro (R$) *</label>
+                                <input type="number" class="form-control" id="valor_litro" name="valor_litro"
+                                       value="{{ request.form.get('valor_litro') }}" step="0.001" min="0" required>
+                                <div class="form-text">Preço por litro</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="valor_total" class="form-label">Valor Total (R$) *</label>
+                                <input type="number" class="form-control" id="valor_total" name="valor_total"
+                                       value="{{ request.form.get('valor_total') }}" step="0.01" min="0" required readonly>
+                                <div class="form-text">Calculado automaticamente</div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="posto" class="form-label">Posto</label>
+                                <input type="text" class="form-control" id="posto" name="posto"
+                                       value="{{ request.form.get('posto') }}" placeholder="Nome do posto">
+                                <div class="form-text">Nome ou rede do posto de combustível</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="tipo_combustivel" class="form-label">Tipo de Combustível</label>
+                                <select class="form-select" id="tipo_combustivel" name="tipo_combustivel">
+                                    <option value="Diesel" {{ 'selected' if request.form.get('tipo_combustivel', 'Diesel') == 'Diesel' }}>Diesel</option>
+                                    <option value="Gasolina" {{ 'selected' if request.form.get('tipo_combustivel') == 'Gasolina' }}>Gasolina</option>
+                                    <option value="Etanol" {{ 'selected' if request.form.get('tipo_combustivel') == 'Etanol' }}>Etanol</option>
+                                    <option value="GNV" {{ 'selected' if request.form.get('tipo_combustivel') == 'GNV' }}>GNV</option>
+                                    <option value="Arla 32" {{ 'selected' if request.form.get('tipo_combustivel') == 'Arla 32' }}>Arla 32</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="numero_cupom" class="form-label">Número do Cupom</label>
+                                <input type="text" class="form-control" id="numero_cupom" name="numero_cupom"
+                                       value="{{ request.form.get('numero_cupom') }}" placeholder="Número do cupom fiscal">
+                                <div class="form-text">Número do cupom fiscal (opcional)</div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="observacoes" class="form-label">Observações</label>
+                            <textarea class="form-control" id="observacoes" name="observacoes" rows="3"
+                                      placeholder="Observações adicionais sobre o abastecimento">{{ request.form.get('observacoes') }}</textarea>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-check-circle"></i> Registrar Abastecimento
+                                </button>
+                                <a href="{{ url_for('abastecimentos_list') }}" class="btn btn-secondary ms-2">
+                                    <i class="bi bi-x-circle"></i> Cancelar
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Card de Ajuda -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 fw-bold text-info">Dicas</h6>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <i class="bi bi-fuel-pump display-4 text-info"></i>
+                    </div>
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <i class="bi bi-check-circle text-success"></i>
+                            <strong>Dados obrigatórios:</strong> Veículo, motorista, data, odômetro, litros e valores
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-calculator text-primary"></i>
+                            <strong>Cálculo automático:</strong> O valor total será calculado automaticamente
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-speedometer2 text-warning"></i>
+                            <strong>Odômetro:</strong> Verifique se a quilometragem está correta
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-receipt text-info"></i>
+                            <strong>Cupom fiscal:</strong> Guarde o cupom para controle financeiro
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Card de Informações do Veículo -->
+            <div class="card shadow mb-4" id="veiculo-info" style="display: none;">
+                <div class="card-header py-3">
+                    <h6 class="m-0 fw-bold text-primary">Informações do Veículo</h6>
+                </div>
+                <div class="card-body">
+                    <div id="veiculo-details">
+                        <!-- Preenchido via JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Definir data/hora atual
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    document.getElementById('data_abastecimento').value = now.toISOString().slice(0, 16);
+
+    // Calcular valor total automaticamente
+    function calcularTotal() {
+        const litros = parseFloat(document.getElementById('litros').value) || 0;
+        const valorLitro = parseFloat(document.getElementById('valor_litro').value) || 0;
+        const total = litros * valorLitro;
+        document.getElementById('valor_total').value = total.toFixed(2);
+    }
+
+    // Validar odômetro com base no veículo selecionado
+    function validarOdometro() {
+        const veiculoSelect = document.getElementById('veiculo_id');
+        const odometroInput = document.getElementById('odometro');
+        const warning = document.getElementById('km-warning');
+
+        if (veiculoSelect.value && odometroInput.value) {
+            const selectedOption = veiculoSelect.options[veiculoSelect.selectedIndex];
+            const kmAtual = parseInt(selectedOption.dataset.km) || 0;
+            const odometroInformado = parseInt(odometroInput.value) || 0;
+
+            if (odometroInformado < kmAtual) {
+                warning.style.display = 'block';
+                warning.innerHTML = `<small><i class="bi bi-exclamation-triangle"></i> Odômetro informado (${odometroInformado.toLocaleString()}km) é menor que o registrado (${kmAtual.toLocaleString()}km)</small>`;
+            } else {
+                warning.style.display = 'none';
+            }
+        }
+    }
+
+    // Mostrar informações do veículo selecionado
+    function mostrarInfoVeiculo() {
+        const veiculoSelect = document.getElementById('veiculo_id');
+        const infoCard = document.getElementById('veiculo-info');
+        const detailsDiv = document.getElementById('veiculo-details');
+
+        if (veiculoSelect.value) {
+            const selectedOption = veiculoSelect.options[veiculoSelect.selectedIndex];
+            const kmAtual = parseInt(selectedOption.dataset.km) || 0;
+            const texto = selectedOption.textContent;
+
+            detailsDiv.innerHTML = `
+                <div class="text-center mb-3">
+                    <i class="bi bi-truck display-4 text-primary"></i>
+                </div>
+                <p><strong>Veículo:</strong> ${texto}</p>
+                <p><strong>KM Atual:</strong> ${kmAtual.toLocaleString()} km</p>
+                <div class="alert alert-info">
+                    <small><i class="bi bi-info-circle"></i> Informe o odômetro atual do veículo</small>
+                </div>
+            `;
+            infoCard.style.display = 'block';
+        } else {
+            infoCard.style.display = 'none';
+        }
+    }
+
+    // Event listeners
+    document.getElementById('litros').addEventListener('input', calcularTotal);
+    document.getElementById('valor_litro').addEventListener('input', calcularTotal);
+    document.getElementById('odometro').addEventListener('input', validarOdometro);
+    document.getElementById('veiculo_id').addEventListener('change', function() {
+        mostrarInfoVeiculo();
+        validarOdometro();
+    });
+
+    // Validação do formulário
+    document.getElementById('abastecimento-form').addEventListener('submit', function(e) {
+        const odometroInput = document.getElementById('odometro');
+        const veiculoSelect = document.getElementById('veiculo_id');
+
+        if (veiculoSelect.value && odometroInput.value) {
+            const selectedOption = veiculoSelect.options[veiculoSelect.selectedIndex];
+            const kmAtual = parseInt(selectedOption.dataset.km) || 0;
+            const odometroInformado = parseInt(odometroInput.value) || 0;
+
+            if (odometroInformado < kmAtual) {
+                if (!confirm('O odômetro informado é menor que o registrado. Deseja continuar mesmo assim?')) {
+                    e.preventDefault();
+                    return false;
+                }
+            }
+        }
+    });
+
+    // Inicializar se já houver valores
+    calcularTotal();
+    mostrarInfoVeiculo();
+    validarOdometro();
+});
+</script>
+{% endblock %}

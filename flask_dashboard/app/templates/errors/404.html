@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}Página Não Encontrada{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-6 col-md-8">
+            <div class="text-center">
+                <div class="error mx-auto mb-4" data-text="404">
+                    <p class="m-0 display-1 fw-bold text-primary">404</p>
+                </div>
+                <h1 class="h4 text-gray-900 mb-4">Página Não Encontrada</h1>
+                <p class="text-gray-500 mb-4">
+                    Parece que a página que você está procurando não existe ou foi movida.
+                </p>
+                <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-primary">
+                        <i class="fas fa-home me-2"></i>Voltar ao Dashboard
+                    </a>
+                    <a href="javascript:history.back()" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Voltar
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.error {
+    color: #5a5c69;
+    font-size: 7rem;
+    position: relative;
+    line-height: 1;
+    width: 12.5rem;
+}
+
+@media (max-width: 576px) {
+    .error {
+        font-size: 4.5rem;
+        width: 7.5rem;
+    }
+}
+
+.error:before {
+    content: attr(data-text);
+    position: absolute;
+    left: 0;
+    top: 0;
+    color: #eaecf4;
+    text-shadow: -1px 0px 0px #c5c6d0;
+    z-index: -1;
+}
+</style>
+{% endblock %}

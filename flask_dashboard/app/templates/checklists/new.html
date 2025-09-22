@@ -1,0 +1,717 @@
+{% extends "base.html" %}
+
+{% block title %}Novo Checklist - Transpontual{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-card {
+        background: white;
+        border-radius: 15px;
+        padding: 30px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        border: none;
+    }
+
+    .step-indicator {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 30px;
+    }
+
+    .step {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: #e9ecef;
+        color: #6c757d;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        margin: 0 10px;
+        position: relative;
+    }
+
+    .step.active {
+        background: #667eea;
+        color: white;
+    }
+
+    .step.completed {
+        background: #00b894;
+        color: white;
+    }
+
+    .step::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 100%;
+        width: 20px;
+        height: 2px;
+        background: #e9ecef;
+        transform: translateY(-50%);
+    }
+
+    .step:last-child::after {
+        display: none;
+    }
+
+    .step.completed::after {
+        background: #00b894;
+    }
+
+    .vehicle-card, .driver-card, .model-card {
+        border: 2px solid #e9ecef;
+        border-radius: 10px;
+        padding: 20px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-bottom: 15px;
+    }
+
+    .vehicle-card:hover, .driver-card:hover, .model-card:hover {
+        border-color: #667eea;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
+        transform: translateY(-2px);
+    }
+
+    .vehicle-card.selected, .driver-card.selected, .model-card.selected {
+        border-color: #667eea;
+        background: rgba(102, 126, 234, 0.05);
+    }
+
+    .card-header-custom {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 10px 10px 0 0;
+        padding: 20px;
+        margin: -30px -30px 30px -30px;
+    }
+
+    .preview-section {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 20px;
+        margin-top: 20px;
+    }
+
+    .info-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 0;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .info-item:last-child {
+        border-bottom: none;
+    }
+
+    @media (max-width: 768px) {
+        .form-card { padding: 20px; }
+        .step-indicator { flex-wrap: wrap; }
+        .step { margin: 5px; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-xl-8 col-lg-10">
+            <!-- Header -->
+            <div class="text-center mb-4">
+                <h1 class="h3 mb-2">
+                    <i class="bi bi-plus-circle text-primary me-2"></i>
+                    Novo Checklist
+                </h1>
+                <p class="text-muted">Inicie um novo checklist veicular seguindo os passos abaixo</p>
+            </div>
+
+            <!-- Seção de Aprovação - Checklists Pendentes -->
+            {% if checklists_pendentes %}
+            <div class="form-card mb-4">
+                <div class="card-header-custom">
+                    <h4 class="mb-1">
+                        <i class="bi bi-clipboard-check me-2"></i>
+                        Checklists Aguardando Aprovação
+                    </h4>
+                    <p class="mb-0 opacity-75">Aprove os checklists finalizados para liberar as viagens</p>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Código</th>
+                                <th>Veículo</th>
+                                <th>Motorista</th>
+                                <th>Data/Hora</th>
+                                <th>Tipo</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for checklist in checklists_pendentes %}
+                            <tr id="checklist-row-{{ checklist.get('id') }}">
+                                <td><strong>{{ checklist.get('codigo') }}</strong></td>
+                                <td>
+                                    <div>{{ checklist.get('veiculo_placa') }}</div>
+                                    <small class="text-muted">{{ checklist.get('veiculo_modelo') }}</small>
+                                </td>
+                                <td>{{ checklist.get('motorista_nome') }}</td>
+                                <td>
+                                    {% if checklist.get('dt_fim') %}
+                                        {{ checklist.get('dt_fim')|datetime }}
+                                    {% else %}
+                                        {{ checklist.get('dt_inicio')|datetime }}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-{{ 'primary' if checklist.get('tipo') == 'pre' else 'success' }}">
+                                        {{ 'Pré-viagem' if checklist.get('tipo') == 'pre' else 'Pós-viagem' }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <button type="button" class="btn btn-success btn-sm" onclick="approveChecklist({{ checklist.get('id') }})">
+                                        <i class="bi bi-check-circle me-1"></i>Aprovar
+                                    </button>
+                                    <button type="button" class="btn btn-info btn-sm ms-1" onclick="viewChecklist({{ checklist.get('id') }})">
+                                        <i class="bi bi-eye me-1"></i>Ver
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Indicador de Passos -->
+            <div class="step-indicator">
+                <div class="step active" id="step1">1</div>
+                <div class="step" id="step2">2</div>
+                <div class="step" id="step3">3</div>
+                <div class="step" id="step4">4</div>
+            </div>
+
+            <!-- Formulário -->
+            <div class="form-card">
+                <form id="newChecklistForm" action="{{ url_for('checklist_new') }}" method="POST">
+                    <!-- Passo 1: Seleção do Veículo -->
+                    <div class="form-step" id="form-step-1">
+                        <div class="card-header-custom">
+                            <h4 class="mb-1">
+                                <i class="bi bi-truck me-2"></i>
+                                Passo 1: Selecione o Veículo
+                            </h4>
+                            <p class="mb-0 opacity-75">Escolha o veículo que será inspeccionado</p>
+                        </div>
+
+                        <div class="row" id="vehicles-container">
+                            {% if veiculos %}
+                                {% for veiculo in veiculos %}
+                                <div class="col-md-6 col-lg-4">
+                                    <div class="vehicle-card" onclick="selectVehicle({{ veiculo.id }}, '{{ veiculo.placa }}', '{{ veiculo.modelo }}')">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <i class="bi bi-truck fs-3 text-primary me-3"></i>
+                                            <div>
+                                                <h5 class="mb-1">{{ veiculo.placa }}</h5>
+                                                <p class="text-muted mb-0">{{ veiculo.modelo }} {{ veiculo.ano or '' }}</p>
+                                            </div>
+                                        </div>
+
+                                        <div class="row text-center mt-3">
+                                            <div class="col-6">
+                                                <small class="text-muted d-block">KM Atual</small>
+                                                <strong>{{ "{:,}".format(veiculo.km_atual or 0).replace(',', '.') }}</strong>
+                                            </div>
+                                            <div class="col-6">
+                                                <small class="text-muted d-block">Status</small>
+                                                <span class="badge bg-{{ 'success' if veiculo.ativo else 'secondary' }}">
+                                                    {{ 'Ativo' if veiculo.ativo else 'Inativo' }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="col-12 text-center py-5">
+                                    <i class="bi bi-truck display-1 text-muted mb-3"></i>
+                                    <h5 class="text-muted">Nenhum veículo disponível</h5>
+                                    <p class="text-muted">Cadastre veículos antes de criar checklists.</p>
+                                    <a href="{{ url_for('vehicle_new') }}" class="btn btn-primary">
+                                        <i class="bi bi-plus me-1"></i>Cadastrar Veículo
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <input type="hidden" id="selected_veiculo_id" name="veiculo_id">
+                    </div>
+
+                    <!-- Passo 2: Seleção do Motorista -->
+                    <div class="form-step" id="form-step-2" style="display: none;">
+                        <div class="card-header-custom">
+                            <h4 class="mb-1">
+                                <i class="bi bi-person me-2"></i>
+                                Passo 2: Selecione o Motorista
+                            </h4>
+                            <p class="mb-0 opacity-75">Escolha o motorista responsável pelo checklist</p>
+                        </div>
+
+                        <div class="row" id="drivers-container">
+                            {% if motoristas %}
+                                {% for motorista in motoristas %}
+                                <div class="col-md-6 col-lg-4">
+                                    <div class="driver-card" onclick="selectDriver({{ motorista.id }}, '{{ motorista.nome }}')">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <i class="bi bi-person-circle fs-3 text-success me-3"></i>
+                                            <div>
+                                                <h5 class="mb-1">{{ motorista.nome }}</h5>
+                                                <p class="text-muted mb-0">CNH: {{ motorista.cnh or 'N/A' }}</p>
+                                            </div>
+                                        </div>
+
+                                        <div class="row text-center mt-3">
+                                            <div class="col-6">
+                                                <small class="text-muted d-block">Categoria</small>
+                                                <strong>{{ motorista.categoria or 'N/A' }}</strong>
+                                            </div>
+                                            <div class="col-6">
+                                                <small class="text-muted d-block">Validade</small>
+                                                <small>{{ motorista.validade_cnh|date if motorista.validade_cnh else 'N/A' }}</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="col-12 text-center py-5">
+                                    <i class="bi bi-person display-1 text-muted mb-3"></i>
+                                    <h5 class="text-muted">Nenhum motorista disponível</h5>
+                                    <p class="text-muted">Cadastre motoristas antes de criar checklists.</p>
+                                    <a href="{{ url_for('driver_new') }}" class="btn btn-success">
+                                        <i class="bi bi-plus me-1"></i>Cadastrar Motorista
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <input type="hidden" id="selected_motorista_id" name="motorista_id">
+                    </div>
+
+                    <!-- Passo 3: Seleção do Modelo de Checklist -->
+                    <div class="form-step" id="form-step-3" style="display: none;">
+                        <div class="card-header-custom">
+                            <h4 class="mb-1">
+                                <i class="bi bi-clipboard-check me-2"></i>
+                                Passo 3: Selecione o Modelo de Checklist
+                            </h4>
+                            <p class="mb-0 opacity-75">Escolha o tipo de checklist a ser realizado</p>
+                        </div>
+
+                        <div class="row" id="models-container">
+                            {% if modelos %}
+                                {% for modelo in modelos %}
+                                <div class="col-md-6 col-lg-4">
+                                    <div class="model-card" onclick="selectModel({{ modelo.id }}, '{{ modelo.nome }}', '{{ modelo.tipo }}')">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <i class="bi bi-{{ 'arrow-right-circle' if modelo.tipo == 'pre' else 'arrow-left-circle' if modelo.tipo == 'pos' else 'tools' }} fs-3 text-warning me-3"></i>
+                                            <div>
+                                                <h5 class="mb-1">{{ modelo.nome }}</h5>
+                                                <p class="text-muted mb-0">
+                                                    {% if modelo.tipo == 'pre' %}Pré-viagem
+                                                    {% elif modelo.tipo == 'pos' %}Pós-viagem
+                                                    {% else %}Manutenção
+                                                    {% endif %}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div class="text-center mt-3">
+                                            <small class="text-muted d-block">Itens do Checklist</small>
+                                            <strong>{{ modelo.total_itens or 0 }} itens</strong>
+                                        </div>
+
+                                        {% if modelo.descricao %}
+                                        <div class="mt-2">
+                                            <small class="text-muted">{{ modelo.descricao }}</small>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="col-12 text-center py-5">
+                                    <i class="bi bi-clipboard display-1 text-muted mb-3"></i>
+                                    <h5 class="text-muted">Nenhum modelo disponível</h5>
+                                    <p class="text-muted">Configure modelos de checklist antes de continuar.</p>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <input type="hidden" id="selected_modelo_id" name="modelo_id">
+                        <input type="hidden" id="selected_tipo" name="tipo">
+                    </div>
+
+                    <!-- Passo 4: Informações Finais -->
+                    <div class="form-step" id="form-step-4" style="display: none;">
+                        <div class="card-header-custom">
+                            <h4 class="mb-1">
+                                <i class="bi bi-gear me-2"></i>
+                                Passo 4: Informações Finais
+                            </h4>
+                            <p class="mb-0 opacity-75">Configure os detalhes do checklist</p>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="odometro_ini" class="form-label">
+                                        <i class="bi bi-speedometer me-1"></i>
+                                        Odômetro Inicial (km)
+                                    </label>
+                                    <input type="number" class="form-control" id="odometro_ini" name="odometro_ini"
+                                           min="0" step="1" placeholder="Digite a quilometragem atual">
+                                    <div class="form-text">Quilometragem no início do checklist</div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="prioridade" class="form-label">
+                                        <i class="bi bi-flag me-1"></i>
+                                        Prioridade
+                                    </label>
+                                    <select class="form-select" id="prioridade" name="prioridade">
+                                        <option value="normal" selected>Normal</option>
+                                        <option value="alta">Alta</option>
+                                        <option value="urgente">Urgente</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="observacoes_iniciais" class="form-label">
+                                <i class="bi bi-chat-text me-1"></i>
+                                Observações Iniciais
+                            </label>
+                            <textarea class="form-control" id="observacoes_iniciais" name="observacoes_iniciais"
+                                      rows="3" placeholder="Comentários ou instruções especiais (opcional)"></textarea>
+                        </div>
+
+                        <!-- Preview dos Dados -->
+                        <div class="preview-section">
+                            <h5 class="mb-3">
+                                <i class="bi bi-eye me-2"></i>
+                                Resumo do Checklist
+                            </h5>
+
+                            <div class="info-item">
+                                <span><i class="bi bi-truck me-2 text-primary"></i>Veículo:</span>
+                                <strong id="preview-veiculo">-</strong>
+                            </div>
+
+                            <div class="info-item">
+                                <span><i class="bi bi-person me-2 text-success"></i>Motorista:</span>
+                                <strong id="preview-motorista">-</strong>
+                            </div>
+
+                            <div class="info-item">
+                                <span><i class="bi bi-clipboard-check me-2 text-warning"></i>Modelo:</span>
+                                <strong id="preview-modelo">-</strong>
+                            </div>
+
+                            <div class="info-item">
+                                <span><i class="bi bi-calendar me-2 text-info"></i>Data/Hora:</span>
+                                <strong id="preview-datetime">{{ current_datetime|datetime }}</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botões de Navegação -->
+                    <div class="d-flex justify-content-between mt-4">
+                        <button type="button" class="btn btn-outline-secondary" id="prevBtn" onclick="changeStep(-1)" style="display: none;">
+                            <i class="bi bi-arrow-left me-1"></i>Anterior
+                        </button>
+
+                        <div class="ms-auto">
+                            <button type="button" class="btn btn-primary" id="nextBtn" onclick="changeStep(1)" disabled>
+                                Próximo <i class="bi bi-arrow-right ms-1"></i>
+                            </button>
+
+                            <button type="submit" class="btn btn-success" id="submitBtn" style="display: none;">
+                                <i class="bi bi-check-circle me-1"></i>Iniciar Checklist
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentStep = 1;
+let selectedData = {
+    veiculo_id: null,
+    veiculo_info: null,
+    motorista_id: null,
+    motorista_info: null,
+    modelo_id: null,
+    modelo_info: null
+};
+
+// Seleção de veículo
+function selectVehicle(id, placa, modelo) {
+    // Remover seleção anterior
+    document.querySelectorAll('.vehicle-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+
+    // Selecionar atual
+    event.currentTarget.classList.add('selected');
+
+    selectedData.veiculo_id = id;
+    selectedData.veiculo_info = `${placa} - ${modelo}`;
+
+    document.getElementById('selected_veiculo_id').value = id;
+    document.getElementById('preview-veiculo').textContent = selectedData.veiculo_info;
+
+    // Habilitar botão próximo
+    document.getElementById('nextBtn').disabled = false;
+}
+
+// Seleção de motorista
+function selectDriver(id, nome) {
+    document.querySelectorAll('.driver-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+
+    event.currentTarget.classList.add('selected');
+
+    selectedData.motorista_id = id;
+    selectedData.motorista_info = nome;
+
+    document.getElementById('selected_motorista_id').value = id;
+    document.getElementById('preview-motorista').textContent = selectedData.motorista_info;
+
+    document.getElementById('nextBtn').disabled = false;
+}
+
+// Seleção de modelo
+function selectModel(id, nome, tipo) {
+    document.querySelectorAll('.model-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+
+    event.currentTarget.classList.add('selected');
+
+    selectedData.modelo_id = id;
+    selectedData.modelo_info = nome;
+
+    document.getElementById('selected_modelo_id').value = id;
+    document.getElementById('selected_tipo').value = tipo;
+    document.getElementById('preview-modelo').textContent = selectedData.modelo_info;
+
+    document.getElementById('nextBtn').disabled = false;
+}
+
+// Navegação entre passos
+function changeStep(direction) {
+    const totalSteps = 4;
+    const newStep = currentStep + direction;
+
+    if (newStep < 1 || newStep > totalSteps) return;
+
+    // Validar passo atual antes de avançar
+    if (direction > 0 && !validateCurrentStep()) {
+        return;
+    }
+
+    // Ocultar passo atual
+    document.getElementById(`form-step-${currentStep}`).style.display = 'none';
+    document.getElementById(`step${currentStep}`).classList.remove('active');
+
+    if (direction > 0) {
+        document.getElementById(`step${currentStep}`).classList.add('completed');
+    } else {
+        document.getElementById(`step${currentStep}`).classList.remove('completed');
+    }
+
+    // Mostrar novo passo
+    currentStep = newStep;
+    document.getElementById(`form-step-${currentStep}`).style.display = 'block';
+    document.getElementById(`step${currentStep}`).classList.add('active');
+
+    // Atualizar botões
+    updateNavigationButtons();
+
+    // Auto-foco em campos de input do passo atual
+    const currentStepElement = document.getElementById(`form-step-${currentStep}`);
+    const firstInput = currentStepElement.querySelector('input, select, textarea');
+    if (firstInput && currentStep === 4) {
+        firstInput.focus();
+    }
+}
+
+// Validar passo atual
+function validateCurrentStep() {
+    switch(currentStep) {
+        case 1:
+            if (!selectedData.veiculo_id) {
+                alert('Por favor, selecione um veículo.');
+                return false;
+            }
+            break;
+        case 2:
+            if (!selectedData.motorista_id) {
+                alert('Por favor, selecione um motorista.');
+                return false;
+            }
+            break;
+        case 3:
+            if (!selectedData.modelo_id) {
+                alert('Por favor, selecione um modelo de checklist.');
+                return false;
+            }
+            break;
+    }
+    return true;
+}
+
+// Atualizar botões de navegação
+function updateNavigationButtons() {
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const submitBtn = document.getElementById('submitBtn');
+
+    // Botão anterior
+    prevBtn.style.display = currentStep > 1 ? 'block' : 'none';
+
+    // Botão próximo vs submit
+    if (currentStep === 4) {
+        nextBtn.style.display = 'none';
+        submitBtn.style.display = 'block';
+    } else {
+        nextBtn.style.display = 'block';
+        submitBtn.style.display = 'none';
+
+        // Desabilitar próximo se não tiver seleção no passo atual
+        const hasSelection =
+            (currentStep === 1 && selectedData.veiculo_id) ||
+            (currentStep === 2 && selectedData.motorista_id) ||
+            (currentStep === 3 && selectedData.modelo_id) ||
+            currentStep === 4;
+
+        nextBtn.disabled = !hasSelection;
+    }
+}
+
+// Atualizar datetime preview
+function updateDateTimePreview() {
+    const now = new Date();
+    const formatted = now.toLocaleDateString('pt-BR') + ' ' + now.toLocaleTimeString('pt-BR', {
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+    document.getElementById('preview-datetime').textContent = formatted;
+}
+
+// Validação do formulário
+document.getElementById('newChecklistForm').addEventListener('submit', function(e) {
+    if (!validateCurrentStep()) {
+        e.preventDefault();
+        return false;
+    }
+
+    // Adicionar loading state
+    const submitBtn = document.getElementById('submitBtn');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<div class="spinner-border spinner-border-sm me-2"></div>Criando...';
+    submitBtn.disabled = true;
+
+    // Em caso de erro, restaurar botão (seria tratado pelo backend)
+    setTimeout(() => {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    }, 10000);
+});
+
+// Inicialização
+document.addEventListener('DOMContentLoaded', function() {
+    updateNavigationButtons();
+    updateDateTimePreview();
+
+    // Atualizar datetime a cada minuto
+    setInterval(updateDateTimePreview, 60000);
+});
+
+// Atalhos de teclado
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowLeft' && currentStep > 1) {
+        changeStep(-1);
+    } else if (e.key === 'ArrowRight' && currentStep < 4 && !document.getElementById('nextBtn').disabled) {
+        changeStep(1);
+    }
+});
+
+// Funções para aprovação de checklist
+async function approveChecklist(checklistId) {
+    if (!confirm('Confirma a aprovação deste checklist?')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/ui/checklist/${checklistId}/approve`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                aprovado_por: 'gestor'
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            // Remover linha da tabela
+            const row = document.getElementById(`checklist-row-${checklistId}`);
+            if (row) {
+                row.remove();
+            }
+
+            // Verificar se há mais linhas
+            const tbody = document.querySelector('.table tbody');
+            if (tbody && tbody.children.length === 0) {
+                // Se não há mais linhas, ocultar toda a seção
+                const approvalSection = document.querySelector('.form-card:has(.table)');
+                if (approvalSection) {
+                    approvalSection.style.display = 'none';
+                }
+            }
+
+            alert('Checklist aprovado com sucesso! O motorista pode iniciar a viagem.');
+        } else {
+            alert('Erro ao aprovar checklist: ' + (result.error || 'Erro desconhecido'));
+        }
+    } catch (error) {
+        console.error('Erro ao aprovar checklist:', error);
+        alert('Erro ao aprovar checklist. Tente novamente.');
+    }
+}
+
+function viewChecklist(checklistId) {
+    // Abrir checklist em nova aba para visualização
+    window.open(`/checklists/${checklistId}/execute`, '_blank');
+}
+</script>
+{% endblock %}

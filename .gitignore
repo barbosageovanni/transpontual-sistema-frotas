@@ -1,0 +1,9 @@
+# Ignorar arquivos problemáticos
+nul
+*.tmp
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+Thumbs.db
+.env.local

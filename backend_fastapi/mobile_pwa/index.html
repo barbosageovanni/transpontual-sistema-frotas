@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <title>Checklist Veicular</title>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu; margin:0; background:#f7f7f7;}
+    header{background:#0d6efd; color:#fff; padding:12px 16px; font-weight:600;}
+    .container{padding:12px 12px 100px;}
+    .card{background:#fff; border-radius:12px; padding:12px; box-shadow:0 1px 3px rgba(0,0,0,.08); margin-bottom:12px;}
+    .row{display:flex; gap:8px; flex-wrap:wrap;}
+    .field{flex:1; min-width:140px;}
+    input,select,button{width:100%; padding:12px; border-radius:10px; border:1px solid #dcdcdc; font-size:16px;}
+    button.primary{background:#0d6efd; color:#fff; border:none;}
+    .item{padding:12px; border:1px solid #eee; border-radius:12px; margin-bottom:10px; background:#fff;}
+    .item header{display:flex; justify-content:space-between; align-items:center; background:transparent; color:#000; padding:0; font-weight:600;}
+    .chips{display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;}
+    .chip{padding:8px 10px; border:1px solid #dcdcdc; border-radius:999px; background:#fafafa; font-size:14px; cursor:pointer; user-select:none;}
+    .chip.active{background:#ffe3e3; border-color:#ff9a9a;}
+    .ok-toggle{display:flex; gap:10px; margin-top:8px; align-items:center;}
+    .ok-toggle input{width:auto;}
+    .badge{font-size:12px; padding:4px 8px; border-radius:999px; background:#eee;}
+    .danger{background:#ffd9d9;}
+    .footer{position:fixed; left:0; right:0; bottom:0; background:#fff; padding:10px 12px; box-shadow:0 -2px 6px rgba(0,0,0,.08);}
+    .progress{height:10px; background:#eee; border-radius:999px; overflow:hidden; margin:10px 0;}
+    .progress > div{height:100%; background:#0d6efd; width:0%}
+  </style>
+</head>
+<body>
+  <header>Checklist Veicular</header>
+  <div class="container">
+    <div class="card" id="starter">
+      <div class="row">
+        <div class="field"><label>Veículo ID</label><input id="veiculo_id" type="number" value="1"></div>
+        <div class="field"><label>Motorista ID</label><input id="motorista_id" type="number" value="1"></div>
+        <div class="field">
+          <label>Modelo</label>
+          <select id="modelo_id"></select>
+        </div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Odômetro inicial</label><input id="odo_ini" type="number" value="0"></div>
+        <div class="field"><label>Geo início (auto)</label><input id="geo_inicio" placeholder="usa GPS" readonly></div>
+      </div>
+      <button class="primary" id="btnStart">Iniciar checklist</button>
+    </div>
+
+    <div class="card" id="workArea" style="display:none">
+      <div><strong>Checklist #<span id="cid"></span></strong> • <span class="badge" id="cstatus">pendente</span></div>
+      <div class="progress"><div id="pbar"></div></div>
+      <div id="items"></div>
+    </div>
+  </div>
+
+  <div class="footer" id="footer" style="display:none">
+    <div class="row">
+      <div class="field"><input id="odo_fim" type="number" placeholder="Odômetro final (opcional)"></div>
+      <div class="field"><button class="primary" id="btnFinish">Finalizar</button></div>
+    </div>
+  </div>
+
+<script>
+const API = (location.hostname === "localhost" || location.hostname === "127.0.0.1")
+  ? "http://localhost:8005"
+  : "https://SEU_BACKEND"; // ajuste se publicar
+
+async function getModels(){ const r = await fetch(API + "/checklist/modelos"); return await r.json(); }
+async function getChecklist(cid){ const r = await fetch(API + "/checklist/" + cid); return await r.json(); }
+async function postJson(path, body){
+  const r = await fetch(API + path, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)});
+  if(!r.ok){ throw new Error(await r.text()); }
+  return await r.json().catch(()=> ({}));
+}
+function progress(done,total){ const pct = total? Math.round((done/total)*100) : 0; document.getElementById("pbar").style.width = pct + "%"; }
+
+function renderItems(data){
+  const wrap = document.getElementById("items");
+  wrap.innerHTML = "";
+  const respostas = {};
+  (data.respostas||[]).forEach(r=> respostas[r.item_id]=r);
+  let responded = Object.keys(respostas).length;
+
+  data.itens.forEach(it=>{
+    const el = document.createElement("div");
+    el.className = "item";
+    const isNOK = respostas[it.id]?.valor === "nao_ok";
+    el.innerHTML = `
+      <header>
+        <div>#${it.ordem} • ${it.descricao}</div>
+        <span class="badge ${it.bloqueia_viagem? 'danger':''}">${it.severidade}${it.bloqueia_viagem?' • bloqueia':''}</span>
+      </header>
+
+      <div class="ok-toggle">
+        <label><input type="radio" name="ok_${it.id}" value="ok" ${!isNOK && respostas[it.id] ? 'checked':''}> Sem avaria</label>
+        <label><input type="radio" name="ok_${it.id}" value="nao_ok" ${isNOK ? 'checked':''}> Com avaria</label>
+        <label><input type="radio" name="ok_${it.id}" value="na" ${(!respostas[it.id]) ? 'checked':''}> N.A.</label>
+      </div>
+
+      <div class="chips" id="chips_${it.id}" style="display:${isNOK?'flex':'none'}">
+        ${(it.opcoes||[]).map(op=>`<div class="chip ${respostas[it.id]?.observacao===op?'active':''}" data-op="${op}">${op}</div>`).join("")}
+      </div>
+    `;
+    const radios = el.querySelectorAll(`input[name="ok_${it.id}"]`);
+    radios.forEach(r=>{
+      r.addEventListener("change", async (e)=>{
+        const val = e.target.value;
+        const chips = el.querySelector(`#chips_${it.id}`);
+        chips.style.display = (val==="nao_ok") ? "flex":"none";
+        let payload = { checklist_id: data.id, respostas: [{ item_id: it.id, valor: val, observacao: null }] };
+        try{
+          await postJson("/checklist/answer", payload);
+          if(!respostas[it.id]){ responded++; progress(responded, data.itens.length); }
+        }catch(err){ alert("Erro ao salvar: " + err.message); }
+      });
+    });
+    el.querySelectorAll(".chip").forEach(ch=>{
+      ch.addEventListener("click", async ()=>{
+        const opcao = ch.dataset.op;
+        el.querySelectorAll(".chip").forEach(c=>c.classList.remove("active"));
+        ch.classList.add("active");
+        try{
+          await postJson("/checklist/answer", {
+            checklist_id: data.id,
+            respostas: [{ item_id: it.id, valor: "nao_ok", observacao: opcao }]
+          });
+        }catch(err){ alert("Erro ao salvar: " + err.message); }
+      });
+    });
+    wrap.appendChild(el);
+  });
+
+  progress(responded, data.itens.length);
+}
+
+async function geoInit(){
+  try{
+    const p = await new Promise((res,rej)=>navigator.geolocation.getCurrentPosition(res,rej,{enableHighAccuracy:true, timeout:5000}));
+    const s = `${p.coords.latitude.toFixed(6)},${p.coords.longitude.toFixed(6)}`;
+    document.getElementById("geo_inicio").value = s;
+    return s;
+  }catch{ return null; }
+}
+
+async function boot(){
+  const sel = document.getElementById("modelo_id");
+  (await getModels()).forEach(m=>{
+    const o = document.createElement("option");
+    o.value = m.id; o.textContent = `#${m.id} - ${m.nome} (${m.tipo})`;
+    sel.appendChild(o);
+  });
+  geoInit();
+
+  document.getElementById("btnStart").addEventListener("click", async ()=>{
+    const payload = {
+      veiculo_id: +document.getElementById("veiculo_id").value,
+      motorista_id: +document.getElementById("motorista_id").value,
+      modelo_id: +document.getElementById("modelo_id").value,
+      tipo: "pre",
+      odometro_ini: +document.getElementById("odo_ini").value,
+      geo_inicio: document.getElementById("geo_inicio").value || null
+    };
+    try{
+      const c = await postJson("/checklist/start", payload);
+      document.getElementById("starter").style.display="none";
+      document.getElementById("workArea").style.display="block";
+      document.getElementById("footer").style.display="block";
+      document.getElementById("cid").textContent = c.id;
+      const data = await getChecklist(c.id);
+      document.getElementById("cstatus").textContent = data.status;
+      renderItems(data);
+
+      document.getElementById("btnFinish").onclick = async ()=>{
+        try{
+          await postJson("/checklist/finish", {
+            checklist_id: data.id,
+            odometro_fim: +document.getElementById("odo_fim").value || null
+          });
+          const novo = await getChecklist(data.id);
+          document.getElementById("cstatus").textContent = novo.status.toUpperCase();
+          alert("Checklist finalizado: " + novo.status.toUpperCase());
+        }catch(err){ alert("Erro ao finalizar: " + err.message); }
+      };
+
+    }catch(err){
+      alert("Erro ao iniciar: " + err.message);
+    }
+  });
+}
+boot();
+</script>
+</body>
+</html>

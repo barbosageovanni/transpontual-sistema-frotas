@@ -1,0 +1,10 @@
+[build]
+builder = "dockerfile"
+
+[deploy]
+startCommand = "echo 'Deploy configured per service'"
+
+# Configuração para monorepo - deploy separado por serviço
+# Use railway CLI para fazer deploy de cada serviço:
+# railway up --service backend --source backend_fastapi
+# railway up --service dashboard --source flask_dashboard

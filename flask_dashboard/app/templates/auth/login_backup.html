@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Transpontual</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css">
+
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .login-container {
+            max-width: 400px;
+            width: 100%;
+            padding: 0 20px;
+        }
+
+        .login-card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            border: none;
+        }
+
+        .logo-section {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            color: white;
+            font-size: 36px;
+        }
+
+        .form-floating > .form-control {
+            border-radius: 15px;
+            border: 2px solid #e9ecef;
+            padding: 20px 15px 10px;
+        }
+
+        .form-floating > .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.15);
+        }
+
+        .form-floating > label {
+            padding: 15px;
+        }
+
+        .btn-login {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: none;
+            border-radius: 15px;
+            padding: 15px;
+            font-weight: 600;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+            background: linear-gradient(135deg, #5a67d8, #6b46c1);
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin: 25px 0;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .divider span {
+            padding: 0 15px;
+            color: #6c757d;
+            font-size: 14px;
+        }
+
+        .demo-credentials {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .demo-credentials h6 {
+            color: #495057;
+            margin-bottom: 10px;
+        }
+
+        .credential-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .credential-item:last-child {
+            border-bottom: none;
+        }
+
+        .credential-badge {
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: 8px;
+        }
+
+        @media (max-width: 480px) {
+            .login-card {
+                padding: 30px 20px;
+            }
+
+            .logo-icon {
+                width: 60px;
+                height: 60px;
+                font-size: 28px;
+            }
+        }
+
+        .loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top: 2px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="card login-card">
+            <div class="logo-section">
+                <div class="logo-icon">
+                    <i class="bi bi-truck"></i>
+                </div>
+                <h2 class="fw-bold text-dark mb-1">Transpontual</h2>
+                <p class="text-muted mb-0">Sistema de Gestão de Frotas</p>
+            </div>
+
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                            <i class="bi bi-{{ 'exclamation-triangle' if category == 'warning' else 'info-circle' if category == 'info' else 'check-circle' if category == 'success' else 'x-circle' }} me-2"></i>
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <form method="POST" id="loginForm">
+                <div class="form-floating mb-3">
+                    <input type="email" class="form-control" id="email" name="email" placeholder="seu@email.com" required>
+                    <label for="email">
+                        <i class="bi bi-envelope me-2"></i>Email
+                    </label>
+                </div>
+
+                <div class="form-floating mb-4">
+                    <input type="password" class="form-control" id="password" name="password" placeholder="Senha" required>
+                    <label for="password">
+                        <i class="bi bi-lock me-2"></i>Senha
+                    </label>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="remember" name="remember">
+                        <label class="form-check-label" for="remember">
+                            Lembrar-me
+                        </label>
+                    </div>
+                    <a href="#" class="text-decoration-none" onclick="alert('Funcionalidade em desenvolvimento')">
+                        Esqueceu a senha?
+                    </a>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-login w-100">
+                    <span id="loginText">
+                        <i class="bi bi-box-arrow-in-right me-2"></i>Entrar
+                    </span>
+                    <span id="loginLoading" style="display: none;">
+                        <div class="loading-spinner me-2"></div>Entrando...
+                    </span>
+                </button>
+            </form>
+
+            <div class="divider">
+                <span>Credenciais de Teste</span>
+            </div>
+
+            <div class="demo-credentials">
+                <h6><i class="bi bi-person-check me-2"></i>Contas Disponíveis:</h6>
+
+                <div class="credential-item">
+                    <div>
+                        <strong>admin@transpontual.com</strong>
+                        <br><small class="text-muted">admin123</small>
+                    </div>
+                    <span class="badge credential-badge bg-primary">Gestor</span>
+                </div>
+
+                <div class="credential-item">
+                    <div>
+                        <strong>joao.silva@transpontual.com</strong>
+                        <br><small class="text-muted">motorista123</small>
+                    </div>
+                    <span class="badge credential-badge bg-success">Motorista</span>
+                </div>
+
+                <div class="credential-item">
+                    <div>
+                        <strong>pedro.costa@transpontual.com</strong>
+                        <br><small class="text-muted">mecanico123</small>
+                    </div>
+                    <span class="badge credential-badge bg-warning text-dark">Mecânico</span>
+                </div>
+            </div>
+
+            <div class="text-center mt-4">
+                <small class="text-muted">
+                    <i class="bi bi-shield-check me-1"></i>
+                    Acesso seguro e criptografado
+                </small>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center mt-4">
+            <small class="text-white opacity-75">
+                © 2024 Transpontual. Todos os direitos reservados.
+                <br>Versão 1.0.0
+            </small>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Efeito de loading no submit
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            const loginText = document.getElementById('loginText');
+            const loginLoading = document.getElementById('loginLoading');
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+
+            loginText.style.display = 'none';
+            loginLoading.style.display = 'inline-flex';
+            submitBtn.disabled = true;
+
+            // Se houver erro, restaurar o botão (seria tratado pelo Flask)
+            setTimeout(() => {
+                if (window.location.search.includes('error')) {
+                    loginText.style.display = 'inline-flex';
+                    loginLoading.style.display = 'none';
+                    submitBtn.disabled = false;
+                }
+            }, 3000);
+        });
+
+        // Auto-fill para demonstração
+        function fillCredentials(email, password) {
+            document.getElementById('email').value = email;
+            document.getElementById('password').value = password;
+        }
+
+        // Clique nas credenciais para auto-fill
+        document.querySelectorAll('.credential-item').forEach(item => {
+            item.style.cursor = 'pointer';
+            item.addEventListener('click', function() {
+                const email = this.querySelector('strong').textContent;
+                const password = this.querySelector('small').textContent;
+                fillCredentials(email, password);
+
+                // Feedback visual
+                this.style.background = '#e3f2fd';
+                setTimeout(() => {
+                    this.style.background = '';
+                }, 300);
+            });
+        });
+
+        // Animação de entrada
+        document.addEventListener('DOMContentLoaded', function() {
+            const card = document.querySelector('.login-card');
+            card.style.transform = 'translateY(20px)';
+            card.style.opacity = '0';
+
+            setTimeout(() => {
+                card.style.transition = 'all 0.6s ease';
+                card.style.transform = 'translateY(0)';
+                card.style.opacity = '1';
+            }, 100);
+        });
+
+        // Verificar se há parâmetro de redirect
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('redirect')) {
+            const alert = document.createElement('div');
+            alert.className = 'alert alert-info alert-dismissible fade show';
+            alert.innerHTML = `
+                <i class="bi bi-info-circle me-2"></i>
+                Faça login para continuar
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.querySelector('.logo-section').after(alert);
+        }
+    </script>
+</body>
+</html>

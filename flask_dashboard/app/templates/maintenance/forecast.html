@@ -1,0 +1,344 @@
+{% extends "base.html" %}
+
+{% block title %}Previsão de Alertas de Manutenção - Transpontual{% endblock %}
+
+{% block extra_css %}
+<style>
+    .forecast-card {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        border-left: 4px solid #ffc107;
+    }
+
+    .forecast-table {
+        background: white;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .forecast-table table {
+        margin: 0;
+    }
+
+    .forecast-table th {
+        background: #f8f9fa;
+        color: #495057;
+        font-weight: 600;
+        font-size: 0.85rem;
+        padding: 15px 12px;
+        border: none;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .forecast-table td {
+        padding: 12px;
+        border: none;
+        color: #6c757d;
+        font-size: 0.9rem;
+        border-bottom: 1px solid #f3f4f6;
+        vertical-align: middle;
+    }
+
+    .forecast-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .forecast-table tbody tr:hover {
+        background: #f9fafb;
+    }
+
+    .equipment-code {
+        font-weight: 600;
+        color: #495057;
+    }
+
+    .maintenance-item {
+        color: #007bff;
+        font-weight: 500;
+    }
+
+    .forecast-date {
+        color: #28a745;
+        font-weight: 500;
+    }
+
+    .km-alert {
+        background: #fff3cd;
+        color: #856404;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+
+    .km-alert.urgent {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    .km-alert.normal {
+        background: #d1ecf1;
+        color: #0c5460;
+    }
+
+    .filter-section {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .status-indicator {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 8px;
+    }
+
+    .status-previsto { background: #ffc107; }
+    .status-urgente { background: #dc3545; }
+    .status-normal { background: #17a2b8; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="mb-1">
+                        <i class="bi bi-calendar-event text-warning me-2"></i>
+                        Previsão de Alertas de Manutenção
+                    </h2>
+                    <p class="text-muted mb-0">Visualize manutenções programadas para se antecipar às necessidades</p>
+                </div>
+                <div>
+                    <button class="btn btn-outline-primary" onclick="location.reload()">
+                        <i class="bi bi-arrow-clockwise me-1"></i>Atualizar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="filter-section">
+                <h6 class="mb-3">
+                    <i class="bi bi-funnel me-2"></i>Filtrar
+                </h6>
+                <form id="filterForm" method="GET">
+                    <div class="row">
+                        <div class="col-md-2">
+                            <label class="form-label">Equipamento</label>
+                            <select name="equipamento" id="filtro_equipamento" class="form-select">
+                                <option value="">Todos</option>
+                                <option value="CAVALOMECANICO" {{ 'selected' if request.args.get('equipamento') == 'CAVALOMECANICO' }}>CAVALO MECÂNICO</option>
+                                <option value="TOCO" {{ 'selected' if request.args.get('equipamento') == 'TOCO' }}>TOCO</option>
+                                <option value="EMPILHADEIRA" {{ 'selected' if request.args.get('equipamento') == 'EMPILHADEIRA' }}>EMPILHADEIRA</option>
+                                <option value="TRUCK" {{ 'selected' if request.args.get('equipamento') == 'TRUCK' }}>TRUCK</option>
+                                <option value="CARRETA" {{ 'selected' if request.args.get('equipamento') == 'CARRETA' }}>CARRETA</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Grupo</label>
+                            <select name="grupo" id="filtro_grupo" class="form-select">
+                                <option value="">Todos</option>
+                                <option value="Motor" {{ 'selected' if request.args.get('grupo') == 'Motor' }}>Motor</option>
+                                <option value="Freios" {{ 'selected' if request.args.get('grupo') == 'Freios' }}>Freios</option>
+                                <option value="Transmissão" {{ 'selected' if request.args.get('grupo') == 'Transmissão' }}>Transmissão</option>
+                                <option value="Suspensão" {{ 'selected' if request.args.get('grupo') == 'Suspensão' }}>Suspensão</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Tipo de equipamento</label>
+                            <select name="tipo" id="filtro_tipo" class="form-select">
+                                <option value="">Todos</option>
+                                <option value="Veicular" {{ 'selected' if request.args.get('tipo') == 'Veicular' }}>Veicular</option>
+                                <option value="Industrial" {{ 'selected' if request.args.get('tipo') == 'Industrial' }}>Industrial</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Tipo de medidor</label>
+                            <select name="medidor" id="filtro_medidor" class="form-select">
+                                <option value="">Todos</option>
+                                <option value="KM" {{ 'selected' if request.args.get('medidor') == 'KM' }}>Quilometragem</option>
+                                <option value="Horas" {{ 'selected' if request.args.get('medidor') == 'Horas' }}>Horas</option>
+                                <option value="Data" {{ 'selected' if request.args.get('medidor') == 'Data' }}>Data</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Plano de manutenção</label>
+                            <select name="plano" id="filtro_plano" class="form-select">
+                                <option value="">Todos</option>
+                                {% if todos_planos %}
+                                    {% for plano in todos_planos %}
+                                    <option value="{{ plano.id }}" {{ 'selected' if request.args.get('plano') == plano.id|string }}>
+                                        {{ plano.descricao }}
+                                    </option>
+                                    {% endfor %}
+                                {% endif %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Período de medição</label>
+                            <input type="date" name="data" id="filtro_data" class="form-control" value="{{ request.args.get('data', '') }}">
+                        </div>
+                    </div>
+                </form>
+                <div class="row mt-3">
+                    <div class="col-md-12">
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-outline-secondary" onclick="clearFilters()">
+                                <i class="bi bi-arrow-clockwise me-1"></i>Limpar
+                            </button>
+                            <button type="submit" form="filterForm" class="btn btn-warning">
+                                <i class="bi bi-funnel me-1"></i>Filtrar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela de Previsões -->
+    <div class="row">
+        <div class="col-12">
+            <div class="forecast-table">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Tipo do equipamento</th>
+                                <th>Equipamento</th>
+                                <th>Plano de manutenção</th>
+                                <th>Alerta</th>
+                                <th>Previsão</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if alertas %}
+                                {% for alerta in alertas %}
+                                <tr>
+                                    <td>
+                                        <span class="status-indicator status-previsto"></span>
+                                        {{ alerta.tipo_equipamento }}
+                                    </td>
+                                    <td>
+                                        <span class="equipment-code">{{ alerta.equipamento }}</span>
+                                        <br>
+                                        <small class="text-muted">FROTA PRÓPRIA</small>
+                                    </td>
+                                    <td>
+                                        <span class="maintenance-item">{{ alerta.item }}</span>
+                                        <br>
+                                        <small class="text-muted">{{ alerta.plano }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="km-alert {% if 'Faltam 3' in alerta.alerta %}urgent{% elif 'Faltam 15' in alerta.alerta %}normal{% else %}normal{% endif %}">
+                                            {{ alerta.alerta }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="forecast-date">{{ alerta.previsao }}</span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="5" class="text-center py-5">
+                                        <i class="bi bi-calendar-x fs-1 text-muted mb-3"></i>
+                                        <h6>Nenhuma previsão de manutenção encontrada</h6>
+                                        <p class="text-muted mb-0">Todas as manutenções estão em dia ou não há equipamentos cadastrados</p>
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Legenda -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="forecast-card">
+                <h6 class="mb-3">
+                    <i class="bi bi-info-circle me-2"></i>Legenda
+                </h6>
+                <div class="row">
+                    <div class="col-md-4">
+                        <span class="status-indicator status-previsto"></span>
+                        <strong>Previsto:</strong> Manutenção programada
+                    </div>
+                    <div class="col-md-4">
+                        <span class="status-indicator status-urgente"></span>
+                        <strong>Urgente:</strong> Menos de 500 km restantes
+                    </div>
+                    <div class="col-md-4">
+                        <span class="status-indicator status-normal"></span>
+                        <strong>Normal:</strong> Mais de 500 km restantes
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Destacar itens urgentes
+    const alertasUrgentes = document.querySelectorAll('.km-alert.urgent');
+    alertasUrgentes.forEach(alerta => {
+        alerta.parentElement.parentElement.style.background = '#fff5f5';
+    });
+
+    // Auto-refresh a cada 5 minutos
+    setInterval(function() {
+        if (navigator.onLine) {
+            location.reload();
+        }
+    }, 300000);
+});
+
+// Função para limpar todos os filtros
+function clearFilters() {
+    document.getElementById('filtro_equipamento').value = '';
+    document.getElementById('filtro_grupo').value = '';
+    document.getElementById('filtro_tipo').value = '';
+    document.getElementById('filtro_medidor').value = '';
+    document.getElementById('filtro_plano').value = '';
+    document.getElementById('filtro_data').value = '';
+
+    // Enviar formulário para recarregar sem filtros
+    document.getElementById('filterForm').submit();
+}
+
+// Função para aplicar filtros via Enter key
+document.addEventListener('DOMContentLoaded', function() {
+    const filterInputs = document.querySelectorAll('#filterForm select, #filterForm input');
+    filterInputs.forEach(input => {
+        input.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                document.getElementById('filterForm').submit();
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Transpontual{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1 class="h3 mb-0">Dashboard Transpontual</h1>
+            <div class="badge bg-{{ 'success' if api_status == 'ok' else 'danger' }}">
+                API: {{ api_status.upper() }}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- KPI Cards -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <p class="text-muted mb-1">Total Checklists</p>
+                        <h4 class="mb-0" id="total-checklists">-</h4>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-clipboard-check text-primary" style="font-size: 2rem;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <p class="text-muted mb-1">Taxa Aprovação</p>
+                        <h4 class="mb-0" id="taxa-aprovacao">-</h4>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-check-circle text-success" style="font-size: 2rem;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <p class="text-muted mb-1">Veículos Ativos</p>
+                        <h4 class="mb-0" id="veiculos-ativos">-</h4>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-truck text-info" style="font-size: 2rem;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <p class="text-muted mb-1">OS Abertas</p>
+                        <h4 class="mb-0" id="os-abertas">-</h4>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-tools text-warning" style="font-size: 2rem;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Actions -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Ações Rápidas</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <a href="#" class="btn btn-primary btn-lg w-100 mb-2" onclick="alert('Em desenvolvimento')">
+                            <i class="bi bi-plus-circle me-2"></i>
+                            Novo Checklist
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="#" class="btn btn-success btn-lg w-100 mb-2" onclick="alert('Em desenvolvimento')">
+                            <i class="bi bi-truck me-2"></i>
+                            Cadastrar Veículo
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="#" class="btn btn-info btn-lg w-100 mb-2" onclick="alert('Em desenvolvimento')">
+                            <i class="bi bi-person-plus me-2"></i>
+                            Cadastrar Motorista
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="#" class="btn btn-warning btn-lg w-100 mb-2" onclick="alert('Em desenvolvimento')">
+                            <i class="bi bi-file-earmark me-2"></i>
+                            Gerar Relatório
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Info -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Status da API</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="badge bg-{{ 'success' if api_status == 'ok' else 'danger' }} me-3">
+                        {{ api_status.upper() }}
+                    </div>
+                    <div>
+                        <p class="mb-0">Conexão com API FastAPI</p>
+                        <small class="text-muted">Backend: localhost:8005</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Sistema</h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-1"><strong>Versão:</strong> 1.0.0</p>
+                <p class="mb-1"><strong>Ambiente:</strong> Desenvolvimento</p>
+                <p class="mb-0"><strong>Última atualização:</strong> <span id="last-update">-</span></p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Carregar estatísticas
+function loadStats() {
+    fetch('{{ url_for("main.api_stats") }}')
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                console.error('Erro ao carregar stats:', data.error);
+                return;
+            }
+            
+            document.getElementById('total-checklists').textContent = data.total_checklists || 0;
+            document.getElementById('taxa-aprovacao').textContent = (data.taxa_aprovacao || 0) + '%';
+            document.getElementById('veiculos-ativos').textContent = data.veiculos_ativos || 0;
+            document.getElementById('os-abertas').textContent = data.os_abertas || 0;
+            document.getElementById('last-update').textContent = new Date().toLocaleString('pt-BR');
+        })
+        .catch(error => {
+            console.error('Erro ao carregar estatísticas:', error);
+        });
+}
+
+// Carregar stats quando a página carregar
+document.addEventListener('DOMContentLoaded', loadStats);
+
+// Recarregar a cada 30 segundos
+setInterval(loadStats, 30000);
+</script>
+{% endblock %}

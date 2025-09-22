@@ -1,0 +1,425 @@
+{% extends "base.html" %}
+
+{% block title %}Planos de Manutenção - Transpontual{% endblock %}
+
+{% block extra_css %}
+<style>
+    .maintenance-card {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        border-left: 4px solid #28a745;
+    }
+
+    .maintenance-header {
+        display: flex;
+        justify-content: between;
+        align-items: center;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .maintenance-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #495057;
+        margin: 0;
+    }
+
+    .maintenance-status {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .status-active {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .status-inactive {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    .maintenance-info {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+
+    .info-item {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .info-label {
+        font-size: 0.8rem;
+        color: #6c757d;
+        text-transform: uppercase;
+        font-weight: 600;
+        margin-bottom: 5px;
+    }
+
+    .info-value {
+        font-size: 0.9rem;
+        color: #495057;
+    }
+
+    .items-table {
+        margin-top: 20px;
+    }
+
+    .items-table table {
+        background: #f8f9fa;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .items-table th {
+        background: #e9ecef;
+        color: #495057;
+        font-weight: 600;
+        font-size: 0.85rem;
+        padding: 12px;
+        border: none;
+    }
+
+    .items-table td {
+        padding: 10px 12px;
+        border: none;
+        color: #6c757d;
+        font-size: 0.85rem;
+    }
+
+    .items-table tbody tr:hover {
+        background: #e9ecef;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 10px;
+        margin-top: 15px;
+    }
+
+    .btn-outline-primary {
+        border-color: #007bff;
+        color: #007bff;
+    }
+
+    .btn-outline-primary:hover {
+        background: #007bff;
+        color: white;
+    }
+
+    .filter-card {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .vehicle-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .vehicle-tag {
+        background: #e3f2fd;
+        color: #1976d2;
+        padding: 5px 10px;
+        border-radius: 15px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid #bbdefb;
+    }
+
+    .vehicle-link {
+        color: #1976d2;
+        text-decoration: none;
+        opacity: 0.7;
+        transition: opacity 0.2s ease;
+    }
+
+    .vehicle-link:hover {
+        opacity: 1;
+        color: #0d47a1;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="mb-1">
+                        <i class="bi bi-gear-fill text-primary me-2"></i>
+                        Planos de Manutenção
+                    </h2>
+                    <p class="text-muted mb-0">Gerencie os planos de manutenção preventiva dos equipamentos</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('maintenance_plan_new') }}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-1"></i>Novo Plano
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="filter-card">
+                <form id="filterForm" method="GET" action="{{ url_for('maintenance_plans') }}">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <label class="form-label">Equipamento</label>
+                            <select name="equipamento" class="form-select">
+                                <option value="">Todos</option>
+                                <option value="EMPILHADEIRA" {{ 'selected' if filtros.equipamento == 'EMPILHADEIRA' }}>EMPILHADEIRA</option>
+                                <option value="TRUCK" {{ 'selected' if filtros.equipamento == 'TRUCK' }}>TRUCK</option>
+                                <option value="CARRETA" {{ 'selected' if filtros.equipamento == 'CARRETA' }}>CARRETA</option>
+                                <option value="CAVALOMECANICO" {{ 'selected' if filtros.equipamento == 'CAVALOMECANICO' }}>CAVALO MECÂNICO</option>
+                                <option value="TOCO" {{ 'selected' if filtros.equipamento == 'TOCO' }}>TOCO</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Grupo</label>
+                            <select name="grupo" class="form-select">
+                                <option value="">Todos</option>
+                                <option value="Motor" {{ 'selected' if filtros.grupo == 'Motor' }}>Motor</option>
+                                <option value="Freios" {{ 'selected' if filtros.grupo == 'Freios' }}>Freios</option>
+                                <option value="Elétrica" {{ 'selected' if filtros.grupo == 'Elétrica' }}>Elétrica</option>
+                                <option value="Suspensão" {{ 'selected' if filtros.grupo == 'Suspensão' }}>Suspensão</option>
+                                <option value="Transmissão" {{ 'selected' if filtros.grupo == 'Transmissão' }}>Transmissão</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Tipo de equipamento</label>
+                            <select name="tipo" class="form-select">
+                                <option value="">Todos</option>
+                                <option value="Veicular" {{ 'selected' if filtros.tipo == 'Veicular' }}>Veicular</option>
+                                <option value="Industrial" {{ 'selected' if filtros.tipo == 'Industrial' }}>Industrial</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Plano de manutenção</label>
+                            <select name="plano" class="form-select">
+                                <option value="">Todos</option>
+                                {% if todos_planos %}
+                                    {% for plano in todos_planos %}
+                                    <option value="{{ plano.id }}" {{ 'selected' if filtros.plano == plano.id|string }}>{{ plano.descricao }}</option>
+                                    {% endfor %}
+                                {% endif %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-12">
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-outline-secondary" onclick="clearFilters()">
+                                    <i class="bi bi-arrow-clockwise me-1"></i>Limpar
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-funnel me-1"></i>Filtrar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de Planos -->
+    <div class="row">
+        <div class="col-12">
+            {% if planos %}
+                {% for plano in planos %}
+                <div class="maintenance-card">
+                    <div class="maintenance-header">
+                        <h5 class="maintenance-title">{{ plano.descricao }}</h5>
+                        <span class="maintenance-status {% if plano.ativo %}status-active{% else %}status-inactive{% endif %}">
+                            {% if plano.ativo %}Ativo{% else %}Inativo{% endif %}
+                        </span>
+                    </div>
+
+                    <div class="maintenance-info">
+                        <div class="info-item">
+                            <span class="info-label">Repetição</span>
+                            <span class="info-value">{{ plano.repeticao }}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Quando</span>
+                            <span class="info-value">{{ plano.quando }}</span>
+                        </div>
+                    </div>
+
+                    <div class="info-item">
+                        <span class="info-label">Tipos de Equipamento</span>
+                        <span class="info-value">{{ plano.tipos_equipamento|join(', ') }}</span>
+                    </div>
+
+                    {% if plano.get('veiculos_vinculados') %}
+                    <div class="info-item mt-3">
+                        <span class="info-label">Veículos Vinculados</span>
+                        <div class="vehicle-tags mt-2">
+                            {% for veiculo in plano.veiculos_vinculados %}
+                            <span class="vehicle-tag">
+                                <i class="bi bi-truck me-1"></i>{{ veiculo.placa }}
+                                <a href="{{ url_for('maintenance_vehicle_history', veiculo_id=veiculo.id) }}"
+                                   class="vehicle-link ms-1" target="_blank" title="Ver histórico">
+                                    <i class="bi bi-box-arrow-up-right"></i>
+                                </a>
+                            </span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Itens do Plano -->
+                    <div class="items-table">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Descrição</th>
+                                    <th>Tipo</th>
+                                    <th>Quando chegar a</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in plano.itens %}
+                                <tr>
+                                    <td>{{ item.descricao }}</td>
+                                    <td>{{ item.tipo }}</td>
+                                    <td>{{ item.quando }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="action-buttons">
+                        <a href="{{ url_for('maintenance_plan_edit', plan_id=plano.id) }}" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-pencil me-1"></i>Editar
+                        </a>
+                        <a href="{{ url_for('maintenance_plan_view', plan_id=plano.id) }}" class="btn btn-outline-info btn-sm">
+                            <i class="bi bi-eye me-1"></i>Visualizar
+                        </a>
+                        <a href="{{ url_for('maintenance_plan_duplicate', plan_id=plano.id) }}" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-copy me-1"></i>Duplicar
+                        </a>
+                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="confirmarExclusao({{ plano.id }}, '{{ plano.nome }}')">
+                            <i class="bi bi-trash me-1"></i>Excluir
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-gear fs-1 text-muted mb-3"></i>
+                    <h5>Nenhum plano de manutenção encontrado</h5>
+                    <p class="text-muted">Crie seu primeiro plano de manutenção preventiva</p>
+                    <button class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-1"></i>Criar Primeiro Plano
+                    </button>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Adicionar funcionalidade de filtros em tempo real
+    const filtros = document.querySelectorAll('select[name]');
+    filtros.forEach(filtro => {
+        filtro.addEventListener('change', function() {
+            // Auto-submit do formulário quando filtro é alterado
+            document.getElementById('filterForm').submit();
+        });
+    });
+
+    // Mostrar contador de resultados
+    const totalPlanos = {{ planos|length }};
+    const totalTodos = {{ todos_planos|length if todos_planos else 0 }};
+
+    if (totalPlanos !== totalTodos) {
+        const filterCard = document.querySelector('.filter-card');
+        const contador = document.createElement('div');
+        contador.className = 'alert alert-info mt-2 mb-0';
+        contador.innerHTML = `
+            <i class="bi bi-funnel me-1"></i>
+            Mostrando ${totalPlanos} de ${totalTodos} planos de manutenção
+        `;
+        filterCard.appendChild(contador);
+    }
+});
+
+// Função para limpar todos os filtros
+function clearFilters() {
+    const selects = document.querySelectorAll('#filterForm select');
+    selects.forEach(select => {
+        select.value = '';
+    });
+    document.getElementById('filterForm').submit();
+}
+
+// Função para destacar termos filtrados
+function highlightFilteredTerms() {
+    const filtros = {{ filtros|tojson|safe }};
+
+    // Destacar equipamentos filtrados
+    if (filtros.equipamento) {
+        const equipmentTags = document.querySelectorAll('.equipment-tag, .info-value');
+        equipmentTags.forEach(tag => {
+            if (tag.textContent.includes(filtros.equipamento)) {
+                tag.style.backgroundColor = '#fff3cd';
+                tag.style.border = '1px solid #ffc107';
+            }
+        });
+    }
+}
+
+// Executar highlight após carregamento
+document.addEventListener('DOMContentLoaded', highlightFilteredTerms);
+
+// Função para confirmar exclusão de plano
+function confirmarExclusao(planId, planNome) {
+    if (confirm(`Tem certeza que deseja excluir o plano "${planNome}"?\n\nEsta ação não pode ser desfeita.`)) {
+        // Criar formulário para enviar POST
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/maintenance/plans/${planId}/delete`;
+
+        // Adicionar CSRF token se necessário
+        const csrfToken = document.querySelector('meta[name=csrf-token]');
+        if (csrfToken) {
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrf_token';
+            csrfInput.value = csrfToken.getAttribute('content');
+            form.appendChild(csrfInput);
+        }
+
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+{% endblock %}

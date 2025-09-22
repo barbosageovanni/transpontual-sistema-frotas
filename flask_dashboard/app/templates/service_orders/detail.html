@@ -1,0 +1,378 @@
+{% extends "base.html" %}
+
+{% block title %}Detalhes da Ordem de Serviço{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h4 mb-0 text-gray-800">Ordem de Serviço #{{ ordem.id }}</h1>
+        <div>
+            <a href="{{ url_for('service_order_edit', ordem_id=ordem.id) }}" class="btn btn-warning">
+                <i class="bi bi-pencil"></i> Editar
+            </a>
+            <a href="{{ url_for('service_orders_list') }}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar à Lista
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Informações Principais -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 fw-bold text-primary">Informações da Ordem de Serviço</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td class="fw-bold" width="40%">ID da OS:</td>
+                                    <td>#{{ ordem.id }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Veículo:</td>
+                                    <td>
+                                        {% if ordem.veiculo %}
+                                            <span class="fw-bold">{{ ordem.veiculo.placa }}</span><br>
+                                            <small class="text-muted">{{ ordem.veiculo.marca }} {{ ordem.veiculo.modelo }}</small>
+                                        {% elif ordem.veiculo_placa %}
+                                            <span class="fw-bold">{{ ordem.veiculo_placa }}</span>
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Tipo de Serviço:</td>
+                                    <td>{{ ordem.tipo_servico or '-' }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Status:</td>
+                                    <td>
+                                        {% if ordem.status == 'Aberta' %}
+                                            <span class="badge bg-warning">{{ ordem.status }}</span>
+                                        {% elif ordem.status == 'Em Andamento' %}
+                                            <span class="badge bg-info">{{ ordem.status }}</span>
+                                        {% elif ordem.status == 'Concluída' %}
+                                            <span class="badge bg-success">{{ ordem.status }}</span>
+                                        {% elif ordem.status == 'Cancelada' %}
+                                            <span class="badge bg-danger">{{ ordem.status }}</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ ordem.status or 'N/A' }}</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Oficina:</td>
+                                    <td>{{ ordem.oficina or '-' }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td class="fw-bold" width="40%">Data Abertura:</td>
+                                    <td>{{ ordem.data_abertura|datetime if ordem.data_abertura else '-' }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Data Prevista:</td>
+                                    <td>{{ ordem.data_prevista|datetime if ordem.data_prevista else '-' }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Data Conclusão:</td>
+                                    <td>{{ ordem.data_conclusao|datetime if ordem.data_conclusao else '-' }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Odômetro:</td>
+                                    <td>{{ "{:,}".format(ordem.odometro).replace(',', '.') if ordem.odometro else '-' }} km</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Valor Total:</td>
+                                    <td class="fs-5 text-success fw-bold">
+                                        {% if ordem.valor_total %}
+                                            R$ {{ ordem.valor_total }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    {% if ordem.descricao_problema %}
+                    <hr>
+                    <div class="row">
+                        <div class="col-12">
+                            <h6 class="fw-bold">Descrição do Problema:</h6>
+                            <div class="bg-light p-3 rounded">
+                                {{ ordem.descricao_problema }}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if ordem.descricao_servico %}
+                    <hr>
+                    <div class="row">
+                        <div class="col-12">
+                            <h6 class="fw-bold">Descrição do Serviço:</h6>
+                            <div class="bg-light p-3 rounded">
+                                {{ ordem.descricao_servico }}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if ordem.observacoes %}
+                    <hr>
+                    <div class="row">
+                        <div class="col-12">
+                            <h6 class="fw-bold">Observações:</h6>
+                            <div class="bg-light p-3 rounded">
+                                {{ ordem.observacoes }}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Itens da Ordem de Serviço -->
+            {% if ordem.itens %}
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 fw-bold text-primary">Itens/Serviços</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Tipo</th>
+                                    <th>Descrição</th>
+                                    <th>Qtd</th>
+                                    <th>Valor Unit.</th>
+                                    <th>Valor Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in ordem.itens %}
+                                <tr>
+                                    <td>{{ item.tipo_item or '-' }}</td>
+                                    <td>{{ item.descricao or '-' }}</td>
+                                    <td>{{ item.quantidade or 1 }}</td>
+                                    <td>R$ {{ item.valor_unitario or '0.00' }}</td>
+                                    <td>R$ {{ item.valor_total or '0.00' }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Resumo Status -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 fw-bold text-primary">Status da Ordem</h6>
+                </div>
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="bi bi-wrench display-4 text-warning"></i>
+                    </div>
+                    <div class="mb-3">
+                        {% if ordem.status == 'Aberta' %}
+                            <h4 class="text-warning">{{ ordem.status }}</h4>
+                        {% elif ordem.status == 'Em Andamento' %}
+                            <h4 class="text-info">{{ ordem.status }}</h4>
+                        {% elif ordem.status == 'Concluída' %}
+                            <h4 class="text-success">{{ ordem.status }}</h4>
+                        {% elif ordem.status == 'Cancelada' %}
+                            <h4 class="text-danger">{{ ordem.status }}</h4>
+                        {% else %}
+                            <h4 class="text-secondary">{{ ordem.status or 'N/A' }}</h4>
+                        {% endif %}
+                        <p class="text-muted mb-0">Status Atual</p>
+                    </div>
+
+                    {% if ordem.valor_total %}
+                    <hr>
+                    <div class="row text-center">
+                        <div class="col-12">
+                            <div class="h5 text-success">R$ {{ ordem.valor_total }}</div>
+                            <small class="text-muted">Valor Total</small>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Ações -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 fw-bold text-dark">Ações</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('service_order_edit', ordem_id=ordem.id) }}"
+                           class="btn btn-warning">
+                            <i class="bi bi-pencil"></i> Editar Ordem
+                        </a>
+                        <button type="button" class="btn btn-outline-primary" onclick="imprimirOrdem()">
+                            <i class="bi bi-printer"></i> Imprimir Ordem
+                        </button>
+                        <button type="button" class="btn btn-outline-danger" onclick="confirmarExclusao()">
+                            <i class="bi bi-trash"></i> Excluir Ordem
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Informações do Veículo -->
+            {% if ordem.veiculo %}
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 fw-bold text-primary">Informações do Veículo</h6>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <i class="bi bi-truck display-4 text-primary"></i>
+                    </div>
+                    <table class="table table-sm table-borderless">
+                        <tr>
+                            <td class="fw-bold">Placa:</td>
+                            <td>{{ ordem.veiculo.placa }}</td>
+                        </tr>
+                        <tr>
+                            <td class="fw-bold">Marca/Modelo:</td>
+                            <td>{{ ordem.veiculo.marca }} {{ ordem.veiculo.modelo }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmação de Exclusão -->
+<div class="modal fade" id="modalExclusao" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmar Exclusão</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-3">
+                    <i class="bi bi-exclamation-triangle display-4 text-warning"></i>
+                </div>
+                <p class="text-center">Tem certeza que deseja excluir esta ordem de serviço?</p>
+                <div class="alert alert-warning">
+                    <strong>Atenção:</strong> Esta ação não pode ser desfeita e removerá permanentemente:
+                    <ul class="mb-0 mt-2">
+                        <li>Dados da ordem de serviço</li>
+                        <li>Itens e serviços relacionados</li>
+                        <li>Histórico de manutenção</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form method="POST" action="{{ url_for('service_order_delete', ordem_id=ordem.id) }}" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash"></i> Confirmar Exclusão
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function confirmarExclusao() {
+    const modal = new bootstrap.Modal(document.getElementById('modalExclusao'));
+    modal.show();
+}
+
+function imprimirOrdem() {
+    // Criar uma nova janela para impressão
+    const printWindow = window.open('', '_blank');
+
+    const content = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Ordem de Serviço {{ ordem.numero_os or '#' + ordem.id|string }}</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 20px; }
+                .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
+                .section { margin-bottom: 15px; }
+                .label { font-weight: bold; }
+                .value { margin-left: 10px; }
+                .status { padding: 5px 10px; border-radius: 5px; color: white; }
+                .status-aberta { background-color: #ffc107; }
+                .status-andamento { background-color: #17a2b8; }
+                .status-concluida { background-color: #28a745; }
+                .status-cancelada { background-color: #dc3545; }
+                @media print { body { margin: 0; } }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h2>ORDEM DE SERVIÇO</h2>
+                <p>{{ ordem.numero_os or '#' + ordem.id|string }}</p>
+                <p>Transpontual - Sistema de Gestão de Frotas</p>
+            </div>
+
+            <div class="section">
+                <div><span class="label">Veículo:</span><span class="value">{{ ordem.veiculo.placa if ordem.veiculo else ordem.veiculo_placa or 'N/A' }}</span></div>
+                <div><span class="label">Tipo de Serviço:</span><span class="value">{{ ordem.tipo_servico or '-' }}</span></div>
+                <div><span class="label">Status:</span><span class="value">{{ ordem.status or 'N/A' }}</span></div>
+                <div><span class="label">Oficina:</span><span class="value">{{ ordem.oficina or '-' }}</span></div>
+            </div>
+
+            <div class="section">
+                <div><span class="label">Data Abertura:</span><span class="value">{{ ordem.data_abertura|datetime if ordem.data_abertura else '-' }}</span></div>
+                <div><span class="label">Data Prevista:</span><span class="value">{{ ordem.data_prevista|datetime if ordem.data_prevista else '-' }}</span></div>
+                <div><span class="label">Odômetro:</span><span class="value">{{ "{:,}".format(ordem.odometro).replace(',', '.') if ordem.odometro else '-' }} km</span></div>
+                <div><span class="label">Valor Total:</span><span class="value">R$ {{ ordem.valor_total or '0.00' }}</span></div>
+            </div>
+
+            {% if ordem.descricao_problema %}
+            <div class="section">
+                <div><span class="label">Problema:</span></div>
+                <div style="margin-top: 5px; padding: 10px; background-color: #f8f9fa; border-radius: 4px;">{{ ordem.descricao_problema }}</div>
+            </div>
+            {% endif %}
+
+            {% if ordem.descricao_servico %}
+            <div class="section">
+                <div><span class="label">Serviço:</span></div>
+                <div style="margin-top: 5px; padding: 10px; background-color: #f8f9fa; border-radius: 4px;">{{ ordem.descricao_servico }}</div>
+            </div>
+            {% endif %}
+
+            <div class="section" style="margin-top: 30px; text-align: center; font-size: 12px; color: #666;">
+                <p>Documento gerado em ' + new Date().toLocaleString('pt-BR') + '</p>
+            </div>
+        </body>
+        </html>
+    `;
+
+    printWindow.document.write(content);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+    printWindow.close();
+}
+</script>
+{% endblock %}

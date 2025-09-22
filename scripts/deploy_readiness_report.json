@@ -1,0 +1,68 @@
+{
+  "timestamp": "2025-09-15 08:07:22.966323",
+  "results": {
+    "security": {
+      "issues": [
+        "DEBUG habilitado em C:\\Users\\Geovane\\Documents\\Transpontual\\sistema_gestão_frotas\\.env"
+      ],
+      "passed": [
+        "Permissões verificadas para C:\\Users\\Geovane\\Documents\\Transpontual\\sistema_gestão_frotas\\.env"
+      ]
+    },
+    "database": {
+      "issues": [
+        "Erro ao verificar configurações do banco: No module named 'app'"
+      ],
+      "passed": []
+    },
+    "dependencies": {
+      "issues": [
+        "Dependências sem versão fixa em C:\\Users\\Geovane\\Documents\\Transpontual\\sistema_gestão_frotas\\requirements.txt: ['psycopg[binary]']",
+        "Ferramenta 'safety' não instalada para verificar vulnerabilidades"
+      ],
+      "passed": [
+        "Arquivo C:\\Users\\Geovane\\Documents\\Transpontual\\sistema_gestão_frotas\\requirements.txt encontrado",
+        "Arquivo C:\\Users\\Geovane\\Documents\\Transpontual\\sistema_gestão_frotas\\backend_fastapi\\requirements.txt encontrado",
+        "Todas as dependências têm versões fixas em C:\\Users\\Geovane\\Documents\\Transpontual\\sistema_gestão_frotas\\backend_fastapi\\requirements.txt",
+        "Arquivo C:\\Users\\Geovane\\Documents\\Transpontual\\sistema_gestão_frotas\\flask_dashboard\\requirements.txt encontrado",
+        "Todas as dependências têm versões fixas em C:\\Users\\Geovane\\Documents\\Transpontual\\sistema_gestão_frotas\\flask_dashboard\\requirements.txt"
+      ]
+    },
+    "configuration": {
+      "issues": [
+        "Arquivo .gitignore não encontrado"
+      ],
+      "passed": [
+        "Diretório backend_fastapi encontrado",
+        "Diretório flask_dashboard encontrado",
+        "Diretório sql encontrado",
+        "Diretório scripts encontrado",
+        "Arquivo README.md encontrado",
+        "Arquivo sql/improved_ddl.sql encontrado"
+      ]
+    },
+    "logging": {
+      "issues": [
+        "Configuração de logging não encontrada: C:\\Users\\Geovane\\Documents\\Transpontual\\sistema_gestão_frotas\\backend_fastapi\\app\\core\\logging.py",
+        "Configuração de logging não encontrada: C:\\Users\\Geovane\\Documents\\Transpontual\\sistema_gestão_frotas\\flask_dashboard\\app\\logging.py",
+        "Diretório de logs não existe"
+      ],
+      "passed": []
+    },
+    "docker": {
+      "issues": [
+        "Usuário não-root não configurado em C:\\Users\\Geovane\\Documents\\Transpontual\\sistema_gestão_frotas\\backend_fastapi\\Dockerfile",
+        "Usuário não-root não configurado em C:\\Users\\Geovane\\Documents\\Transpontual\\sistema_gestão_frotas\\flask_dashboard\\Dockerfile"
+      ],
+      "passed": [
+        "Dockerfile encontrado: C:\\Users\\Geovane\\Documents\\Transpontual\\sistema_gestão_frotas\\backend_fastapi\\Dockerfile",
+        "Dockerfile encontrado: C:\\Users\\Geovane\\Documents\\Transpontual\\sistema_gestão_frotas\\flask_dashboard\\Dockerfile",
+        "Docker Compose encontrado: C:\\Users\\Geovane\\Documents\\Transpontual\\sistema_gestão_frotas\\docker-compose.yml"
+      ]
+    }
+  },
+  "summary": {
+    "total_issues": 10,
+    "total_passed": 15
+  }
+}

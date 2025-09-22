@@ -1,0 +1,19 @@
+{% extends "layout.html" %}
+{% block content %}
+<h2>Modelos de Checklist</h2>
+<table class="table table-striped">
+  <thead><tr><th>ID</th><th>Nome</th><th>Tipo</th><th>Ações</th></tr></thead>
+  <tbody>
+    {% for m in modelos %}
+    <tr>
+      <td>{{ m.id }}</td>
+      <td>{{ m.nome }}</td>
+      <td>{{ m.tipo }}</td>
+      <td>
+        <a class="btn btn-sm btn-primary" href="{{ url_for('main.start') }}?modelo_id={{m.id}}">Iniciar com este</a>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

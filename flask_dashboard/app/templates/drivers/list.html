@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}Motoristas{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="mb-0">
+                    <i class="bi bi-person-badge text-primary me-2"></i>
+                    Motoristas
+                </h2>
+                <a href="{{ url_for('driver_new') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Novo Motorista
+                </a>
+            </div>
+
+            <!-- Lista de Motoristas -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">{{ motoristas|length }} motoristas encontrados</h5>
+                </div>
+
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>CNH</th>
+                                    <th>Categoria</th>
+                                    <th>Status</th>
+                                    <th class="text-center">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for motorista in motoristas %}
+                                <tr>
+                                    <td>{{ motorista.nome }}</td>
+                                    <td>{{ motorista.cnh or '-' }}</td>
+                                    <td>{{ motorista.categoria or '-' }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if motorista.ativo else 'danger' }}">
+                                            {{ 'Ativo' if motorista.ativo else 'Inativo' }}
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="btn-group btn-group-sm">
+                                            <button class="btn btn-outline-info" onclick="viewDriver({{ motorista.id }})" title="Ver detalhes">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="btn btn-outline-primary" onclick="editDriver({{ motorista.id }})" title="Editar">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="btn btn-outline-danger" onclick="confirmDeleteDriver({{ motorista.id }}, '{{ motorista.nome }}')" title="Excluir">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="5" class="text-center py-4">
+                                        <i class="bi bi-person-x display-4 text-muted d-block mb-2"></i>
+                                        <h5 class="text-muted">Nenhum motorista cadastrado</h5>
+                                        <p class="text-muted">Clique no botão "Novo Motorista" para começar.</p>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmação de Exclusão -->
+<div class="modal fade" id="deleteDriverModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmar Exclusão</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Tem certeza que deseja excluir o motorista <strong id="driverName"></strong>?</p>
+                <p class="text-muted"><small>Esta ação não pode ser desfeita.</small></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteDriver">Excluir</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Função para editar motorista
+function editDriver(driverId) {
+    window.location.href = `/drivers/${driverId}/edit`;
+}
+
+// Função para visualizar motorista
+function viewDriver(driverId) {
+    window.location.href = `/drivers/${driverId}`;
+}
+
+// Variável para armazenar o ID do motorista a ser deletado
+let driverToDelete = null;
+
+// Função para confirmar exclusão
+function confirmDeleteDriver(driverId, driverName) {
+    driverToDelete = driverId;
+    document.getElementById('driverName').textContent = driverName;
+
+    const modal = new bootstrap.Modal(document.getElementById('deleteDriverModal'));
+    modal.show();
+}
+
+// Confirmar exclusão
+document.getElementById('confirmDeleteDriver').addEventListener('click', function() {
+    if (driverToDelete) {
+        // Chamada AJAX para excluir o motorista via API local
+        fetch(`/api/drivers/${driverToDelete}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.message) {
+                // Sucesso - recarregar a página
+                location.reload();
+            } else {
+                // Erro - mostrar mensagem
+                alert(data.error || 'Erro ao excluir motorista. Tente novamente.');
+            }
+        })
+        .catch(error => {
+            console.error('Erro:', error);
+            alert('Erro ao excluir motorista. Tente novamente.');
+        });
+    }
+
+    const modal = bootstrap.Modal.getInstance(document.getElementById('deleteDriverModal'));
+    modal.hide();
+});
+</script>
+{% endblock %}

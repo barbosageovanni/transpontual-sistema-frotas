@@ -1,0 +1,403 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard de Multas{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stats-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 15px;
+        padding: 30px;
+        color: white;
+        text-align: center;
+        margin-bottom: 30px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        transition: transform 0.3s ease;
+    }
+
+    .stats-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .stats-card.danger {
+        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+    }
+
+    .stats-card.warning {
+        background: linear-gradient(135deg, #feca57 0%, #ff9ff3 100%);
+    }
+
+    .stats-card.success {
+        background: linear-gradient(135deg, #48cab2 0%, #2dd4bf 100%);
+    }
+
+    .stats-card.info {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+
+    .stats-number {
+        font-size: 3rem;
+        font-weight: bold;
+        margin-bottom: 10px;
+    }
+
+    .stats-label {
+        font-size: 1.1rem;
+        opacity: 0.9;
+    }
+
+    .chart-container {
+        background: white;
+        border-radius: 15px;
+        padding: 30px;
+        margin-bottom: 30px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        height: 400px;
+        position: relative;
+    }
+
+    .chart-container canvas {
+        max-height: 320px !important;
+        width: 100% !important;
+        height: 320px !important;
+    }
+
+    .recent-fines {
+        background: white;
+        border-radius: 15px;
+        padding: 30px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
+    .fine-item {
+        border-left: 4px solid #ff6b6b;
+        padding: 15px;
+        margin-bottom: 15px;
+        background: #f8f9fa;
+        border-radius: 0 8px 8px 0;
+    }
+
+    .fine-item.gravissima {
+        border-left-color: #dc3545;
+    }
+
+    .fine-item.grave {
+        border-left-color: #fd7e14;
+    }
+
+    .fine-item.media {
+        border-left-color: #ffc107;
+    }
+
+    .fine-item.leve {
+        border-left-color: #20c997;
+    }
+
+    .classification-badge {
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: bold;
+        text-transform: uppercase;
+    }
+
+    .badge-gravissima { background: #dc3545; color: white; }
+    .badge-grave { background: #fd7e14; color: white; }
+    .badge-media { background: #ffc107; color: #212529; }
+    .badge-leve { background: #20c997; color: white; }
+
+    .action-buttons {
+        margin-top: 30px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">Dashboard de Multas</h1>
+            <p class="text-muted">Gestão e análise de infrações de trânsito</p>
+        </div>
+        <div>
+            <a href="{{ url_for('multas_nova') }}" class="btn btn-success me-2">
+                <i class="bi bi-plus-circle me-2"></i>Nova Multa
+            </a>
+            <a href="{{ url_for('multas_lista') }}" class="btn btn-primary">
+                <i class="bi bi-list-ul me-2"></i>Ver Lista Completa
+            </a>
+        </div>
+    </div>
+
+    <!-- Cards de Estatísticas -->
+    <div class="row">
+        <div class="col-md-3">
+            <div class="stats-card info">
+                <div class="stats-number">{{ stats.total_multas or 0 }}</div>
+                <div class="stats-label">Total de Multas</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card danger">
+                <div class="stats-number">R$ {{ "{:,.2f}".format(stats.valor_total or 0) }}</div>
+                <div class="stats-label">Valor Total</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card warning">
+                <div class="stats-number">{{ stats.pendentes or 0 }}</div>
+                <div class="stats-label">Pendentes</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card success">
+                <div class="stats-number">{{ stats.vencidas or 0 }}</div>
+                <div class="stats-label">Vencidas</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Gráfico por Classificação -->
+        <div class="col-md-6">
+            <div class="chart-container">
+                <h5 class="mb-4">
+                    <i class="bi bi-pie-chart me-2"></i>
+                    Multas por Classificação
+                </h5>
+                <canvas id="chartClassificacao"></canvas>
+            </div>
+        </div>
+
+        <!-- Gráfico por Situação -->
+        <div class="col-md-6">
+            <div class="chart-container">
+                <h5 class="mb-4">
+                    <i class="bi bi-bar-chart me-2"></i>
+                    Multas por Situação
+                </h5>
+                <canvas id="chartSituacao"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Multas Recentes -->
+    <div class="recent-fines">
+        <h5 class="mb-4">
+            <i class="bi bi-clock-history me-2"></i>
+            Multas Recentes
+        </h5>
+
+        {% if multas %}
+            {% for multa in multas[:5] %}
+            <div class="fine-item {{ multa.classificacao.lower() }}">
+                <div class="row align-items-center">
+                    <div class="col-md-2">
+                        <strong>{{ multa.auto_infracao }}</strong>
+                        <br>
+                        <small class="text-muted">{{ multa.placa }}</small>
+                    </div>
+                    <div class="col-md-3">
+                        <strong>{{ multa.condutor_infrator }}</strong>
+                    </div>
+                    <div class="col-md-4">
+                        {{ multa.infracao }}
+                    </div>
+                    <div class="col-md-1">
+                        <span class="classification-badge badge-{{ multa.classificacao.lower() }}">
+                            {{ multa.classificacao }}
+                        </span>
+                    </div>
+                    <div class="col-md-2 text-end">
+                        <strong>R$ {{ "{:,.2f}".format(multa.valor) }}</strong>
+                        <br>
+                        <small class="text-muted">{{ multa.data_ocorrencia }}</small>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="text-center py-4">
+                <i class="bi bi-info-circle fs-1 text-muted mb-3"></i>
+                <h5>Nenhuma multa encontrada</h5>
+                <p class="text-muted">Não há multas registradas no sistema.</p>
+            </div>
+        {% endif %}
+
+        <div class="action-buttons text-center">
+            <a href="{{ url_for('multas_lista') }}" class="btn btn-outline-primary btn-lg">
+                <i class="bi bi-arrow-right me-2"></i>Ver Todas as Multas
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Função para otimizar performance
+    function optimizeChartRendering() {
+        // Configuração global de performance para Chart.js
+        Chart.defaults.animation.duration = 800;
+        Chart.defaults.responsive = true;
+        Chart.defaults.maintainAspectRatio = true;
+        Chart.defaults.aspectRatio = 1.5;
+        Chart.defaults.resizeDelay = 200;
+
+        // Disable animations se detectar dispositivo com performance baixa
+        if (navigator.hardwareConcurrency && navigator.hardwareConcurrency < 4) {
+            Chart.defaults.animation = false;
+        }
+    }
+
+    // Aplicar otimizações
+    optimizeChartRendering();
+
+    // Dados das estatísticas
+    const statsClassificacao = {{ stats.por_classificacao|tojson|safe }};
+    const statsSituacao = {{ stats.por_situacao|tojson|safe }};
+
+    // Cores para os gráficos
+    const coresClassificacao = {
+        'Gravíssima': '#dc3545',
+        'Grave': '#fd7e14',
+        'Média': '#ffc107',
+        'Leve': '#20c997'
+    };
+
+    const coresSituacao = {
+        'Pendente': '#ffc107',
+        'Confirmada': '#dc3545',
+        'Cancelada': '#6c757d',
+        'Paga': '#28a745'
+    };
+
+    // Gráfico de Pizza - Classificação
+    if (Object.keys(statsClassificacao).length > 0) {
+        const ctxClassificacao = document.getElementById('chartClassificacao').getContext('2d');
+        new Chart(ctxClassificacao, {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(statsClassificacao),
+                datasets: [{
+                    data: Object.values(statsClassificacao).map(item => item.count),
+                    backgroundColor: Object.keys(statsClassificacao).map(key => coresClassificacao[key] || '#6c757d'),
+                    borderWidth: 3,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                aspectRatio: 1.2,
+                animation: {
+                    duration: 800,
+                    easing: 'easeOutQuart'
+                },
+                layout: {
+                    padding: 10
+                },
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 20,
+                            usePointStyle: true
+                        }
+                    },
+                    tooltip: {
+                        enabled: true,
+                        mode: 'nearest',
+                        intersect: false,
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label;
+                                const count = context.parsed;
+                                const valor = statsClassificacao[label].valor;
+                                return `${label}: ${count} multas (R$ ${valor.toLocaleString('pt-BR', {minimumFractionDigits: 2})})`;
+                            }
+                        }
+                    }
+                },
+                interaction: {
+                    intersect: false,
+                    mode: 'nearest'
+                }
+            }
+        });
+    }
+
+    // Gráfico de Barras - Situação
+    if (Object.keys(statsSituacao).length > 0) {
+        const ctxSituacao = document.getElementById('chartSituacao').getContext('2d');
+        new Chart(ctxSituacao, {
+            type: 'bar',
+            data: {
+                labels: Object.keys(statsSituacao),
+                datasets: [{
+                    label: 'Quantidade',
+                    data: Object.values(statsSituacao).map(item => item.count),
+                    backgroundColor: Object.keys(statsSituacao).map(key => coresSituacao[key] || '#6c757d'),
+                    borderRadius: 8,
+                    borderSkipped: false
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                aspectRatio: 1.2,
+                animation: {
+                    duration: 800,
+                    easing: 'easeOutQuart'
+                },
+                layout: {
+                    padding: 10
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        enabled: true,
+                        mode: 'nearest',
+                        intersect: false,
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label;
+                                const count = context.parsed.y;
+                                const valor = statsSituacao[label].valor;
+                                return `${label}: ${count} multas (R$ ${valor.toLocaleString('pt-BR', {minimumFractionDigits: 2})})`;
+                            }
+                        }
+                    }
+                },
+                interaction: {
+                    intersect: false,
+                    mode: 'nearest'
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            borderDash: [5, 5]
+                        },
+                        ticks: {
+                            stepSize: 1,
+                            maxTicksLimit: 8
+                        }
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

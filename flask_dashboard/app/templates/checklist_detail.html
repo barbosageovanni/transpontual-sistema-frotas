@@ -1,0 +1,55 @@
+{% extends "layout.html" %}
+{% block content %}
+<h2>Checklist #{{ data.id }} — {{ data.status|upper }}</h2>
+<p class="text-muted">Iniciado em {{ data.dt_inicio }} | Veículo {{ data.veiculo_id }} | Motorista {{ data.motorista_id }}</p>
+
+<form method="post">
+  <div class="table-responsive">
+    <table class="table table-bordered align-middle">
+      <thead><tr><th>#</th><th>Item</th><th>Resposta</th><th>Observação</th></tr></thead>
+      <tbody>
+        {% for it in itens %}
+        {% set r = respostas_map.get(it.id) %}
+        <tr class="{% if r and r.valor=='nao_ok' %}table-danger{% endif %}">
+          <td>{{ it.ordem }}</td>
+          <td>
+            <strong>{{ it.descricao }}</strong>
+            <div class="small text-muted">Severidade: {{ it.severidade }}{% if it.bloqueia_viagem %} • <span class="text-danger">Bloqueia viagem</span>{% endif %}</div>
+          </td>
+          <td style="width:240px">
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="resp_{{it.id}}" id="ok{{it.id}}" value="ok" {% if r and r.valor=='ok' %}checked{% endif %}>
+              <label class="form-check-label" for="ok{{it.id}}">OK</label>
+            </div>
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="resp_{{it.id}}" id="nok{{it.id}}" value="nao_ok" {% if r and r.valor=='nao_ok' %}checked{% endif %}>
+              <label class="form-check-label" for="nok{{it.id}}">Não OK</label>
+            </div>
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="resp_{{it.id}}" id="na{{it.id}}" value="na" {% if r and r.valor=='na' %}checked{% endif %}>
+              <label class="form-check-label" for="na{{it.id}}">N.A.</label>
+            </div>
+          </td>
+          <td>
+            <input class="form-control" name="obs_{{it.id}}" value="{{ r.observacao if r else '' }}">
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-md-3">
+      <label class="form-label">Odômetro final</label>
+      <input class="form-control" type="number" name="odometro_fim">
+    </div>
+  </div>
+
+  <div class="mt-3">
+    <button class="btn btn-primary" name="salvar" value="1">Salvar respostas</button>
+    <button class="btn btn-success" name="finalizar" value="1">Finalizar checklist</button>
+    <a class="btn btn-secondary" href="{{ url_for('main.start') }}">Novo checklist</a>
+  </div>
+</form>
+{% endblock %}

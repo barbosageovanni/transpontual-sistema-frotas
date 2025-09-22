@@ -1,0 +1,51 @@
+# flask_dashboard/app/__init__.py
+"""
+Flask Dashboard Factory
+"""
+import os
+from flask import Flask
+
+def create_app():
+    """Factory para criar aplicação Flask"""
+    app = Flask(__name__)
+    
+    # Configurações
+    app.config["SECRET_KEY"] = os.getenv("FLASK_SECRET_KEY", "dev-secret-key")
+    app.config["API_BASE"] = os.getenv("API_BASE", "http://localhost:8005")
+    app.config["DEBUG"] = os.getenv("FLASK_DEBUG", "True").lower() == "true"
+    # Credenciais de serviço para chamar a API (JWT)
+    app.config["API_LOGIN_EMAIL"] = os.getenv("API_LOGIN_EMAIL", os.getenv("DASHBOARD_USER_EMAIL", "admin@transpontual.com"))
+    app.config["API_LOGIN_PASSWORD"] = os.getenv("API_LOGIN_PASSWORD", os.getenv("DASHBOARD_USER_PASSWORD", "admin123"))
+    
+    # Registrar blueprints
+    from .blueprints.main import bp as main_bp
+    from .blueprints.checklist import bp as checklist_bp
+    from .blueprints.maintenance import bp as maintenance_bp
+    from .blueprints.reports import bp as reports_bp
+    from .blueprints.alerts import bp as alerts_bp
+    from .routes import bp as routes_bp
+
+    app.register_blueprint(main_bp)
+    app.register_blueprint(routes_bp)
+    app.register_blueprint(checklist_bp, url_prefix="/checklist")
+    app.register_blueprint(maintenance_bp, url_prefix="/maintenance")
+    app.register_blueprint(reports_bp, url_prefix="/reports")
+    app.register_blueprint(alerts_bp, url_prefix="/alerts")
+    
+    # Filtros personalizados
+    @app.template_filter("datetime")
+    def datetime_filter(value):
+        """Formatar datetime"""
+        if value:
+            return value.strftime("%d/%m/%Y %H:%M")
+        return "-"
+    
+    @app.template_filter("currency")
+    def currency_filter(value):
+        """Formatar moeda"""
+        if value:
+            return f"R$ {value:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        return "R$ 0,00"
+
+    
+    return app

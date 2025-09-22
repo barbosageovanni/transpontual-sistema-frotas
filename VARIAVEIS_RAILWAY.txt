@@ -1,0 +1,14 @@
+# 🔧 VARIÁVEIS DE AMBIENTE PARA RAILWAY
+
+## BACKEND API (transpontual-api)
+DATABASE_URL=postgresql://postgres:Mariaana953%407334@db.lijtncazuwnbydeqtoyz.supabase.co:5432/postgres?sslmode=require
+SUPABASE_URL=https://lijtncazuwnbydeqtoyz.supabase.co
+SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxpanRuY2F6dXduYnlkZXF0b3l6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjY1MTU3NDEsImV4cCI6MjA0MjA5MTc0MX0.VBiQx7_XzT_B5BHkANy5m-3vnJxrJ_4TsGcvJEobhNI
+
+## FRONTEND DASHBOARD (transpontual-dashboard) - USAR DEPOIS
+API_BASE=https://SEU-BACKEND.railway.app
+SUPABASE_URL=https://lijtncazuwnbydeqtoyz.supabase.co
+SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxpanRuY2F6dXduYnlkZXF0b3l6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjY1MTU3NDEsImV4cCI6MjA0MjA5MTc0MX0.VBiQx7_XzT_B5BHkANy5m-3vnJxrJ_4TsGcvJEobhNI
+DATABASE_URL=postgresql://postgres:Mariaana953%407334@db.lijtncazuwnbydeqtoyz.supabase.co:5432/postgres?sslmode=require
+FLASK_ENV=production
+SECRET_KEY=transpontual-secret-key-2024

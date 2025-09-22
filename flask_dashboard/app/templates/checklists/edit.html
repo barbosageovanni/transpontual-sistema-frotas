@@ -1,0 +1,359 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Checklist #{{ checklist.id }} - Transpontual{% endblock %}
+
+{% block extra_css %}
+<style>
+    .edit-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    .form-section {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .section-title {
+        color: #495057;
+        border-bottom: 2px solid #e9ecef;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+    }
+    .readonly-field {
+        background-color: #f8f9fa;
+        border-color: #e9ecef;
+    }
+    .status-badge {
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-weight: 500;
+    }
+    .save-indicator {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 1050;
+        padding: 10px 20px;
+        border-radius: 5px;
+        font-weight: 500;
+        display: none;
+    }
+    .save-indicator.saving { background: #17a2b8; color: white; }
+    .save-indicator.saved { background: #28a745; color: white; }
+    .save-indicator.error { background: #dc3545; color: white; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Save Indicator -->
+    <div id="saveIndicator" class="save-indicator">
+        <i class="bi bi-check-circle me-2"></i>
+        <span id="saveText">Salvando...</span>
+    </div>
+
+    <!-- Header -->
+    <div class="edit-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <div class="d-flex align-items-center">
+                    <a href="/checklists" class="btn btn-outline-light btn-sm me-3">
+                        <i class="bi bi-arrow-left me-1"></i>Voltar
+                    </a>
+                    <div>
+                        <h2 class="mb-1">
+                            <i class="bi bi-pencil-square me-2"></i>
+                            Editar Checklist #{{ checklist.id }}
+                        </h2>
+                        <p class="mb-0 opacity-75">
+                            Modifique os dados básicos do checklist
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 text-end">
+                <span class="status-badge bg-{{ 'warning' if checklist.status == 'em_andamento' else 'success' if checklist.status == 'aprovado' else 'danger' }}">
+                    {{ checklist.status.replace('_', ' ').title() }}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <form id="editForm">
+        <!-- Informações Básicas -->
+        <div class="form-section">
+            <h5 class="section-title">
+                <i class="bi bi-info-circle me-2"></i>Informações Básicas
+            </h5>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <label class="form-label">ID do Checklist</label>
+                    <input type="text" class="form-control readonly-field" value="{{ checklist.id }}" readonly>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Tipo de Checklist</label>
+                    <select name="tipo" class="form-select" {{ 'disabled' if checklist.status != 'em_andamento' else '' }}>
+                        <option value="pre" {{ 'selected' if checklist.tipo == 'pre' else '' }}>Pré-viagem</option>
+                        <option value="pos" {{ 'selected' if checklist.tipo == 'pos' else '' }}>Pós-viagem</option>
+                        <option value="extra" {{ 'selected' if checklist.tipo == 'extra' else '' }}>Extraordinário</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="row mt-3">
+                <div class="col-md-6">
+                    <label class="form-label">Modelo de Checklist</label>
+                    <select name="modelo_id" class="form-select" {{ 'disabled' if checklist.status != 'em_andamento' else '' }}>
+                        {% for modelo in modelos %}
+                        <option value="{{ modelo.id }}" {{ 'selected' if modelo.id == checklist.modelo_id else '' }}>
+                            {{ modelo.nome }} ({{ modelo.tipo.upper() }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Status</label>
+                    <input type="text" class="form-control readonly-field"
+                           value="{{ checklist.status.replace('_', ' ').title() }}" readonly>
+                </div>
+            </div>
+        </div>
+
+        <!-- Veículo e Motorista -->
+        <div class="form-section">
+            <h5 class="section-title">
+                <i class="bi bi-truck me-2"></i>Veículo e Motorista
+            </h5>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <label class="form-label">Veículo</label>
+                    <select name="veiculo_id" class="form-select">
+                        {% for veiculo in veiculos %}
+                        <option value="{{ veiculo.id }}" {{ 'selected' if veiculo.id == checklist.veiculo_id else '' }}>
+                            {{ veiculo.placa }} - {{ veiculo.modelo }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Motorista</label>
+                    <select name="motorista_id" class="form-select">
+                        {% for motorista in motoristas %}
+                        <option value="{{ motorista.id }}" {{ 'selected' if motorista.id == checklist.motorista_id else '' }}>
+                            {{ motorista.nome }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Odômetros -->
+        <div class="form-section">
+            <h5 class="section-title">
+                <i class="bi bi-speedometer2 me-2"></i>Odômetros
+            </h5>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <label class="form-label">Odômetro Inicial (KM)</label>
+                    <input type="number" name="odometro_ini" class="form-control"
+                           value="{{ checklist.odometro_ini }}" min="0" step="1">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Odômetro Final (KM)</label>
+                    <input type="number" name="odometro_fim" class="form-control"
+                           value="{{ checklist.odometro_fim or '' }}" min="0" step="1"
+                           {{ 'readonly' if checklist.status == 'em_andamento' else '' }}>
+                </div>
+            </div>
+        </div>
+
+        <!-- Datas -->
+        <div class="form-section">
+            <h5 class="section-title">
+                <i class="bi bi-calendar me-2"></i>Datas e Horários
+            </h5>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <label class="form-label">Data/Hora de Início</label>
+                    <input type="text" class="form-control readonly-field"
+                           value="{{ checklist.dt_inicio }}" readonly>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Data/Hora de Fim</label>
+                    <input type="text" class="form-control readonly-field"
+                           value="{{ checklist.dt_fim or 'Em andamento' }}" readonly>
+                </div>
+            </div>
+        </div>
+
+        <!-- Botões de Ação -->
+        <div class="form-section">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <a href="/checklists/{{ checklist.id }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-eye me-1"></i>Visualizar
+                    </a>
+                    {% if checklist.status == 'em_andamento' %}
+                    <a href="/checklists/{{ checklist.id }}/execute" class="btn btn-outline-primary">
+                        <i class="bi bi-play me-1"></i>Continuar Execução
+                    </a>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <button type="button" class="btn btn-outline-secondary me-2" onclick="resetForm()">
+                        <i class="bi bi-arrow-clockwise me-1"></i>Resetar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save me-1"></i>Salvar Alterações
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    let originalData = {};
+    let hasChanges = false;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Salvar dados originais
+        saveOriginalData();
+
+        // Monitorar mudanças
+        const form = document.getElementById('editForm');
+        form.addEventListener('change', detectChanges);
+        form.addEventListener('input', detectChanges);
+
+        // Submit handler
+        form.addEventListener('submit', handleSubmit);
+
+        // Warning ao sair
+        window.addEventListener('beforeunload', function(e) {
+            if (hasChanges) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        });
+    });
+
+    function saveOriginalData() {
+        const form = document.getElementById('editForm');
+        const formData = new FormData(form);
+
+        originalData = {};
+        for (let [key, value] of formData.entries()) {
+            originalData[key] = value;
+        }
+    }
+
+    function detectChanges() {
+        const form = document.getElementById('editForm');
+        const formData = new FormData(form);
+
+        hasChanges = false;
+        for (let [key, value] of formData.entries()) {
+            if (originalData[key] !== value) {
+                hasChanges = true;
+                break;
+            }
+        }
+
+        // Atualizar visual do botão salvar
+        const saveBtn = form.querySelector('button[type="submit"]');
+        if (hasChanges) {
+            saveBtn.classList.remove('btn-primary');
+            saveBtn.classList.add('btn-warning');
+            saveBtn.innerHTML = '<i class="bi bi-exclamation-triangle me-1"></i>Salvar Alterações';
+        } else {
+            saveBtn.classList.remove('btn-warning');
+            saveBtn.classList.add('btn-primary');
+            saveBtn.innerHTML = '<i class="bi bi-save me-1"></i>Salvar Alterações';
+        }
+    }
+
+    function resetForm() {
+        if (hasChanges && !confirm('Descartar todas as alterações?')) {
+            return;
+        }
+
+        location.reload();
+    }
+
+    async function handleSubmit(e) {
+        e.preventDefault();
+
+        if (!hasChanges) {
+            showSaveIndicator('saved', 'Nenhuma alteração para salvar');
+            return;
+        }
+
+        const form = e.target;
+        const formData = new FormData(form);
+        const data = {};
+
+        for (let [key, value] of formData.entries()) {
+            // Converter números
+            if (['veiculo_id', 'motorista_id', 'modelo_id', 'odometro_ini', 'odometro_fim'].includes(key)) {
+                data[key] = value ? parseInt(value) : null;
+            } else {
+                data[key] = value;
+            }
+        }
+
+        showSaveIndicator('saving', 'Salvando alterações...');
+
+        try {
+            const response = await fetch('/checklists/{{ checklist.id }}/edit', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                showSaveIndicator('saved', 'Alterações salvas com sucesso!');
+                hasChanges = false;
+                saveOriginalData();
+                detectChanges();
+            } else {
+                throw new Error(result.error || 'Erro ao salvar');
+            }
+
+        } catch (error) {
+            console.error('Erro ao salvar:', error);
+            showSaveIndicator('error', 'Erro ao salvar: ' + error.message);
+        }
+    }
+
+    function showSaveIndicator(type, message) {
+        const indicator = document.getElementById('saveIndicator');
+        const text = document.getElementById('saveText');
+
+        indicator.className = `save-indicator ${type}`;
+        text.textContent = message;
+        indicator.style.display = 'block';
+
+        if (type !== 'saving') {
+            setTimeout(() => {
+                indicator.style.display = 'none';
+            }, 3000);
+        }
+    }
+</script>
+{% endblock %}

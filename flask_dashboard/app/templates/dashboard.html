@@ -1,0 +1,785 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Transpontual{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dashboard-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 30px;
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+    }
+
+    .metric-card {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        border: none;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .metric-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #667eea, #764ba2);
+    }
+
+    .metric-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+
+    .metric-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        color: white;
+        margin-bottom: 15px;
+    }
+
+    .metric-value {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin: 0;
+        color: #2d3436;
+    }
+
+    .metric-label {
+        color: #636e72;
+        font-size: 0.9rem;
+        font-weight: 500;
+        margin-bottom: 10px;
+    }
+
+    .quick-actions {
+        background: linear-gradient(135deg, #74b9ff, #0984e3);
+        color: white;
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 20px;
+    }
+
+    .quick-action-btn {
+        background: rgba(255,255,255,0.2);
+        border: 2px solid rgba(255,255,255,0.3);
+        color: white;
+        border-radius: 10px;
+        padding: 15px;
+        text-decoration: none;
+        display: block;
+        transition: all 0.3s ease;
+        margin-bottom: 10px;
+    }
+
+    .quick-action-btn:hover {
+        background: rgba(255,255,255,0.3);
+        color: white;
+        border-color: rgba(255,255,255,0.5);
+        transform: translateX(5px);
+    }
+
+    .chart-card {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        border: none;
+        height: 100%;
+    }
+
+    .status-indicator {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 8px;
+    }
+
+    .status-online { background: #00b894; animation: pulse 2s infinite; }
+    .status-warning { background: #fdcb6e; }
+    .status-offline { background: #e17055; }
+
+    @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.5; }
+        100% { opacity: 1; }
+    }
+
+    /* Estilos para os cartões de atalho */
+    .shortcut-card {
+        background: white;
+        border: 1px solid #e3e6f0;
+        border-radius: 10px;
+        padding: 20px 15px;
+        text-align: center;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        min-height: 120px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .shortcut-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        border-color: #4e73df;
+    }
+
+    .shortcut-icon {
+        font-size: 2.5rem;
+        margin-bottom: 10px;
+        transition: transform 0.3s ease;
+    }
+
+    .shortcut-card:hover .shortcut-icon {
+        transform: scale(1.1);
+    }
+
+    .shortcut-content h6 {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #5a5c69;
+        margin: 0;
+        line-height: 1.2;
+    }
+
+    .shortcut-card:hover .shortcut-content h6 {
+        color: #4e73df;
+    }
+
+    /* Estilos para alertas do sistema */
+    .alerts-sidebar {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        height: fit-content;
+        max-height: 600px;
+        overflow-y: auto;
+    }
+
+    .alert-item {
+        border-left: 4px solid;
+        background: #f8f9fa;
+        padding: 12px 15px;
+        margin-bottom: 10px;
+        border-radius: 5px;
+        transition: all 0.3s ease;
+    }
+
+    .alert-item:hover {
+        transform: translateX(5px);
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .alert-critical { border-left-color: #dc3545; }
+    .alert-warning { border-left-color: #ffc107; }
+    .alert-info { border-left-color: #17a2b8; }
+
+    .alert-title {
+        font-weight: 600;
+        font-size: 0.9rem;
+        margin-bottom: 5px;
+        color: #2d3436;
+    }
+
+    .alert-time {
+        font-size: 0.75rem;
+        color: #6c757d;
+    }
+
+    /* Grid de módulos principais */
+    .modules-grid {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        margin-bottom: 30px;
+    }
+
+    .module-card {
+        background: linear-gradient(145deg, #ffffff, #f8f9fa);
+        border: 1px solid #e9ecef;
+        border-radius: 12px;
+        padding: 20px 15px;
+        text-align: center;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        min-height: 130px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .module-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        border-color: #667eea;
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .module-icon {
+        font-size: 2.8rem;
+        margin-bottom: 12px;
+        transition: all 0.3s ease;
+    }
+
+    .module-card:hover .module-icon {
+        transform: scale(1.1);
+    }
+
+    .module-title {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #495057;
+        margin: 0;
+        line-height: 1.3;
+        text-align: center;
+    }
+
+    .module-card:hover .module-title {
+        color: #667eea;
+    }
+
+    /* Responsividade para telas menores */
+    @media (max-width: 768px) {
+        .alerts-sidebar {
+            margin-top: 20px;
+        }
+
+        .module-card {
+            min-height: 110px;
+            padding: 15px 10px;
+        }
+
+        .module-icon {
+            font-size: 2.2rem;
+        }
+
+        .module-title {
+            font-size: 0.8rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Dashboard Header -->
+<div class="dashboard-header">
+    <div class="row align-items-center">
+        <div class="col-md-8">
+            <h1 class="mb-2">
+                <i class="bi bi-speedometer2 me-2"></i>
+                Dashboard Operacional
+            </h1>
+            <p class="mb-0 opacity-75">
+                <span class="status-indicator status-{{ 'online' if health.status == 'ok' else 'offline' }}"></span>
+                Sistema {{ 'Online' if health.status == 'ok' else 'Offline' }} - Última atualização: <span id="last-update">carregando...</span>
+            </p>
+        </div>
+        <div class="col-md-4 text-end">
+            <div class="d-flex justify-content-end gap-2">
+                <button class="btn btn-light btn-sm" onclick="location.reload()">
+                    <i class="bi bi-arrow-clockwise me-1"></i>Atualizar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- KPIs Row -->
+<div class="row mb-4" id="kpis-row">
+    <div class="col-xl-3 col-lg-6 col-md-6 mb-4">
+        <div class="metric-card">
+            <div class="d-flex justify-content-between">
+                <div class="flex-grow-1">
+                    <p class="metric-label">Total de Checklists</p>
+                    <h2 class="metric-value" id="total-checklists">
+                        {{ kpis.estatisticas_gerais.total_checklists|default(0) }}
+                    </h2>
+                </div>
+                <div class="metric-icon" style="background: linear-gradient(135deg, #74b9ff, #0984e3);">
+                    <i class="bi bi-clipboard-data"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-lg-6 col-md-6 mb-4">
+        <div class="metric-card">
+            <div class="d-flex justify-content-between">
+                <div class="flex-grow-1">
+                    <p class="metric-label">Taxa de Aprovação</p>
+                    <h2 class="metric-value" id="approval-rate">
+                        {{ "%.1f"|format(kpis.estatisticas_gerais.taxa_aprovacao|default(0)) }}%
+                    </h2>
+                </div>
+                <div class="metric-icon" style="background: linear-gradient(135deg, #00b894, #00a085);">
+                    <i class="bi bi-check-circle"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-lg-6 col-md-6 mb-4">
+        <div class="metric-card">
+            <div class="d-flex justify-content-between">
+                <div class="flex-grow-1">
+                    <p class="metric-label">Checklists Aprovados</p>
+                    <h2 class="metric-value" id="approved-checklists">
+                        {{ kpis.estatisticas_gerais.aprovados|default(0) }}
+                    </h2>
+                </div>
+                <div class="metric-icon" style="background: linear-gradient(135deg, #00b894, #00a085);">
+                    <i class="bi bi-check-circle-fill"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-lg-6 col-md-6 mb-4">
+        <div class="metric-card">
+            <div class="d-flex justify-content-between">
+                <div class="flex-grow-1">
+                    <p class="metric-label">Checklists Reprovados</p>
+                    <h2 class="metric-value" id="rejected-checklists">
+                        {{ kpis.estatisticas_gerais.reprovados|default(0) }}
+                    </h2>
+                </div>
+                <div class="metric-icon" style="background: linear-gradient(135deg, #e17055, #d63031);">
+                    <i class="bi bi-x-circle-fill"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Layout Principal: Módulos e Alertas -->
+<div class="row">
+    <!-- Área Principal com Módulos do Sistema -->
+    <div class="col-xl-9 col-lg-8 mb-4">
+        <!-- Atalhos do Sistema -->
+        <div class="modules-grid">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h5 class="mb-0">
+                    <i class="bi bi-grid-3x3-gap me-2"></i>Atalhos do Sistema
+                </h5>
+                <span class="badge bg-primary">10 módulos disponíveis</span>
+            </div>
+
+            <div class="row g-3">
+                <!-- Primeira linha -->
+                <!-- Módulo EDI - Comentado para desenvolvimento posterior
+                <div class="col-xl-3 col-lg-4 col-md-6 col-sm-6">
+                    <a href="/edi" class="module-card">
+                        <i class="bi bi-arrow-down-up module-icon text-success"></i>
+                        <h6 class="module-title">Importação/<br>Exportação EDI</h6>
+                    </a>
+                </div>
+                -->
+
+                <div class="col-xl-3 col-lg-4 col-md-6 col-sm-6">
+                    <a href="/drivers" class="module-card">
+                        <i class="bi bi-people module-icon text-primary"></i>
+                        <h6 class="module-title">Pessoas</h6>
+                    </a>
+                </div>
+
+                <div class="col-xl-3 col-lg-4 col-md-6 col-sm-6">
+                    <a href="/vehicles" class="module-card">
+                        <i class="bi bi-truck module-icon text-info"></i>
+                        <h6 class="module-title">Veículos</h6>
+                    </a>
+                </div>
+
+                <!-- Módulo Pedidos - Comentado para desenvolvimento posterior
+                <div class="col-xl-3 col-lg-4 col-md-6 col-sm-6">
+                    <a href="/orders" class="module-card">
+                        <i class="bi bi-box-seam module-icon text-warning"></i>
+                        <h6 class="module-title">Pedidos</h6>
+                    </a>
+                </div>
+                -->
+
+                <!-- Segunda linha -->
+                <!-- Módulo Ordem de Carregamento - Comentado para desenvolvimento posterior
+                <div class="col-xl-3 col-lg-4 col-md-6 col-sm-6">
+                    <a href="/loading-orders" class="module-card">
+                        <i class="bi bi-arrows-move module-icon text-secondary"></i>
+                        <h6 class="module-title">Ordem de<br>Carregamento</h6>
+                    </a>
+                </div>
+                -->
+
+                <!-- Módulo NF-e Pré-Cadastradas - Comentado para desenvolvimento posterior
+                <div class="col-xl-3 col-lg-4 col-md-6 col-sm-6">
+                    <a href="/pre-nfe" class="module-card">
+                        <i class="bi bi-file-earmark-text module-icon text-primary"></i>
+                        <h6 class="module-title">NF-e Pré-<br>Cadastradas</h6>
+                    </a>
+                </div>
+                -->
+
+                <!-- Módulo Conhecimento - Comentado para desenvolvimento posterior
+                <div class="col-xl-3 col-lg-4 col-md-6 col-sm-6">
+                    <a href="/conhecimento" class="module-card">
+                        <i class="bi bi-geo-alt module-icon text-info"></i>
+                        <h6 class="module-title">Conhecimento</h6>
+                    </a>
+                </div>
+                -->
+
+                <!-- Módulo MDF-e - Comentado para desenvolvimento posterior
+                <div class="col-xl-3 col-lg-4 col-md-6 col-sm-6">
+                    <a href="/mdfe" class="module-card">
+                        <i class="bi bi-file-text module-icon text-success"></i>
+                        <h6 class="module-title">MDF-e</h6>
+                    </a>
+                </div>
+                -->
+
+                <!-- Terceira linha -->
+                <div class="col-xl-3 col-lg-4 col-md-6 col-sm-6">
+                    <a href="/fleet-control" class="module-card">
+                        <i class="bi bi-speedometer2 module-icon text-warning"></i>
+                        <h6 class="module-title">Controle de<br>Frota</h6>
+                    </a>
+                </div>
+
+                <div class="col-xl-3 col-lg-4 col-md-6 col-sm-6">
+                    <a href="http://localhost:5000/" class="module-card">
+                        <i class="bi bi-currency-dollar module-icon text-success"></i>
+                        <h6 class="module-title">Faturamento</h6>
+                    </a>
+                </div>
+
+                <div class="col-xl-3 col-lg-4 col-md-6 col-sm-6">
+                    <a href="/receivables" class="module-card">
+                        <i class="bi bi-arrow-up-circle module-icon text-info"></i>
+                        <h6 class="module-title">Títulos a<br>Receber</h6>
+                    </a>
+                </div>
+
+                <div class="col-xl-3 col-lg-4 col-md-6 col-sm-6">
+                    <a href="/payables" class="module-card">
+                        <i class="bi bi-arrow-down-circle module-icon text-danger"></i>
+                        <h6 class="module-title">Títulos a<br>Pagar</h6>
+                    </a>
+                </div>
+
+                <!-- Quarta linha -->
+                <div class="col-xl-3 col-lg-4 col-md-6 col-sm-6">
+                    <a href="/driver-settlement" class="module-card">
+                        <i class="bi bi-calculator module-icon text-primary"></i>
+                        <h6 class="module-title">Acerto de<br>Motorista</h6>
+                    </a>
+                </div>
+
+                <div class="col-xl-3 col-lg-4 col-md-6 col-sm-6">
+                    <a href="/service-orders" class="module-card">
+                        <i class="bi bi-wrench module-icon text-warning"></i>
+                        <h6 class="module-title">Ordens de<br>Serviço</h6>
+                    </a>
+                </div>
+
+                <div class="col-xl-3 col-lg-4 col-md-6 col-sm-6">
+                    <a href="{{ url_for('abastecimentos_list') }}" class="module-card">
+                        <i class="bi bi-fuel-pump module-icon text-info"></i>
+                        <h6 class="module-title">Abastecimentos</h6>
+                    </a>
+                </div>
+
+                <div class="col-xl-3 col-lg-4 col-md-6 col-sm-6">
+                    <a href="/pricing" class="module-card">
+                        <i class="bi bi-tags module-icon text-secondary"></i>
+                        <h6 class="module-title">Manutenção<br>de Preço</h6>
+                    </a>
+                </div>
+
+                <!-- Quinta linha -->
+                <div class="col-xl-3 col-lg-4 col-md-6 col-sm-6">
+                    <a href="/financial-results" class="module-card">
+                        <i class="bi bi-graph-up module-icon text-success"></i>
+                        <h6 class="module-title">Resultado<br>Receitas/Despesas</h6>
+                    </a>
+                </div>
+
+                <!-- Módulo Multi Empresas - Comentado para desenvolvimento posterior
+                <div class="col-xl-3 col-lg-4 col-md-6 col-sm-6">
+                    <a href="/multi-companies" class="module-card">
+                        <i class="bi bi-building module-icon text-primary"></i>
+                        <h6 class="module-title">Multi<br>Empresas</h6>
+                    </a>
+                </div>
+                -->
+
+                <div class="col-xl-3 col-lg-4 col-md-6 col-sm-6">
+                    <a href="/manager-reports" class="module-card">
+                        <i class="bi bi-file-earmark-bar-graph module-icon text-info"></i>
+                        <h6 class="module-title">Relatório<br>do Gestor</h6>
+                    </a>
+                </div>
+
+                <!-- Módulo Rankings - Comentado para desenvolvimento posterior
+                <div class="col-xl-3 col-lg-4 col-md-6 col-sm-6">
+                    <a href="/rankings" class="module-card">
+                        <i class="bi bi-trophy module-icon text-warning"></i>
+                        <h6 class="module-title">Ranking Placa/<br>Motorista/Rota</h6>
+                    </a>
+                </div>
+                -->
+            </div>
+        </div>
+
+        <!-- Ações Rápidas Condensadas -->
+        <div class="quick-actions">
+            <h5 class="mb-3">
+                <i class="bi bi-lightning me-2"></i>Ações Rápidas
+            </h5>
+
+            <div class="row g-2">
+                <div class="col-md-6">
+                    <a href="/checklists/new" class="quick-action-btn">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-plus-circle me-3 fs-5"></i>
+                            <div>
+                                <strong>Novo Checklist</strong>
+                                <br><small>Iniciar novo checklist veicular</small>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+
+                <div class="col-md-6">
+                    <a href="/checklist" class="quick-action-btn">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-clock-history me-3 fs-5"></i>
+                            <div>
+                                <strong>Ver Checklists</strong>
+                                <br><small>Listar todos os checklists</small>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar de Alertas -->
+    <div class="col-xl-3 col-lg-4 mb-4">
+        <div class="alerts-sidebar">
+            <h5 class="mb-3">
+                <i class="bi bi-bell me-2"></i>Alertas do Sistema
+                <span class="badge bg-danger ms-2">3</span>
+            </h5>
+
+            <!-- Alert items -->
+            <div class="alert-item alert-critical">
+                <div class="alert-title">
+                    <i class="bi bi-exclamation-triangle me-1"></i>
+                    Veículo ABC-1234 com manutenção vencida
+                </div>
+                <div class="alert-time">Há 2 horas</div>
+            </div>
+
+            <div class="alert-item alert-warning">
+                <div class="alert-title">
+                    <i class="bi bi-fuel-pump me-1"></i>
+                    Baixo nível de combustível - XYZ-5678
+                </div>
+                <div class="alert-time">Há 4 horas</div>
+            </div>
+
+            <div class="alert-item alert-info">
+                <div class="alert-title">
+                    <i class="bi bi-geo-alt me-1"></i>
+                    Rota atualizada para entrega 12345
+                </div>
+                <div class="alert-time">Há 6 horas</div>
+            </div>
+
+            <div class="alert-item alert-warning">
+                <div class="alert-title">
+                    <i class="bi bi-clock me-1"></i>
+                    Checklist pendente - Motorista João
+                </div>
+                <div class="alert-time">Ontem</div>
+            </div>
+
+            <div class="alert-item alert-info">
+                <div class="alert-title">
+                    <i class="bi bi-file-text me-1"></i>
+                    Documentação em processo de renovação
+                </div>
+                <div class="alert-time">2 dias atrás</div>
+            </div>
+
+            <!-- Status do Sistema -->
+            <div class="mt-4 pt-3 border-top">
+                <h6 class="mb-3">
+                    <i class="bi bi-info-circle me-2"></i>Status do Sistema
+                </h6>
+
+                <div class="mb-2">
+                    <div class="d-flex align-items-center">
+                        <div class="status-indicator status-{{ 'online' if health.status == 'ok' else 'offline' }}"></div>
+                        <div>
+                            <small><strong>API Backend:</strong> {{ health.status|upper }}</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-2">
+                    <div class="d-flex align-items-center">
+                        <div class="status-indicator status-online"></div>
+                        <div>
+                            <small><strong>Dashboard:</strong> ONLINE</small>
+                        </div>
+                    </div>
+                </div>
+
+                {% if health.database %}
+                <div class="mb-2">
+                    <div class="d-flex align-items-center">
+                        <div class="status-indicator status-{{ 'online' if health.database == 'connected' else 'offline' }}"></div>
+                        <div>
+                            <small><strong>Banco de Dados:</strong> {{ health.database|upper }}</small>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Seção Inferior: Placas Bloqueadas e Análises -->
+<div class="row mt-4">
+    <!-- Placas Bloqueadas -->
+    <div class="col-xl-6 col-lg-6 mb-4">
+        <div class="chart-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">
+                    <i class="bi bi-shield-x me-2"></i>Placas Bloqueadas
+                </h5>
+                <span class="badge bg-danger">{{ kpis.placas_bloqueadas|length|default(0) }}</span>
+            </div>
+
+            {% if kpis.placas_bloqueadas %}
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Placa</th>
+                            <th>Modelo</th>
+                            <th>Status</th>
+                            <th>Observações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for placa in kpis.placas_bloqueadas %}
+                        <tr>
+                            <td><strong>{{ placa.placa }}</strong></td>
+                            <td>{{ placa.modelo }}</td>
+                            <td>
+                                {% if placa.em_manutencao %}
+                                    <span class="badge bg-warning">Em Manutenção</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Inativo</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <small class="text-muted">
+                                    {{ placa.motivo if placa.motivo else 'Sem observações' }}
+                                </small>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <i class="bi bi-check-circle text-success" style="font-size: 2rem;"></i>
+                <p class="text-muted mt-2">Nenhuma placa bloqueada no momento</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Análises Rápidas -->
+    <div class="col-xl-6 col-lg-6 mb-4">
+        <div class="chart-card">
+            <h5 class="mb-3">
+                <i class="bi bi-graph-up me-2"></i>Análises Rápidas
+            </h5>
+
+            <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span>Checklists realizados em menos de 1min 30s</span>
+                    <span class="badge bg-warning">{{ kpis.checklists_rapidos|default(0) }}</span>
+                </div>
+                <div class="progress mt-1" style="height: 6px;">
+                    <div class="progress-bar bg-warning" style="width: {{ (kpis.checklists_rapidos|default(0) / kpis.estatisticas_gerais.total_checklists|default(1) * 100)|round(1) }}%"></div>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span>Colaboradores ativos</span>
+                    <span class="badge bg-success">{{ kpis.colaboradores_ativos|default(0) }}</span>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span>Checklists por dia (média)</span>
+                    <span class="badge bg-info">{{ "%.1f"|format(kpis.media_checklists_dia|default(0)) }}</span>
+                </div>
+            </div>
+
+            <div class="mb-0">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span>Veículos em manutenção</span>
+                    <span class="badge bg-secondary">{{ kpis.veiculos_manutencao|default(0) }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Atualizar timestamp
+    function updateLastUpdateTime() {
+        const now = new Date();
+        document.getElementById('last-update').textContent = now.toLocaleTimeString('pt-BR');
+    }
+
+    updateLastUpdateTime();
+    setInterval(updateLastUpdateTime, 1000);
+});
+</script>
+{% endblock %}

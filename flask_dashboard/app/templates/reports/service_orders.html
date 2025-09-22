@@ -1,0 +1,361 @@
+{% extends "base.html" %}
+
+{% block title %}Relatórios - Ordens de Serviço{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h4 mb-0 text-gray-800">Relatórios de Ordens de Serviço</h1>
+        <div>
+            <a href="{{ url_for('service_orders_list') }}" class="btn btn-primary">
+                <i class="bi bi-wrench"></i> Gerenciar Ordens
+            </a>
+        </div>
+    </div>
+
+    <!-- Resumo Estatísticas -->
+    {% if estatisticas %}
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs fw-bold text-primary text-uppercase mb-1">
+                                Total de Ordens
+                            </div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">{{ estatisticas.total_ordens }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-wrench fs-4 text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs fw-bold text-warning text-uppercase mb-1">
+                                Abertas
+                            </div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">{{ estatisticas.ordens_abertas }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-clock fs-4 text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs fw-bold text-info text-uppercase mb-1">
+                                Em Andamento
+                            </div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">{{ estatisticas.ordens_em_andamento }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-gear fs-4 text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs fw-bold text-success text-uppercase mb-1">
+                                Concluídas
+                            </div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">{{ estatisticas.ordens_concluidas }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-check-circle fs-4 text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-xl-6 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs fw-bold text-success text-uppercase mb-1">
+                                Valor Total
+                            </div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">
+                                R$ {{ "{:,.2f}".format(estatisticas.valor_total) }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-currency-dollar fs-4 text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-6 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs fw-bold text-info text-uppercase mb-1">
+                                Taxa de Conclusão
+                            </div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">
+                                {{ "{:.1f}".format(estatisticas.taxa_conclusao) }}%
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-graph-up fs-4 text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Gráfico Mensal -->
+    {% if dados_mensais %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 fw-bold text-primary">Ordens de Serviço por Mês</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="graficoMensal" width="100%" height="40"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Filtros -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 fw-bold text-primary">Filtros</h6>
+        </div>
+        <div class="card-body">
+            <form method="GET" class="row g-3" id="filtros-form">
+                <div class="col-md-3">
+                    <label for="veiculo_id" class="form-label">Veículo</label>
+                    <select class="form-select" id="veiculo_id" name="veiculo_id">
+                        <option value="">Todos os veículos</option>
+                        {% for veiculo in veiculos %}
+                        <option value="{{ veiculo.id }}"
+                                {{ 'selected' if request.args.get('veiculo_id') == veiculo.id|string }}>
+                            {{ veiculo.placa }} - {{ veiculo.marca }} {{ veiculo.modelo }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="status" class="form-label">Status</label>
+                    <select class="form-select" id="status" name="status">
+                        <option value="">Todos os status</option>
+                        <option value="Aberta" {{ 'selected' if request.args.get('status') == 'Aberta' }}>Aberta</option>
+                        <option value="Em Andamento" {{ 'selected' if request.args.get('status') == 'Em Andamento' }}>Em Andamento</option>
+                        <option value="Concluída" {{ 'selected' if request.args.get('status') == 'Concluída' }}>Concluída</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="data_inicio" class="form-label">Data Início</label>
+                    <input type="date" class="form-control" id="data_inicio" name="data_inicio"
+                           value="{{ request.args.get('data_inicio', '') }}">
+                </div>
+                <div class="col-md-2">
+                    <label for="data_fim" class="form-label">Data Fim</label>
+                    <input type="date" class="form-control" id="data_fim" name="data_fim"
+                           value="{{ request.args.get('data_fim', '') }}">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="bi bi-funnel"></i> Filtrar
+                    </button>
+                    <a href="{{ url_for('reports_service_orders') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-circle"></i> Limpar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Lista de Ordens -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+            <h6 class="m-0 fw-bold text-primary">Lista de Ordens de Serviço</h6>
+            <div class="dropdown no-arrow">
+                <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink"
+                   data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <i class="bi bi-download fs-5 text-gray-400"></i>
+                </a>
+                <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in"
+                     aria-labelledby="dropdownMenuLink">
+                    <div class="dropdown-header">Exportar:</div>
+                    <a class="dropdown-item" href="#" onclick="exportarCSV()">CSV</a>
+                    <a class="dropdown-item" href="#" onclick="exportarExcel()">Excel</a>
+                    <a class="dropdown-item" href="#" onclick="exportarPDF()">PDF</a>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if ordens %}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover table-sm" id="ordensTable">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Nº OS</th>
+                            <th>Veículo</th>
+                            <th>Tipo Serviço</th>
+                            <th>Status</th>
+                            <th>Data Abertura</th>
+                            <th>Data Prevista</th>
+                            <th>Oficina</th>
+                            <th>Valor</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ordem in ordens %}
+                        <tr>
+                            <td>{{ ordem.numero_os or 'N/A' }}</td>
+                            <td>{{ ordem.veiculo_placa or 'N/A' }}</td>
+                            <td>{{ ordem.tipo_servico or '-' }}</td>
+                            <td>
+                                {% if ordem.status == 'Aberta' %}
+                                    <span class="badge bg-warning">{{ ordem.status }}</span>
+                                {% elif ordem.status == 'Em Andamento' %}
+                                    <span class="badge bg-info">{{ ordem.status }}</span>
+                                {% elif ordem.status == 'Concluída' %}
+                                    <span class="badge bg-success">{{ ordem.status }}</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ ordem.status or 'N/A' }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ ordem.data_abertura|datetime if ordem.data_abertura else '-' }}</td>
+                            <td>{{ ordem.data_prevista|datetime if ordem.data_prevista else '-' }}</td>
+                            <td>{{ ordem.oficina or '-' }}</td>
+                            <td>
+                                {% if ordem.valor_total %}
+                                    R$ {{ ordem.valor_total }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-wrench display-1 text-muted"></i>
+                <h4 class="mt-3 text-muted">Nenhuma ordem de serviço encontrada</h4>
+                <p class="text-muted">
+                    {% if request.args %}
+                        Nenhuma ordem corresponde aos filtros aplicados.
+                    {% else %}
+                        Nenhuma ordem de serviço registrada.
+                    {% endif %}
+                </p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+$(document).ready(function() {
+    // Inicializar DataTable
+    $('#ordensTable').DataTable({
+        "pageLength": 25,
+        "language": {
+            "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Portuguese-Brasil.json"
+        },
+        "order": [[4, "desc"]], // Ordenar por data de abertura decrescente
+        "columnDefs": [
+            { "orderable": true, "targets": "_all" }
+        ]
+    });
+
+    // Gráfico mensal
+    {% if dados_mensais %}
+    const dadosMensais = {{ dados_mensais|tojson }};
+    const meses = Object.keys(dadosMensais).sort();
+    const abertas = meses.map(mes => dadosMensais[mes].abertas);
+    const concluidas = meses.map(mes => dadosMensais[mes].concluidas);
+
+    const ctx = document.getElementById('graficoMensal').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: meses.map(mes => {
+                const [ano, mesNum] = mes.split('-');
+                const data = new Date(ano, mesNum - 1);
+                return data.toLocaleDateString('pt-BR', { year: 'numeric', month: 'short' });
+            }),
+            datasets: [{
+                label: 'Ordens Abertas',
+                data: abertas,
+                borderColor: 'rgb(255, 193, 7)',
+                backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                tension: 0.1
+            }, {
+                label: 'Ordens Concluídas',
+                data: concluidas,
+                borderColor: 'rgb(40, 167, 69)',
+                backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Tendência Mensal de Ordens de Serviço'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+    {% endif %}
+});
+
+function exportarCSV() {
+    alert('Funcionalidade de exportação CSV em desenvolvimento');
+}
+
+function exportarExcel() {
+    alert('Funcionalidade de exportação Excel em desenvolvimento');
+}
+
+function exportarPDF() {
+    alert('Funcionalidade de exportação PDF em desenvolvimento');
+}
+</script>
+{% endblock %}

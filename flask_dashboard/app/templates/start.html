@@ -1,0 +1,33 @@
+{% extends "layout.html" %}
+{% block content %}
+<h2>Iniciar Checklist</h2>
+<form method="post" class="row g-3">
+  <div class="col-md-3">
+    <label class="form-label">Veículo ID</label>
+    <input name="veiculo_id" type="number" class="form-control" required>
+  </div>
+  <div class="col-md-3">
+    <label class="form-label">Motorista ID</label>
+    <input name="motorista_id" type="number" class="form-control" required>
+  </div>
+  <div class="col-md-3">
+    <label class="form-label">Modelo</label>
+    <select name="modelo_id" class="form-select">
+      {% for m in modelos %}
+      <option value="{{m.id}}" {% if request.args.get('modelo_id', type=int)==m.id %}selected{% endif %}>#{{m.id}} - {{m.nome}} ({{m.tipo}})</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-3">
+    <label class="form-label">Odômetro inicial</label>
+    <input name="odometro_ini" type="number" class="form-control" value="0">
+  </div>
+  <div class="col-md-12">
+    <label class="form-label">Geo início (opcional)</label>
+    <input name="geo_inicio" type="text" class="form-control">
+  </div>
+  <div class="col-12">
+    <button class="btn btn-success">Iniciar</button>
+  </div>
+</form>
+{% endblock %}

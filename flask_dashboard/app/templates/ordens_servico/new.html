@@ -1,0 +1,273 @@
+{% extends "base.html" %}
+
+{% block title %}Nova Ordem de Serviço{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h4 mb-0 text-gray-800">Nova Ordem de Serviço</h1>
+        <div>
+            <a href="{{ url_for('service_orders_list') }}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar à Lista
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 fw-bold text-primary">Dados da Ordem de Serviço</h6>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="ordem-form">
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <label for="veiculo_id" class="form-label">Veículo *</label>
+                                <select class="form-select" id="veiculo_id" name="veiculo_id" required>
+                                    <option value="">Selecione um veículo</option>
+                                    {% for veiculo in veiculos %}
+                                    <option value="{{ veiculo.id }}"
+                                            data-km="{{ veiculo.km_atual }}"
+                                            {{ 'selected' if request.form.get('veiculo_id') == veiculo.id|string }}>
+                                        {{ veiculo.placa }} - {{ veiculo.marca }} {{ veiculo.modelo }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text">Veículo que receberá o serviço</div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="tipo_servico" class="form-label">Tipo de Serviço *</label>
+                                <select class="form-select" id="tipo_servico" name="tipo_servico" required>
+                                    <option value="">Selecione o tipo</option>
+                                    <option value="Preventiva" {{ 'selected' if request.form.get('tipo_servico') == 'Preventiva' }}>Manutenção Preventiva</option>
+                                    <option value="Corretiva" {{ 'selected' if request.form.get('tipo_servico') == 'Corretiva' }}>Manutenção Corretiva</option>
+                                    <option value="Preditiva" {{ 'selected' if request.form.get('tipo_servico') == 'Preditiva' }}>Manutenção Preditiva</option>
+                                    <option value="Emergencial" {{ 'selected' if request.form.get('tipo_servico') == 'Emergencial' }}>Emergencial</option>
+                                    <option value="Inspeção" {{ 'selected' if request.form.get('tipo_servico') == 'Inspeção' }}>Inspeção</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="status" class="form-label">Status</label>
+                                <select class="form-select" id="status" name="status">
+                                    <option value="Aberta" {{ 'selected' if request.form.get('status', 'Aberta') == 'Aberta' }}>Aberta</option>
+                                    <option value="Em Andamento" {{ 'selected' if request.form.get('status') == 'Em Andamento' }}>Em Andamento</option>
+                                    <option value="Concluída" {{ 'selected' if request.form.get('status') == 'Concluída' }}>Concluída</option>
+                                    <option value="Cancelada" {{ 'selected' if request.form.get('status') == 'Cancelada' }}>Cancelada</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="data_prevista" class="form-label">Data Prevista</label>
+                                <input type="date" class="form-control" id="data_prevista" name="data_prevista"
+                                       value="{{ request.form.get('data_prevista') }}">
+                                <div class="form-text">Data prevista para conclusão</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="oficina" class="form-label">Oficina</label>
+                                <input type="text" class="form-control" id="oficina" name="oficina"
+                                       value="{{ request.form.get('oficina') }}"
+                                       placeholder="Nome da oficina responsável">
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="odometro" class="form-label">Odômetro (km)</label>
+                                <input type="number" class="form-control" id="odometro" name="odometro"
+                                       value="{{ request.form.get('odometro') }}" min="0">
+                                <div class="form-text">Quilometragem atual do veículo</div>
+                                <div id="km-warning" class="text-warning" style="display: none;">
+                                    <small><i class="bi bi-exclamation-triangle"></i> Verifique a quilometragem informada</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="valor_total" class="form-label">Valor Total (R$)</label>
+                                <input type="number" class="form-control" id="valor_total" name="valor_total"
+                                       value="{{ request.form.get('valor_total') }}" step="0.01" min="0"
+                                       placeholder="0,00">
+                                <div class="form-text">Valor estimado ou final do serviço</div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="descricao_problema" class="form-label">Descrição do Problema</label>
+                            <textarea class="form-control" id="descricao_problema" name="descricao_problema" rows="3"
+                                      placeholder="Descreva o problema identificado ou reportado">{{ request.form.get('descricao_problema') }}</textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="descricao_servico" class="form-label">Descrição do Serviço</label>
+                            <textarea class="form-control" id="descricao_servico" name="descricao_servico" rows="3"
+                                      placeholder="Descreva os serviços a serem realizados">{{ request.form.get('descricao_servico') }}</textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="observacoes" class="form-label">Observações</label>
+                            <textarea class="form-control" id="observacoes" name="observacoes" rows="2"
+                                      placeholder="Observações adicionais">{{ request.form.get('observacoes') }}</textarea>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-check-circle"></i> Criar Ordem de Serviço
+                                </button>
+                                <a href="{{ url_for('service_orders_list') }}" class="btn btn-secondary ms-2">
+                                    <i class="bi bi-x-circle"></i> Cancelar
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Card de Ajuda -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 fw-bold text-info">Guia de Criação</h6>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <i class="bi bi-tools display-4 text-info"></i>
+                    </div>
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <i class="bi bi-check-circle text-success"></i>
+                            <strong>Dados obrigatórios:</strong> Número OS, veículo e tipo de serviço
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-gear text-primary"></i>
+                            <strong>Tipos de manutenção:</strong>
+                            <ul class="mt-1 ms-3">
+                                <li><small>Preventiva - Programada</small></li>
+                                <li><small>Corretiva - Após falha</small></li>
+                                <li><small>Preditiva - Baseada em dados</small></li>
+                                <li><small>Emergencial - Urgente</small></li>
+                            </ul>
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-calendar-event text-warning"></i>
+                            <strong>Planejamento:</strong> Defina data prevista para melhor controle
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-file-text text-info"></i>
+                            <strong>Documentação:</strong> Detalhe problemas e serviços para histórico
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Informações do Veículo -->
+            <div class="card shadow mb-4" id="veiculo-info" style="display: none;">
+                <div class="card-header py-3">
+                    <h6 class="m-0 fw-bold text-primary">Informações do Veículo</h6>
+                </div>
+                <div class="card-body">
+                    <div id="veiculo-details">
+                        <!-- Preenchido via JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Numeração Automática -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 fw-bold text-secondary">Numeração</h6>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <i class="bi bi-hash display-4 text-secondary"></i>
+                    </div>
+                    <p class="text-muted">
+                        <strong>Formato sugerido:</strong><br>
+                        OS-AAAA-NNN<br>
+                        <small>Onde AAAA = ano e NNN = sequencial</small>
+                    </p>
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="gerarNumeroOS()">
+                        <i class="bi bi-arrow-clockwise"></i> Gerar Número
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+
+    // Validar odômetro com base no veículo selecionado
+    function validarOdometro() {
+        const veiculoSelect = document.getElementById('veiculo_id');
+        const odometroInput = document.getElementById('odometro');
+        const warning = document.getElementById('km-warning');
+
+        if (veiculoSelect.value && odometroInput.value) {
+            const selectedOption = veiculoSelect.options[veiculoSelect.selectedIndex];
+            const kmAtual = parseInt(selectedOption.dataset.km) || 0;
+            const odometroInformado = parseInt(odometroInput.value) || 0;
+
+            if (odometroInformado < kmAtual) {
+                warning.style.display = 'block';
+                warning.innerHTML = `<small><i class="bi bi-exclamation-triangle"></i> Odômetro informado (${odometroInformado.toLocaleString()}km) é menor que o registrado (${kmAtual.toLocaleString()}km)</small>`;
+            } else {
+                warning.style.display = 'none';
+            }
+        }
+    }
+
+    // Mostrar informações do veículo selecionado
+    function mostrarInfoVeiculo() {
+        const veiculoSelect = document.getElementById('veiculo_id');
+        const infoCard = document.getElementById('veiculo-info');
+        const detailsDiv = document.getElementById('veiculo-details');
+
+        if (veiculoSelect.value) {
+            const selectedOption = veiculoSelect.options[veiculoSelect.selectedIndex];
+            const kmAtual = parseInt(selectedOption.dataset.km) || 0;
+            const texto = selectedOption.textContent;
+
+            detailsDiv.innerHTML = `
+                <div class="text-center mb-3">
+                    <i class="bi bi-truck display-4 text-primary"></i>
+                </div>
+                <p><strong>Veículo:</strong> ${texto}</p>
+                <p><strong>KM Atual:</strong> ${kmAtual.toLocaleString()} km</p>
+                <div class="alert alert-info">
+                    <small><i class="bi bi-info-circle"></i> Confirme o odômetro para o serviço</small>
+                </div>
+            `;
+            infoCard.style.display = 'block';
+
+            // Auto-preencher odômetro
+            if (!document.getElementById('odometro').value && kmAtual > 0) {
+                document.getElementById('odometro').value = kmAtual;
+            }
+        } else {
+            infoCard.style.display = 'none';
+        }
+    }
+
+    // Event listeners
+    document.getElementById('odometro').addEventListener('input', validarOdometro);
+    document.getElementById('veiculo_id').addEventListener('change', function() {
+        mostrarInfoVeiculo();
+        validarOdometro();
+    });
+
+    // Inicializar se já houver valores
+    mostrarInfoVeiculo();
+    validarOdometro();
+});
+
+</script>
+{% endblock %}

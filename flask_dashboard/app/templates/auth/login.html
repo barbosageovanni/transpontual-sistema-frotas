@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Sistema de Gestão de Frotas</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .login-container {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* Lado esquerdo - Formulário */
+        .login-form-section {
+            flex: 1;
+            background: #f8f9fa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            position: relative;
+        }
+
+        .form-container {
+            width: 100%;
+            max-width: 400px;
+            background: white;
+            padding: 3rem 2.5rem;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .logo-section {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .logo {
+            width: 120px;
+            height: 60px;
+            background: linear-gradient(135deg, #023a68, #2944df);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            color: white;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .company-name {
+            color: #2c3e50;
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .company-subtitle {
+            color: #6c757d;
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-title {
+            color: #2c3e50;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            color: #495057;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        .form-control {
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            border-color: #023a68;
+            box-shadow: 0 0 0 0.2rem rgba(255, 107, 53, 0.25);
+        }
+
+        .btn-login {
+            background: linear-gradient(135deg, #2944df, #023a68);
+            border: none;
+            color: white;
+            padding: 0.75rem 2rem;
+            border-radius: 8px;
+            font-weight: 600;
+            width: 100%;
+            transition: all 0.3s ease;
+            margin-top: 1rem;
+        }
+
+        .btn-login:hover {
+            background: linear-gradient(135deg, #2944df, #023a68);
+            transform: translateY(-1px);
+            color: white;
+        }
+
+        .forgot-password {
+            text-align: center;
+            margin-top: 1.5rem;
+        }
+
+        .forgot-password a {
+            color: #6c757d;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+
+        .forgot-password a:hover {
+            color: #ff6b35;
+        }
+
+        /* Lado direito - Visual */
+        .visual-section {
+            flex: 1.2;
+            background: linear-gradient(135deg, #2944df 0%, #023a68 50%, #1a54d3 100%);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .visual-content {
+            text-align: center;
+            color: white;
+            z-index: 2;
+            position: relative;
+        }
+
+        .visual-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .visual-subtitle {
+            font-size: 1.2rem;
+            font-weight: 300;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+
+        .truck-icons {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .truck-icon {
+            font-size: 3rem;
+            opacity: 0.8;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .truck-icon:nth-child(2) {
+            animation-delay: 1s;
+        }
+
+        .truck-icon:nth-child(3) {
+            animation-delay: 2s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        /* Elementos decorativos */
+        .bg-element {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+        }
+
+        .bg-element-1 {
+            width: 200px;
+            height: 200px;
+            top: -100px;
+            right: -100px;
+        }
+
+        .bg-element-2 {
+            width: 150px;
+            height: 150px;
+            bottom: -75px;
+            left: -75px;
+        }
+
+        .bg-element-3 {
+            width: 100px;
+            height: 100px;
+            top: 50%;
+            left: 20%;
+            opacity: 0.5;
+        }
+
+        /* Responsivo */
+        @media (max-width: 768px) {
+            .login-container {
+                flex-direction: column;
+            }
+
+            .visual-section {
+                flex: 0.3;
+                min-height: 200px;
+            }
+
+            .login-form-section {
+                flex: 1;
+            }
+
+            .visual-title {
+                font-size: 1.8rem;
+            }
+
+            .visual-subtitle {
+                font-size: 1rem;
+            }
+
+            .truck-icons {
+                gap: 1rem;
+            }
+
+            .truck-icon {
+                font-size: 2rem;
+            }
+
+            .form-container {
+                padding: 2rem 1.5rem;
+            }
+        }
+
+        /* Alertas */
+        .alert {
+            border: none;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        .alert-danger {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .alert-success {
+            background-color: #d1edff;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <!-- Lado esquerdo - Formulário -->
+        <div class="login-form-section">
+            <div class="form-container">
+                <div class="logo-section">
+                    <div class="logo">
+                        <i class="fas fa-truck"></i>
+                    </div>
+                    <h1 class="company-name">Transpontual</h1>
+                    <p class="company-subtitle">Sistema de Gestão de Frotas</p>
+                </div>
+
+                <h2 class="form-title">Faça seu login</h2>
+
+                <!-- Mensagens de feedback -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <form method="POST" id="loginForm">
+                    <div class="form-group">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email"
+                               class="form-control"
+                               id="email"
+                               name="email"
+                               placeholder="seu.email@empresa.com"
+                               required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password" class="form-label">Senha</label>
+                        <input type="password"
+                               class="form-control"
+                               id="password"
+                               name="password"
+                               placeholder="Digite sua senha"
+                               required>
+                    </div>
+
+                    <button type="submit" class="btn btn-login" id="loginBtn">
+                        <i class="fas fa-sign-in-alt me-2"></i>
+                        Entrar
+                    </button>
+                </form>
+
+                <div class="forgot-password">
+                    <a href="#" onclick="showForgotPassword()">Esqueceu sua senha?</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lado direito - Visual -->
+        <div class="visual-section">
+            <div class="bg-element bg-element-1"></div>
+            <div class="bg-element bg-element-2"></div>
+            <div class="bg-element bg-element-3"></div>
+
+            <div class="visual-content">
+                <h1 class="visual-title">BEM-VINDO</h1>
+                <p class="visual-subtitle">
+                    À uma nova experiência<br>
+                    de gestão de frotas
+                </p>
+
+                <div class="truck-icons">
+                    <i class="fas fa-truck truck-icon"></i>
+                    <i class="fas fa-shipping-fast truck-icon"></i>
+                    <i class="fas fa-truck-moving truck-icon"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Animação do formulário de login
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            const btn = document.getElementById('loginBtn');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Entrando...';
+            btn.disabled = true;
+        });
+
+        // Função para esqueceu senha (placeholder)
+        function showForgotPassword() {
+            alert('Funcionalidade de recuperação de senha será implementada em breve.');
+        }
+
+        // Animação de entrada
+        window.addEventListener('load', function() {
+            document.querySelector('.form-container').style.opacity = '0';
+            document.querySelector('.form-container').style.transform = 'translateY(20px)';
+
+            setTimeout(() => {
+                document.querySelector('.form-container').style.transition = 'all 0.6s ease';
+                document.querySelector('.form-container').style.opacity = '1';
+                document.querySelector('.form-container').style.transform = 'translateY(0)';
+            }, 100);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,676 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {% if plano %}
+        {% if is_duplicate %}Duplicar{% else %}Editar{% endif %} Plano de Manutenção
+    {% else %}
+        Novo Plano de Manutenção
+    {% endif %} - Transpontual
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-container {
+        background: white;
+        border-radius: 15px;
+        padding: 30px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        border: none;
+    }
+
+    .form-section {
+        margin-bottom: 2rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .form-section:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+    }
+
+    .section-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .form-control:focus {
+        border-color: #4e73df;
+        box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
+    }
+
+    .form-check-input:checked {
+        background-color: #4e73df;
+        border-color: #4e73df;
+    }
+
+    .item-row {
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 10px;
+        position: relative;
+    }
+
+    .item-row .btn-remove {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+    }
+
+    .btn-add-item {
+        border: 2px dashed #4e73df;
+        color: #4e73df;
+        background: transparent;
+        padding: 15px;
+        border-radius: 8px;
+        width: 100%;
+        transition: all 0.3s ease;
+    }
+
+    .btn-add-item:hover {
+        background: #4e73df;
+        color: white;
+    }
+
+    .equipment-checkbox {
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 10px;
+        transition: all 0.3s ease;
+    }
+
+    .equipment-checkbox:hover {
+        border-color: #4e73df;
+        background: #f8f9fa;
+    }
+
+    .equipment-checkbox input:checked + label {
+        color: #4e73df;
+        font-weight: 600;
+    }
+
+    .sticky-footer {
+        position: sticky;
+        bottom: 0;
+        background: white;
+        padding: 20px 30px;
+        margin: -30px -30px 0;
+        border-top: 1px solid #e9ecef;
+        border-radius: 0 0 15px 15px;
+    }
+
+    .vehicle-item {
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 8px;
+        transition: all 0.2s ease;
+    }
+
+    .vehicle-item:hover {
+        border-color: #4e73df;
+        background-color: #f8f9ff;
+    }
+
+    .vehicle-item input:checked + label {
+        color: #4e73df;
+    }
+
+    .vehicle-item input:checked + label .vehicle-item {
+        border-color: #4e73df;
+        background-color: #f0f4ff;
+    }
+
+    .vehicle-info {
+        width: 100%;
+    }
+
+    .vehicle-placa {
+        font-weight: 700;
+        font-size: 1.1rem;
+        color: #2c3e50;
+        margin-bottom: 4px;
+    }
+
+    .vehicle-details {
+        font-size: 0.9rem;
+        color: #6c757d;
+        margin-bottom: 4px;
+    }
+
+    .vehicle-km {
+        font-size: 0.85rem;
+        color: #28a745;
+        font-weight: 600;
+    }
+
+    .badge-type {
+        background-color: #e9ecef;
+        color: #495057;
+        font-size: 0.7rem;
+        padding: 2px 6px;
+        border-radius: 4px;
+        margin-left: 8px;
+    }
+
+    .alert-sm {
+        padding: 8px 12px;
+        font-size: 0.85rem;
+        margin-bottom: 15px;
+    }
+
+    .alert-info {
+        background-color: #e7f3ff;
+        border: 1px solid #b8daff;
+        color: #0c5460;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="mb-1">
+                        <i class="bi bi-gear-fill text-primary me-2"></i>
+                        {% if plano %}
+                            {% if is_duplicate %}Duplicar{% else %}Editar{% endif %} Plano de Manutenção
+                        {% else %}
+                            Novo Plano de Manutenção
+                        {% endif %}
+                    </h2>
+                    <p class="text-muted mb-0">
+                        {% if plano %}
+                            {% if is_duplicate %}
+                                Criar uma cópia do plano "{{ plano.descricao }}"
+                            {% else %}
+                                Editar o plano "{{ plano.descricao }}"
+                            {% endif %}
+                        {% else %}
+                            Configure um novo plano de manutenção preventiva
+                        {% endif %}
+                    </p>
+                </div>
+                <div>
+                    <a href="{{ url_for('maintenance_plans') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i>Voltar
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulário -->
+    <div class="row">
+        <div class="col-12">
+            <form method="POST" action="{{ url_for('maintenance_plan_save') }}" id="planForm">
+                <div class="form-container">
+                    <!-- Dados Básicos -->
+                    <div class="form-section">
+                        <div class="section-title">
+                            <i class="bi bi-info-circle"></i>
+                            Informações Básicas
+                        </div>
+
+                        {% if plano and plano.id %}
+                        <input type="hidden" name="plan_id" value="{{ plano.id }}">
+                        {% endif %}
+
+                        <div class="row">
+                            <div class="col-md-8">
+                                <label for="descricao" class="form-label">Descrição do Plano</label>
+                                <input type="text" class="form-control" id="descricao" name="descricao"
+                                       value="{{ plano.descricao if plano else '' }}" required
+                                       placeholder="Ex: MANUTENÇÃO - CAVALO MECÂNICO">
+                                <div class="form-text">Nome que identificará este plano de manutenção</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Status</label>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="ativo" name="ativo"
+                                           {% if not plano or plano.ativo %}checked{% endif %}>
+                                    <label class="form-check-label" for="ativo">
+                                        Plano Ativo
+                                    </label>
+                                </div>
+                                <div class="form-text">Planos inativos não geram alertas</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tipos de Equipamento -->
+                    <div class="form-section">
+                        <div class="section-title">
+                            <i class="bi bi-truck"></i>
+                            Tipos de Equipamento
+                        </div>
+                        <p class="text-muted mb-3">Selecione os tipos de equipamento que utilizarão este plano:</p>
+
+                        <div class="row">
+                            {% for tipo in tipos_equipamento %}
+                            <div class="col-md-6">
+                                <div class="equipment-checkbox">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="tipos_equipamento"
+                                               value="{{ tipo.id }}" id="tipo_{{ tipo.id }}"
+                                               {% if plano and tipo.nome in plano.tipos_equipamento %}checked{% endif %}>
+                                        <label class="form-check-label" for="tipo_{{ tipo.id }}">
+                                            {{ tipo.nome }}
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Veículos Específicos -->
+                    <div class="form-section">
+                        <div class="section-title">
+                            <i class="bi bi-car-front"></i>
+                            Veículos Específicos
+                        </div>
+                        <p class="text-muted mb-3">Selecione veículos específicos para este plano (opcional - deixe vazio para aplicar a todos do tipo):</p>
+                        <div class="alert alert-info alert-sm">
+                            <i class="bi bi-database me-1"></i>
+                            <strong>Veículos da empresa</strong> carregados diretamente da tabela <code>veiculos</code> do Supabase
+                        </div>
+
+                        <div class="row">
+                            {% if veiculos %}
+                                {% for veiculo in veiculos %}
+                                <div class="col-md-6 mb-2">
+                                    <div class="vehicle-item">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="veiculos_especificos"
+                                                   value="{{ veiculo.id }}" id="veiculo_{{ veiculo.id }}"
+                                                   {% if plano and veiculo.id in plano.get('veiculos_especificos', []) %}checked{% endif %}>
+                                            <label class="form-check-label" for="veiculo_{{ veiculo.id }}">
+                                                <div class="vehicle-info">
+                                                    <div class="vehicle-placa">{{ veiculo.placa }}</div>
+                                                    <div class="vehicle-details">
+                                                        {{ veiculo.modelo }} ({{ veiculo.ano }})
+                                                        <span class="badge badge-type">{{ veiculo.tipo }}</span>
+                                                    </div>
+                                                    <div class="vehicle-km">{{ "{:,}".format(veiculo.km_atual) }} km</div>
+                                                    <div class="vehicle-actions mt-2">
+                                                        <a href="{{ url_for('maintenance_vehicle_history', veiculo_id=veiculo.id) }}"
+                                                           class="btn btn-sm btn-outline-info me-1" target="_blank">
+                                                            <i class="bi bi-clock-history"></i> Histórico
+                                                        </a>
+                                                        <a href="{{ url_for('maintenance_vehicle_report', veiculo_id=veiculo.id) }}"
+                                                           class="btn btn-sm btn-outline-success" target="_blank">
+                                                            <i class="bi bi-graph-up"></i> Relatório
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="col-12">
+                                    <div class="alert alert-info">
+                                        <i class="bi bi-info-circle me-2"></i>
+                                        Nenhum veículo encontrado. Verifique a conexão com o banco de dados.
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Itens do Plano -->
+                    <div class="form-section">
+                        <div class="section-title">
+                            <i class="bi bi-list-check"></i>
+                            Itens de Manutenção
+                        </div>
+                        <p class="text-muted mb-3">Configure as manutenções que fazem parte deste plano:</p>
+
+                        <div id="items-container">
+                            {% if plano and plano.itens %}
+                                {% for item in plano.itens %}
+                                <div class="item-row">
+                                    <button type="button" class="btn btn-danger btn-sm btn-remove" onclick="removeItem(this)">
+                                        <i class="bi bi-x"></i>
+                                    </button>
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <label class="form-label">Descrição</label>
+                                            <input type="text" class="form-control" name="item_descricao[]"
+                                                   value="{{ item.descricao }}" required
+                                                   placeholder="Ex: TROCA DE ÓLEO DO MOTOR">
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label">Tipo</label>
+                                            <select class="form-select" name="item_tipo[]" required>
+                                                <option value="Troca" {% if item.tipo == 'Troca' %}selected{% endif %}>Troca</option>
+                                                <option value="Revisão" {% if item.tipo == 'Revisão' %}selected{% endif %}>Revisão</option>
+                                                <option value="Inspeção" {% if item.tipo == 'Inspeção' %}selected{% endif %}>Inspeção</option>
+                                                <option value="Limpeza" {% if item.tipo == 'Limpeza' %}selected{% endif %}>Limpeza</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label">Categoria</label>
+                                            <select class="form-select" name="item_categoria[]">
+                                                <option value="Motor" {% if item.categoria == 'Motor' %}selected{% endif %}>Motor</option>
+                                                <option value="Freios" {% if item.categoria == 'Freios' %}selected{% endif %}>Freios</option>
+                                                <option value="Transmissão" {% if item.categoria == 'Transmissão' %}selected{% endif %}>Transmissão</option>
+                                                <option value="Elétrica" {% if item.categoria == 'Elétrica' %}selected{% endif %}>Elétrica</option>
+                                                <option value="Direção" {% if item.categoria == 'Direção' %}selected{% endif %}>Direção</option>
+                                                <option value="Rodagem" {% if item.categoria == 'Rodagem' %}selected{% endif %}>Rodagem</option>
+                                                <option value="Geral" {% if item.categoria == 'Geral' %}selected{% endif %}>Geral</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label">Controle</label>
+                                            <select class="form-select" name="item_controle[]" required>
+                                                <option value="km" {% if item.controle_por == 'km' %}selected{% endif %}>Quilometragem</option>
+                                                <option value="horas" {% if item.controle_por == 'horas' %}selected{% endif %}>Horas</option>
+                                                <option value="dias" {% if item.controle_por == 'dias' %}selected{% endif %}>Dias</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label">Intervalo</label>
+                                            <input type="number" class="form-control" name="item_intervalo[]"
+                                                   value="{{ item.quando.split()[2] if item.quando else '' }}" required
+                                                   placeholder="15000" min="1">
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <!-- Item padrão para novos planos -->
+                                <div class="item-row">
+                                    <button type="button" class="btn btn-danger btn-sm btn-remove" onclick="removeItem(this)">
+                                        <i class="bi bi-x"></i>
+                                    </button>
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <label class="form-label">Descrição</label>
+                                            <input type="text" class="form-control" name="item_descricao[]" required
+                                                   placeholder="Ex: TROCA DE ÓLEO DO MOTOR">
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label">Tipo</label>
+                                            <select class="form-select" name="item_tipo[]" required>
+                                                <option value="Troca">Troca</option>
+                                                <option value="Revisão">Revisão</option>
+                                                <option value="Inspeção">Inspeção</option>
+                                                <option value="Limpeza">Limpeza</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label">Categoria</label>
+                                            <select class="form-select" name="item_categoria[]">
+                                                <option value="Motor">Motor</option>
+                                                <option value="Freios">Freios</option>
+                                                <option value="Transmissão">Transmissão</option>
+                                                <option value="Elétrica">Elétrica</option>
+                                                <option value="Direção">Direção</option>
+                                                <option value="Rodagem">Rodagem</option>
+                                                <option value="Geral">Geral</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label">Controle</label>
+                                            <select class="form-select" name="item_controle[]" required>
+                                                <option value="km">Quilometragem</option>
+                                                <option value="horas">Horas</option>
+                                                <option value="dias">Dias</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label">Intervalo</label>
+                                            <input type="number" class="form-control" name="item_intervalo[]" required
+                                                   placeholder="15000" min="1">
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <button type="button" class="btn btn-add-item" onclick="addItem()">
+                            <i class="bi bi-plus-circle me-2"></i>
+                            Adicionar Item de Manutenção
+                        </button>
+                    </div>
+
+                    <!-- Botões de Ação -->
+                    <div class="sticky-footer">
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('maintenance_plans') }}" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle me-1"></i>Cancelar
+                            </a>
+                            <div>
+                                <button type="button" class="btn btn-outline-primary me-2" onclick="previewPlan()">
+                                    <i class="bi bi-eye me-1"></i>Visualizar
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-check-circle me-1"></i>
+                                    {% if plano %}Atualizar{% else %}Criar{% endif %} Plano
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function addItem() {
+    const container = document.getElementById('items-container');
+    const itemRow = document.createElement('div');
+    itemRow.className = 'item-row';
+    itemRow.innerHTML = `
+        <button type="button" class="btn btn-danger btn-sm btn-remove" onclick="removeItem(this)">
+            <i class="bi bi-x"></i>
+        </button>
+        <div class="row">
+            <div class="col-md-4">
+                <label class="form-label">Descrição</label>
+                <input type="text" class="form-control" name="item_descricao[]" required
+                       placeholder="Ex: TROCA DE ÓLEO DO MOTOR">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Tipo</label>
+                <select class="form-select" name="item_tipo[]" required>
+                    <option value="Troca">Troca</option>
+                    <option value="Revisão">Revisão</option>
+                    <option value="Inspeção">Inspeção</option>
+                    <option value="Limpeza">Limpeza</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Categoria</label>
+                <select class="form-select" name="item_categoria[]">
+                    <option value="Motor">Motor</option>
+                    <option value="Freios">Freios</option>
+                    <option value="Transmissão">Transmissão</option>
+                    <option value="Elétrica">Elétrica</option>
+                    <option value="Direção">Direção</option>
+                    <option value="Rodagem">Rodagem</option>
+                    <option value="Geral">Geral</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Controle</label>
+                <select class="form-select" name="item_controle[]" required>
+                    <option value="km">Quilometragem</option>
+                    <option value="horas">Horas</option>
+                    <option value="dias">Dias</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Intervalo</label>
+                <input type="number" class="form-control" name="item_intervalo[]" required
+                       placeholder="15000" min="1">
+            </div>
+        </div>
+    `;
+    container.appendChild(itemRow);
+}
+
+function removeItem(button) {
+    const itemRow = button.closest('.item-row');
+    const container = document.getElementById('items-container');
+
+    // Não permitir remover se for o último item
+    if (container.children.length <= 1) {
+        alert('É necessário ter pelo menos um item de manutenção.');
+        return;
+    }
+
+    itemRow.remove();
+}
+
+function previewPlan() {
+    const formData = new FormData(document.getElementById('planForm'));
+
+    // Coletar dados para preview
+    const planData = {
+        descricao: formData.get('descricao'),
+        ativo: formData.has('ativo'),
+        tipos_equipamento: formData.getAll('tipos_equipamento'),
+        itens: []
+    };
+
+    // Coletar itens
+    const descriptions = formData.getAll('item_descricao[]');
+    const types = formData.getAll('item_tipo[]');
+    const categories = formData.getAll('item_categoria[]');
+    const controls = formData.getAll('item_controle[]');
+    const intervals = formData.getAll('item_intervalo[]');
+
+    for (let i = 0; i < descriptions.length; i++) {
+        if (descriptions[i]) {
+            planData.itens.push({
+                descricao: descriptions[i],
+                tipo: types[i],
+                categoria: categories[i],
+                controle: controls[i],
+                intervalo: intervals[i]
+            });
+        }
+    }
+
+    // Mostrar preview em modal
+    let preview = `
+        <h5>Resumo do Plano</h5>
+        <p><strong>Descrição:</strong> ${planData.descricao || 'Não informado'}</p>
+        <p><strong>Status:</strong> ${planData.ativo ? 'Ativo' : 'Inativo'}</p>
+        <p><strong>Tipos de Equipamento:</strong> ${planData.tipos_equipamento.length} selecionados</p>
+        <p><strong>Itens de Manutenção:</strong> ${planData.itens.length} itens</p>
+
+        <h6>Itens:</h6>
+        <ul>`;
+
+    planData.itens.forEach(item => {
+        preview += `<li>${item.descricao} (${item.tipo} - a cada ${item.intervalo} ${item.controle})</li>`;
+    });
+
+    preview += '</ul>';
+
+    // Usar alert simples por enquanto (pode ser substituído por modal)
+    alert('Preview do Plano:\n\n' + preview.replace(/<[^>]*>/g, '\n'));
+}
+
+// Validação do formulário
+document.getElementById('planForm').addEventListener('submit', function(e) {
+    const equipmentChecked = document.querySelectorAll('input[name="tipos_equipamento"]:checked');
+    if (equipmentChecked.length === 0) {
+        e.preventDefault();
+        alert('Selecione pelo menos um tipo de equipamento.');
+        return false;
+    }
+
+    const items = document.querySelectorAll('input[name="item_descricao[]"]');
+    let hasValidItem = false;
+    items.forEach(item => {
+        if (item.value.trim()) {
+            hasValidItem = true;
+        }
+    });
+
+    if (!hasValidItem) {
+        e.preventDefault();
+        alert('Adicione pelo menos um item de manutenção.');
+        return false;
+    }
+});
+
+// Filtrar veículos baseado nos tipos de equipamento selecionados
+function filterVehiclesByType() {
+    const selectedTypes = [];
+    document.querySelectorAll('input[name="tipos_equipamento"]:checked').forEach(checkbox => {
+        const label = document.querySelector(`label[for="${checkbox.id}"]`);
+        if (label) {
+            selectedTypes.push(label.textContent.trim());
+        }
+    });
+
+    const vehicleItems = document.querySelectorAll('.vehicle-item');
+    vehicleItems.forEach(item => {
+        const badge = item.querySelector('.badge-type');
+        if (badge) {
+            const vehicleType = badge.textContent.trim();
+
+            // Mapear tipos de equipamento para tipos de veículo
+            const typeMapping = {
+                'EMPILHADEIRA': 'EMPILHADEIRA',
+                'TRUCK': 'TRUCK',
+                'CARRETA': 'CARRETA',
+                'CAVALOMECANICO': 'CAVALOMECANICO',
+                'TOCO': 'TOCO'
+            };
+
+            const shouldShow = selectedTypes.length === 0 ||
+                             selectedTypes.some(type => typeMapping[type] === vehicleType);
+
+            const parentDiv = item.closest('.col-md-6');
+            if (parentDiv) {
+                parentDiv.style.display = shouldShow ? 'block' : 'none';
+            }
+        }
+    });
+
+    // Mostrar/ocultar seção de veículos específicos
+    const vehicleSection = document.querySelector('.form-section:has(.vehicle-item)');
+    if (vehicleSection) {
+        const visibleVehicles = document.querySelectorAll('.vehicle-item:not([style*="display: none"])').length;
+        vehicleSection.style.display = selectedTypes.length > 0 && visibleVehicles > 0 ? 'block' : 'none';
+    }
+}
+
+// Adicionar event listeners aos checkboxes de tipo de equipamento
+document.querySelectorAll('input[name="tipos_equipamento"]').forEach(checkbox => {
+    checkbox.addEventListener('change', filterVehiclesByType);
+});
+
+// Executar filtro inicial
+document.addEventListener('DOMContentLoaded', filterVehiclesByType);
+</script>
+{% endblock %}

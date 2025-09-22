@@ -1,0 +1,9 @@
+{
+  "name": "Checklist Veicular",
+  "short_name": "Checklist",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "description": "Checklist veicular pré-viagem (demo).",
+  "icons": []
+}

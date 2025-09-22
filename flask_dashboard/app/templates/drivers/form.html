@@ -1,0 +1,275 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {% if motorista %}Editar Motorista{% else %}Novo Motorista{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-user"></i>
+                        {% if motorista %}Editar Motorista{% else %}Novo Motorista{% endif %}
+                    </h3>
+                    <div class="card-tools">
+                        <a href="{{ url_for('drivers_list') }}" class="btn btn-outline-secondary btn-sm">
+                            <i class="fas fa-arrow-left"></i> Voltar
+                        </a>
+                    </div>
+                </div>
+
+                <form id="driverForm" method="POST">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="nome" class="form-label">
+                                        Nome Completo <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="text" class="form-control" id="nome" name="nome"
+                                           value="{{ motorista.nome if motorista else '' }}" required>
+                                </div>
+                            </div>
+
+                            <div class="col-md-3">
+                                <div class="form-group mb-3">
+                                    <label for="cnh" class="form-label">CNH</label>
+                                    <input type="text" class="form-control" id="cnh" name="cnh"
+                                           value="{{ motorista.cnh if motorista else '' }}"
+                                           maxlength="11" pattern="[0-9]{11}">
+                                    <small class="form-text text-muted">Apenas números (11 dígitos)</small>
+                                </div>
+                            </div>
+
+                            <div class="col-md-3">
+                                <div class="form-group mb-3">
+                                    <label for="categoria" class="form-label">Categoria CNH</label>
+                                    <select class="form-select" id="categoria" name="categoria">
+                                        <option value="">Selecione...</option>
+                                        <option value="A" {% if motorista and motorista.categoria == 'A' %}selected{% endif %}>A</option>
+                                        <option value="B" {% if motorista and motorista.categoria == 'B' %}selected{% endif %}>B</option>
+                                        <option value="C" {% if motorista and motorista.categoria == 'C' %}selected{% endif %}>C</option>
+                                        <option value="D" {% if motorista and motorista.categoria == 'D' %}selected{% endif %}>D</option>
+                                        <option value="E" {% if motorista and motorista.categoria == 'E' %}selected{% endif %}>E</option>
+                                        <option value="AB" {% if motorista and motorista.categoria == 'AB' %}selected{% endif %}>AB</option>
+                                        <option value="AC" {% if motorista and motorista.categoria == 'AC' %}selected{% endif %}>AC</option>
+                                        <option value="AD" {% if motorista and motorista.categoria == 'AD' %}selected{% endif %}>AD</option>
+                                        <option value="AE" {% if motorista and motorista.categoria == 'AE' %}selected{% endif %}>AE</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group mb-3">
+                                    <label for="validade_cnh" class="form-label">Validade CNH</label>
+                                    <input type="date" class="form-control" id="validade_cnh" name="validade_cnh"
+                                           value="{% if motorista and motorista.validade_cnh %}{% if motorista.validade_cnh is string %}{{ motorista.validade_cnh[:10] }}{% else %}{{ motorista.validade_cnh.strftime('%Y-%m-%d') }}{% endif %}{% endif %}">
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <div class="form-group mb-3">
+                                    <label for="email" class="form-label">E-mail</label>
+                                    <input type="email" class="form-control" id="email" name="email" autocomplete="username"
+                                           value="{{ motorista.usuario.email if motorista and motorista.usuario else '' }}">
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <div class="form-group mb-3">
+                                    <label for="ativo" class="form-label">Status</label>
+                                    <select class="form-select" id="ativo" name="ativo">
+                                        <option value="true" {% if not motorista or motorista.ativo %}selected{% endif %}>Ativo</option>
+                                        <option value="false" {% if motorista and not motorista.ativo %}selected{% endif %}>Inativo</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        {% if not motorista %}
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="senha" class="form-label">
+                                        Senha <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="password" class="form-control" id="senha" name="senha" required autocomplete="new-password">
+                                    <small class="form-text text-muted">Mínimo 6 caracteres</small>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="senha_confirm" class="form-label">
+                                        Confirmar Senha <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="password" class="form-control" id="senha_confirm" name="senha_confirm" required autocomplete="new-password">
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="form-group mb-3">
+                                    <label for="observacoes" class="form-label">Observações</label>
+                                    <textarea class="form-control" id="observacoes" name="observacoes" rows="3"
+                                              placeholder="Informações adicionais sobre o motorista..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-footer">
+                        <div class="d-flex justify-content-between">
+                            <button type="button" class="btn btn-secondary" onclick="window.history.back()">
+                                <i class="fas fa-times"></i> Cancelar
+                            </button>
+                            <button type="submit" class="btn btn-primary" id="saveBtn">
+                                <i class="fas fa-save"></i>
+                                {% if motorista %}Atualizar{% else %}Cadastrar{% endif %} Motorista
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Form validation
+    $('#driverForm').on('submit', function(e) {
+        e.preventDefault();
+
+        // Basic validation
+        const nome = $('#nome').val().trim();
+        const senha = $('#senha').val();
+        const senhaConfirm = $('#senha_confirm').val();
+
+        if (!nome) {
+            showAlert('Por favor, informe o nome do motorista.', 'warning');
+            $('#nome').focus();
+            return;
+        }
+
+        // Validation for new drivers only
+        {% if not motorista %}
+        if (!senha || senha.length < 6) {
+            showAlert('A senha deve ter pelo menos 6 caracteres.', 'warning');
+            $('#senha').focus();
+            return;
+        }
+
+        if (senha !== senhaConfirm) {
+            showAlert('As senhas não coincidem.', 'warning');
+            $('#senha_confirm').focus();
+            return;
+        }
+        {% endif %}
+
+        // CNH validation
+        const cnh = $('#cnh').val().replace(/\D/g, '');
+        if (cnh && cnh.length !== 11) {
+            showAlert('CNH deve ter exatamente 11 dígitos.', 'warning');
+            $('#cnh').focus();
+            return;
+        }
+
+        // Submit form
+        saveDriver();
+    });
+
+    // CNH mask
+    $('#cnh').on('input', function() {
+        this.value = this.value.replace(/\D/g, '');
+    });
+
+    // Check CNH validity date
+    $('#validade_cnh').on('change', function() {
+        const validadeDate = new Date($(this).val());
+        const today = new Date();
+
+        if (validadeDate < today) {
+            showAlert('CNH vencida! Verifique a data de validade.', 'warning');
+        }
+    });
+});
+
+function saveDriver() {
+    const formData = {
+        nome: $('#nome').val().trim(),
+        cnh: $('#cnh').val().replace(/\D/g, ''),
+        categoria: $('#categoria').val(),
+        validade_cnh: $('#validade_cnh').val(),
+        email: $('#email').val().trim(),
+        ativo: $('#ativo').val() === 'true',
+        observacoes: $('#observacoes').val().trim()
+    };
+
+    // Add password only for new drivers
+    const isNewDriver = {{ 'true' if not motorista else 'false' }};
+    if (isNewDriver) {
+        formData.senha = $('#senha').val();
+    }
+
+    const saveBtn = $('#saveBtn');
+    const originalText = saveBtn.html();
+    saveBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Salvando...');
+
+    {% if motorista %}
+    const url = '/drivers/{{ motorista.id }}';
+    const method = 'PUT';
+    {% else %}
+    const url = '/drivers/new';
+    const method = 'POST';
+    {% endif %}
+
+    $.ajax({
+        url: url,
+        method: method,
+        contentType: 'application/json',
+        data: JSON.stringify(formData),
+        success: function(response) {
+            showAlert('Motorista salvo com sucesso!', 'success');
+            setTimeout(function() {
+                window.location.href = "{{ url_for('drivers_list') }}";
+            }, 1500);
+        },
+        error: function(xhr) {
+            let message = 'Erro ao salvar motorista.';
+            if (xhr.responseJSON && xhr.responseJSON.message) {
+                message = xhr.responseJSON.message;
+            }
+            showAlert(message, 'danger');
+        },
+        complete: function() {
+            saveBtn.prop('disabled', false).html(originalText);
+        }
+    });
+}
+
+function showAlert(message, type) {
+    const alertDiv = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+
+    $('.card-body').prepend(alertDiv);
+
+    setTimeout(() => {
+        $('.alert').fadeOut();
+    }, 5000);
+}
+</script>
+{% endblock %}

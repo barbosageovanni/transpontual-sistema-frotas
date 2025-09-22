@@ -1,0 +1,49 @@
+version: "3.9"
+services:
+  db:
+    image: postgres:15
+    container_name: frotadb
+    environment:
+      POSTGRES_DB: frotadb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d frotadb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend_fastapi
+    container_name: frota-api
+    env_file: .env
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRES_MINUTES=${JWT_EXPIRES_MINUTES}
+      - STORAGE_DIR=${STORAGE_DIR}
+      - ENV=${ENV}
+    volumes:
+      - ${STORAGE_DIR:-./uploads}:/data/uploads
+    ports:
+      - "${API_PORT:-8005}:8005"
+    depends_on:
+      - db
+
+  dashboard:
+    build: ./flask_dashboard
+    container_name: frota-dashboard
+    env_file: .env
+    environment:
+      - API_BASE=http://backend:8005
+    ports:
+      - "${DASHBOARD_PORT:-8050}:8050"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:

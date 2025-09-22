@@ -1,0 +1,1237 @@
+{% extends "base.html" %}
+
+{% block title %}Checklist #{{ checklist.id }} - Detalhes - Transpontual{% endblock %}
+
+{% block extra_css %}
+<style>
+    .checklist-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 30px;
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+    }
+
+    .info-card {
+        transition: all 0.3s ease;
+        border-radius: 12px;
+        overflow: hidden;
+    }
+
+    .info-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    }
+
+    .score-display {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        border-radius: 15px;
+        padding: 25px;
+        text-align: center;
+    }
+
+    .score-circle {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        font-weight: bold;
+        margin: 0 auto 15px;
+        position: relative;
+    }
+
+    .score-excellent {
+        background: linear-gradient(135deg, #00b894, #00a085);
+        box-shadow: 0 0 30px rgba(0, 184, 148, 0.4);
+    }
+
+    .score-good {
+        background: linear-gradient(135deg, #fdcb6e, #f39c12);
+        box-shadow: 0 0 30px rgba(253, 203, 110, 0.4);
+    }
+
+    .score-warning {
+        background: linear-gradient(135deg, #e17055, #d63031);
+        box-shadow: 0 0 30px rgba(225, 112, 85, 0.4);
+    }
+
+    .score-pending {
+        background: linear-gradient(135deg, #6c5ce7, #5f3dc4);
+        box-shadow: 0 0 30px rgba(108, 92, 231, 0.4);
+    }
+
+    .item-result {
+        padding: 15px;
+        border-radius: 12px;
+        margin-bottom: 15px;
+        border-left: 4px solid #dee2e6;
+        transition: all 0.3s ease;
+    }
+
+    .item-result:hover { transform: translateX(5px); }
+
+    .item-result.ok { border-left-color: #28a745; background: rgba(40, 167, 69, 0.05); }
+    .item-result.nao_ok { border-left-color: #dc3545; background: rgba(220, 53, 69, 0.05); }
+    .item-result.na { border-left-color: #6c757d; background: rgba(108, 117, 125, 0.05); }
+
+    .severity-badge {
+        font-size: 11px;
+        padding: 4px 8px;
+        border-radius: 10px;
+        font-weight: 600;
+    }
+
+    .severity-alta { background: #dc3545; color: white; }
+    .severity-media { background: #ffc107; color: #000; }
+    .severity-baixa { background: #17a2b8; color: white; }
+
+    .timeline {
+        position: relative;
+        padding-left: 30px;
+    }
+
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: 15px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: linear-gradient(to bottom, #667eea, #764ba2);
+    }
+
+    .timeline-item {
+        position: relative;
+        margin-bottom: 20px;
+        background: white;
+        border-radius: 10px;
+        padding: 15px 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -37px;
+        top: 20px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #667eea;
+        border: 3px solid white;
+    }
+
+    .chart-container {
+        height: 300px;
+        position: relative;
+    }
+
+    .export-section {
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        border-radius: 15px;
+        padding: 25px;
+        margin-top: 30px;
+    }
+
+    .action-buttons {
+        position: sticky;
+        top: 80px;
+        z-index: 100;
+        background: white;
+        padding: 15px;
+        border-radius: 10px;
+        box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+
+    .defect-card {
+        border-left: 4px solid #dc3545;
+        background: rgba(220, 53, 69, 0.05);
+    }
+
+    .maintenance-card {
+        border-left: 4px solid #ffc107;
+        background: rgba(255, 193, 7, 0.05);
+    }
+
+    .photos-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 15px;
+        margin-top: 15px;
+    }
+
+    .photo-item {
+        border-radius: 8px;
+        overflow: hidden;
+        cursor: pointer;
+        transition: transform 0.3s ease;
+    }
+
+    .photo-item:hover { transform: scale(1.05); }
+
+    .photo-item img {
+        width: 100%;
+        height: 100px;
+        object-fit: cover;
+    }
+
+    @media (max-width: 768px) {
+        .checklist-header { padding: 20px; margin-bottom: 20px; }
+        .score-circle { width: 80px; height: 80px; font-size: 18px; }
+        .chart-container { height: 250px; }
+        .timeline { padding-left: 25px; }
+        .timeline::before { left: 12px; }
+        .timeline-item::before { left: -31px; width: 10px; height: 10px; }
+    }
+
+    /* Estilos de Impressão */
+    @media print {
+        * {
+            -webkit-print-color-adjust: exact !important;
+            color-adjust: exact !important;
+        }
+
+        .action-buttons,
+        .export-section,
+        nav,
+        footer,
+        .btn-group,
+        .dropdown-menu {
+            display: none !important;
+        }
+
+        .checklist-header {
+            background: #f8f9fa !important;
+            color: #000 !important;
+            border: 2px solid #000;
+            margin-bottom: 20px;
+            page-break-inside: avoid;
+        }
+
+        .card {
+            border: 1px solid #000 !important;
+            break-inside: avoid;
+            margin-bottom: 15px;
+            box-shadow: none !important;
+        }
+
+        .score-circle {
+            background: #f8f9fa !important;
+            border: 2px solid #000;
+            color: #000 !important;
+            box-shadow: none !important;
+        }
+
+        .item-result {
+            border: 1px solid #ddd !important;
+            margin-bottom: 10px;
+            page-break-inside: avoid;
+        }
+
+        .item-result.ok {
+            border-left: 4px solid #28a745 !important;
+            background: #f8f9fa !important;
+        }
+
+        .item-result.nao_ok {
+            border-left: 4px solid #dc3545 !important;
+            background: #f8f9fa !important;
+        }
+
+        .item-result.na {
+            border-left: 4px solid #6c757d !important;
+            background: #f8f9fa !important;
+        }
+
+        .badge {
+            border: 1px solid #000 !important;
+            color: #000 !important;
+        }
+
+        .badge.bg-success { background: #d4edda !important; }
+        .badge.bg-danger { background: #f8d7da !important; }
+        .badge.bg-warning { background: #fff3cd !important; }
+        .badge.bg-secondary { background: #e2e3e5 !important; }
+
+        .severity-badge {
+            border: 1px solid #000 !important;
+            color: #000 !important;
+        }
+
+        .severity-alta { background: #f8d7da !important; }
+        .severity-media { background: #fff3cd !important; }
+        .severity-baixa { background: #d1ecf1 !important; }
+
+        body {
+            font-size: 12pt;
+            line-height: 1.4;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            page-break-after: avoid;
+        }
+
+        .page-break {
+            page-break-before: always;
+        }
+
+        .no-break {
+            page-break-inside: avoid;
+        }
+
+        .info-card {
+            border: 1px solid #000 !important;
+            background: #f8f9fa !important;
+        }
+
+        .timeline::before {
+            background: #000 !important;
+        }
+
+        .photos-grid,
+        .chart-container {
+            display: none !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Botões de Ação -->
+<div class="action-buttons">
+    <div class="d-flex justify-content-between align-items-center flex-wrap">
+        <div class="btn-group mb-2">
+            <a href="{{ url_for('checklists_list') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i>Voltar
+            </a>
+
+            {% if checklist.status == 'em_andamento' %}
+            <a href="{{ url_for('checklist_execute', checklist_id=checklist.id) }}" class="btn btn-warning">
+                <i class="bi bi-play me-1"></i>Continuar Execução
+            </a>
+            {% endif %}
+        </div>
+
+        <div class="btn-group mb-2">
+            <button type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown">
+                <i class="bi bi-download me-1"></i>Exportar
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="#" onclick="exportPDF()">
+                    <i class="bi bi-filetype-pdf me-2"></i>Relatório PDF
+                </a></li>
+                <li><a class="dropdown-item" href="#" onclick="exportExcel()">
+                    <i class="bi bi-filetype-xlsx me-2"></i>Planilha Excel
+                </a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="#" onclick="share()">
+                    <i class="bi bi-share me-2"></i>Compartilhar
+                </a></li>
+            </ul>
+
+            <button type="button" class="btn btn-outline-secondary" onclick="print()">
+                <i class="bi bi-printer me-1"></i>Imprimir
+            </button>
+
+            <button type="button" class="btn btn-outline-info" onclick="refreshData()">
+                <i class="bi bi-arrow-clockwise me-1"></i>Atualizar
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Header do Checklist -->
+<div class="checklist-header">
+    <div class="row align-items-center">
+        <div class="col-md-8">
+            <div class="d-flex align-items-center mb-3">
+                <h1 class="h2 mb-0 me-3">
+                    <i class="bi bi-clipboard-check me-2"></i>
+                    Checklist #{{ checklist.id }}
+                </h1>
+
+                <span class="badge bg-{{ 'warning' if checklist.status == 'em_andamento' else 'success' if checklist.status == 'aprovado' else 'danger' }} fs-6">
+                    {{ checklist.status.replace('_', ' ').title() }}
+                </span>
+            </div>
+
+            <div class="row">
+                <div class="col-sm-6">
+                    <p class="mb-2">
+                        <i class="bi bi-truck me-2"></i>
+                        <strong>{{ checklist.veiculo_placa }}</strong> - {{ checklist.veiculo_modelo }}
+                    </p>
+                    <p class="mb-2">
+                        <i class="bi bi-person me-2"></i>
+                        {{ checklist.motorista_nome }}
+                    </p>
+                </div>
+
+                <div class="col-sm-6">
+                    <p class="mb-2">
+                        <i class="bi bi-calendar me-2"></i>
+                        {{ checklist.dt_inicio|datetime }}
+                    </p>
+                    {% if checklist.dt_fim %}
+                    <p class="mb-2">
+                        <i class="bi bi-flag me-2"></i>
+                        {{ checklist.dt_fim|datetime }}
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="score-display">
+                <div id="score-circle" class="score-circle {{ 'score-excellent' if checklist.score_aprovacao and checklist.score_aprovacao >= 90 else 'score-good' if checklist.score_aprovacao and checklist.score_aprovacao >= 70 else 'score-warning' if checklist.score_aprovacao else 'score-pending' }}">
+                    <span id="score-percentage">{{ checklist.score_aprovacao|round if checklist.score_aprovacao else '-' }}%</span>
+                </div>
+                <h5 class="mb-1">Score de Conformidade</h5>
+                <p id="score-breakdown" class="mb-0 opacity-75">
+                    <span id="itens-ok">{{ checklist.itens_ok or 0 }}</span> OK /
+                    <span id="itens-nok">{{ checklist.itens_nok or 0 }}</span> NOK /
+                    <span id="itens-na">{{ checklist.itens_na or 0 }}</span> N/A
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Seção de Aprovação -->
+{% if checklist.status == 'aguardando_aprovacao' %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-warning">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    Checklist Aguardando Aprovação
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-3">
+                    Este checklist foi finalizado pelo motorista e aguarda aprovação do gestor para liberação da viagem.
+                    Revise as informações abaixo e aprove ou reprove conforme necessário.
+                </p>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Motorista:</strong> {{ checklist.motorista_nome }}</p>
+                        <p><strong>Veículo:</strong> {{ checklist.veiculo_placa }} - {{ checklist.veiculo_modelo }}</p>
+                        <p><strong>Data de Finalização:</strong> {{ checklist.dt_fim|datetime if checklist.dt_fim else '-' }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Score de Conformidade:</strong> {{ checklist.score_aprovacao|round if checklist.score_aprovacao else '-' }}%</p>
+                        <p><strong>Itens OK:</strong> {{ checklist.itens_ok or 0 }}</p>
+                        <p><strong>Itens NOK:</strong> {{ checklist.itens_nok or 0 }}</p>
+                    </div>
+                </div>
+
+                <!-- Destacar itens não conformes para aprovação -->
+                {% if checklist.itens_nok and checklist.itens_nok > 0 %}
+                <div class="alert alert-warning mt-4">
+                    <h6 class="alert-heading"><i class="bi bi-exclamation-triangle me-2"></i>Atenção: Itens Não Conformes</h6>
+                    <p class="mb-2">Este checklist possui <strong>{{ checklist.itens_nok }} item(s) não conforme(s)</strong>. Revise os problemas abaixo antes de aprovar:</p>
+                    <div class="row">
+                        {% for item in checklist.itens %}
+                            {% set resposta = checklist.respostas|selectattr('item_id', 'equalto', item.id)|first %}
+                            {% if resposta and resposta.valor == 'nao_ok' %}
+                            <div class="col-md-6 mb-2">
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-x-circle text-danger me-2"></i>
+                                    <span><strong>{{ item.ordem }}.</strong> {{ item.descricao }}</span>
+                                    {% if item.bloqueia_viagem %}
+                                    <span class="badge bg-danger ms-2">Bloqueante</span>
+                                    {% endif %}
+                                </div>
+                                {% if resposta.observacao %}
+                                <small class="text-muted ms-4">{{ resposta.observacao }}</small>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="d-flex gap-3 mt-4">
+                    <button type="button" class="btn btn-success btn-lg" onclick="approveChecklist({{ checklist.id }})">
+                        <i class="bi bi-check-circle me-2"></i>
+                        Aprovar e Liberar Viagem
+                    </button>
+                    <button type="button" class="btn btn-danger btn-lg" onclick="rejectChecklist({{ checklist.id }})">
+                        <i class="bi bi-x-circle me-2"></i>
+                        Reprovar Checklist
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="window.location.href='/checklists'">
+                        <i class="bi bi-arrow-left me-2"></i>
+                        Voltar à Lista
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% elif checklist.status == 'aprovado' %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="alert alert-success" role="alert">
+            <i class="bi bi-check-circle me-2"></i>
+            <strong>Checklist Aprovado!</strong> Este checklist foi aprovado em {{ checklist.dt_aprovacao|datetime if checklist.dt_aprovacao else '-' }}
+            {% if checklist.aprovado_por %}por {{ checklist.aprovado_por }}{% endif %}. O veículo está liberado para viagem.
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Cards de Informações -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card info-card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-clipboard-data display-6 text-primary mb-2"></i>
+                <h5 class="card-title">{{ checklist.itens|length }}</h5>
+                <p class="card-text text-muted">Total de Itens</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card info-card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-clock display-6 text-info mb-2"></i>
+                <h5 class="card-title">
+                    {% if checklist.dt_fim and checklist.dt_inicio %}
+                        {% set duration_seconds = (checklist.dt_fim - checklist.dt_inicio).total_seconds() %}
+                        {% set duration_minutes = (duration_seconds / 60)|round %}
+                        {{ duration_minutes }} min
+                    {% else %}
+                        -
+                    {% endif %}
+                </h5>
+                <p class="card-text text-muted">Duração</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card info-card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-exclamation-triangle display-6 text-warning mb-2"></i>
+                <h5 class="card-title">{{ (checklist.respostas or [])|selectattr('valor', 'equalto', 'nao_ok')|list|length }}</h5>
+                <p class="card-text text-muted">Defeitos Encontrados</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card info-card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-shield-exclamation display-6 text-danger mb-2"></i>
+                <h5 class="card-title">{{ checklist.tem_bloqueios|default(false)|int }}</h5>
+                <p class="card-text text-muted">Itens Bloqueantes</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Coluna Principal: Respostas dos Itens -->
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-list-check me-2"></i>Resultados do Checklist
+                </h5>
+            </div>
+
+            <div class="card-body">
+                {% if checklist.itens %}
+                    {% for item in checklist.itens %}
+                        {% set resposta = checklist.respostas|selectattr('item_id', 'equalto', item.id)|first %}
+
+                        <div class="item-result {{ resposta.valor if resposta else 'pending' }}">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1">
+                                        <span class="badge bg-secondary me-2">{{ item.ordem }}</span>
+                                        {{ item.descricao }}
+                                    </h6>
+
+                                    <div class="d-flex gap-2 mb-2">
+                                        <span class="severity-badge severity-{{ item.severidade }}">
+                                            {{ item.severidade.title() }}
+                                        </span>
+
+                                        {% if item.bloqueia_viagem %}
+                                        <span class="badge bg-danger">Bloqueante</span>
+                                        {% endif %}
+
+                                        {% if item.exige_foto %}
+                                        <span class="badge bg-info">Requer Foto</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <div class="text-end">
+                                    {% if resposta %}
+                                        {% if resposta.valor == 'ok' %}
+                                            <span class="badge bg-success fs-6">
+                                                <i class="bi bi-check-circle me-1"></i>OK
+                                            </span>
+                                        {% elif resposta.valor == 'nao_ok' %}
+                                            <span class="badge bg-danger fs-6">
+                                                <i class="bi bi-x-circle me-1"></i>NÃO OK
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-secondary fs-6">
+                                                <i class="bi bi-dash-circle me-1"></i>N/A
+                                            </span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="badge bg-warning fs-6">
+                                            <i class="bi bi-clock me-1"></i>Pendente
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            {% if resposta and resposta.observacao %}
+                            <div class="mt-2 p-3 bg-light rounded">
+                                <strong class="text-danger">
+                                    <i class="bi bi-exclamation-triangle me-1"></i>Observação:
+                                </strong>
+                                <p class="mb-0 mt-1">{{ resposta.observacao }}</p>
+                            </div>
+                            {% endif %}
+
+                            <!-- Fotos (placeholder - sem implementação de upload) -->
+                            {% if resposta and resposta.valor == 'nao_ok' and item.exige_foto %}
+                            <div class="mt-2">
+                                <small class="text-muted">
+                                    <i class="bi bi-camera me-1"></i>Fotos requeridas para este defeito
+                                </small>
+                                <!-- Aqui ficariam as fotos se implementadas -->
+                            </div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-inbox display-1 text-muted mb-3"></i>
+                        <h5 class="text-muted">Nenhum item encontrado</h5>
+                        <p class="text-muted">Este checklist não possui itens definidos.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Defeitos e Ordens de Serviço -->
+        {% if defeitos %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-tools me-2"></i>Defeitos Identificados
+                </h5>
+            </div>
+
+            <div class="card-body">
+                {% for defeito in defeitos %}
+                <div class="defect-card card mb-3">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h6 class="card-title mb-0">{{ defeito.descricao }}</h6>
+                            <span class="badge bg-{{ 'danger' if defeito.severidade == 'alta' else 'warning' if defeito.severidade == 'media' else 'info' }}">
+                                {{ defeito.severidade.title() }}
+                            </span>
+                        </div>
+
+                        {% if defeito.observacoes %}
+                        <p class="text-muted mb-2">{{ defeito.observacoes }}</p>
+                        {% endif %}
+
+                        <!-- Ordens de Serviço Relacionadas -->
+                        {% if ordens_servico %}
+                            {% for os in ordens_servico %}
+                                {% if os.defeito_id == defeito.id %}
+                                <div class="maintenance-card card mt-2">
+                                    <div class="card-body py-2">
+                                        <small class="text-muted">
+                                            <i class="bi bi-wrench me-1"></i>
+                                            O.S. #{{ os.id }} - {{ os.status }} - {{ os.dt_criacao|date }}
+                                        </small>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Coluna Lateral: Timeline e Gráficos -->
+    <div class="col-lg-4">
+        <!-- Timeline -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-clock-history me-2"></i>Timeline
+                </h5>
+            </div>
+
+            <div class="card-body">
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <h6 class="mb-1">Checklist Iniciado</h6>
+                        <small class="text-muted">
+                            {{ checklist.dt_inicio|datetime }}
+                            <br>por {{ checklist.motorista_nome }}
+                        </small>
+                    </div>
+
+                    {% if checklist.respostas %}
+                    <div class="timeline-item">
+                        <h6 class="mb-1">Respostas Registradas</h6>
+                        <small class="text-muted">
+                            {{ checklist.respostas|length }} de {{ checklist.itens|length }} itens respondidos
+                        </small>
+                    </div>
+                    {% endif %}
+
+                    {% if checklist.dt_fim %}
+                    <div class="timeline-item">
+                        <h6 class="mb-1">Checklist Finalizado</h6>
+                        <small class="text-muted">
+                            {{ checklist.dt_fim|datetime }}
+                            <br>Status: {{ checklist.status.title() }}
+                        </small>
+                    </div>
+                    {% endif %}
+
+                    {% if defeitos %}
+                    <div class="timeline-item">
+                        <h6 class="mb-1 text-warning">Defeitos Identificados</h6>
+                        <small class="text-muted">
+                            {{ defeitos|length }} defeito(s) registrado(s)
+                        </small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráfico de Distribuição -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-pie-chart me-2"></i>Distribuição das Respostas
+                </h5>
+            </div>
+
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="distributionChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Informações Adicionais -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-info-circle me-2"></i>Informações Técnicas
+                </h5>
+            </div>
+
+            <div class="card-body">
+                <div class="row text-center mb-3">
+                    <div class="col-6">
+                        <strong class="d-block">{{ checklist.odometro_ini or 'N/A' }}</strong>
+                        <small class="text-muted">Km Inicial</small>
+                    </div>
+                    <div class="col-6">
+                        <strong class="d-block">{{ checklist.odometro_fim or 'N/A' }}</strong>
+                        <small class="text-muted">Km Final</small>
+                    </div>
+                </div>
+
+                {% if checklist.observacoes_gerais %}
+                <div class="mt-3">
+                    <h6>Observações Gerais:</h6>
+                    <p class="text-muted small">{{ checklist.observacoes_gerais }}</p>
+                </div>
+                {% endif %}
+
+                <div class="mt-3">
+                    <small class="text-muted">
+                        <i class="bi bi-geo-alt me-1"></i>
+                        {{ checklist.geo_inicio or 'Localização não disponível' }}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Seção de Exportação -->
+<div class="export-section">
+    <h4 class="mb-4">
+        <i class="bi bi-download me-2"></i>Exportar Relatório
+    </h4>
+
+    <div class="row">
+        <div class="col-md-8">
+            <p class="text-muted mb-3">
+                Gere relatórios detalhados deste checklist para análise, arquivo ou compartilhamento.
+            </p>
+
+            <div class="btn-group flex-wrap">
+                <button type="button" class="btn btn-outline-danger" onclick="exportPDF()">
+                    <i class="bi bi-filetype-pdf me-1"></i>PDF Detalhado
+                </button>
+                <button type="button" class="btn btn-outline-success" onclick="exportExcel()">
+                    <i class="bi bi-filetype-xlsx me-1"></i>Planilha Excel
+                </button>
+                <button type="button" class="btn btn-outline-primary" onclick="exportCSV()">
+                    <i class="bi bi-filetype-csv me-1"></i>CSV Simples
+                </button>
+                <button type="button" class="btn btn-outline-secondary" onclick="emailReport()">
+                    <i class="bi bi-envelope me-1"></i>Enviar por Email
+                </button>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="text-center">
+                <i class="bi bi-file-text display-3 text-muted mb-2"></i>
+                <p class="small text-muted">
+                    Relatórios incluem todos os detalhes, gráficos e histórico completo.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    initDistributionChart();
+
+    // Atualizar score na inicialização
+    updateScoreFromAPI();
+
+    // Auto-refresh a cada 30 segundos para detectar mudanças
+    setInterval(updateScoreFromAPI, 30000);
+
+    // Detectar mudanças em formulários da página se existirem
+    const formElements = document.querySelectorAll('input[data-item-id], select[data-item-id]');
+    formElements.forEach(element => {
+        element.addEventListener('change', function() {
+            // Aguardar 500ms após mudança para atualizar
+            setTimeout(updateScoreFromAPI, 500);
+        });
+    });
+});
+
+// Variável global para o gráfico
+let distributionChart = null;
+
+// Gráfico de distribuição das respostas
+function initDistributionChart() {
+    const ctx = document.getElementById('distributionChart').getContext('2d');
+
+    // Calcular dados do gráfico
+    const respostas = [
+        {% for item in checklist.itens %}
+            {% set resposta = checklist.respostas|selectattr('item_id', 'equalto', item.id)|first %}
+            '{{ resposta.valor if resposta else "pendente" }}',
+        {% endfor %}
+    ];
+
+    const counts = calculateCounts(respostas);
+
+    distributionChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['OK', 'Não OK', 'N/A', 'Pendente'],
+            datasets: [{
+                data: [counts.ok, counts.nao_ok, counts.na, counts.pendente],
+                backgroundColor: [
+                    '#28a745',
+                    '#dc3545',
+                    '#6c757d',
+                    '#ffc107'
+                ],
+                borderWidth: 2,
+                borderColor: '#ffffff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 15,
+                        usePointStyle: true
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((context.raw / total) * 100).toFixed(1);
+                            return context.label + ': ' + context.raw + ' (' + percentage + '%)';
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Função para calcular contadores
+function calculateCounts(respostas) {
+    return {
+        'ok': respostas.filter(r => r === 'ok').length,
+        'nao_ok': respostas.filter(r => r === 'nao_ok').length,
+        'na': respostas.filter(r => r === 'na').length,
+        'pendente': respostas.filter(r => r === 'pendente').length
+    };
+}
+
+// Função para obter respostas atuais da página (dinâmica)
+function getCurrentResponses() {
+    const respostas = [];
+
+    // Primeiro, tentar obter dos dados estáticos do servidor
+    const dadosEstaticos = [
+        {% for item in checklist.itens %}
+            {% set resposta = checklist.respostas|selectattr('item_id', 'equalto', item.id)|first %}
+            {
+                item_id: {{ item.id }},
+                valor: '{{ resposta.valor if resposta else "pendente" }}'
+            },
+        {% endfor %}
+    ];
+
+    // Verificar se há elementos de formulário na página que podem ter respostas mais atuais
+    dadosEstaticos.forEach(item => {
+        // Procurar por elementos de input/select com o item_id
+        const inputElement = document.querySelector(`[data-item-id="${item.item_id}"]`);
+        if (inputElement) {
+            // Se encontrou um elemento de formulário, usar seu valor
+            let valor = inputElement.value || inputElement.checked || 'pendente';
+            if (inputElement.type === 'radio' || inputElement.type === 'checkbox') {
+                const checkedElement = document.querySelector(`[data-item-id="${item.item_id}"]:checked`);
+                valor = checkedElement ? checkedElement.value : 'pendente';
+            }
+            respostas.push(valor);
+        } else {
+            // Senão, usar o valor estático
+            respostas.push(item.valor);
+        }
+    });
+
+    return respostas;
+}
+
+// Função para atualizar score baseado nos dados do servidor
+async function updateScoreFromAPI() {
+    try {
+        const response = await fetch('/checklists/{{ checklist.id }}/api/refresh', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+
+            // Atualizar elementos do DOM com dados da API
+            const scoreElement = document.getElementById('score-percentage');
+            const scoreCircle = document.getElementById('score-circle');
+            const itensOkElement = document.getElementById('itens-ok');
+            const itensNokElement = document.getElementById('itens-nok');
+            const itensNaElement = document.getElementById('itens-na');
+
+            // Atualizar score
+            if (scoreElement) {
+                const score = data.score_aprovacao ? Math.round(data.score_aprovacao) : 0;
+                scoreElement.textContent = score > 0 ? score + '%' : '-%';
+            }
+
+            // Atualizar contadores
+            if (itensOkElement) itensOkElement.textContent = data.itens_ok || 0;
+            if (itensNokElement) itensNokElement.textContent = data.itens_nok || 0;
+            if (itensNaElement) itensNaElement.textContent = data.itens_na || 0;
+
+            // Atualizar classe do círculo do score
+            if (scoreCircle) {
+                const score = data.score_aprovacao || 0;
+                scoreCircle.className = 'score-circle';
+                if (score >= 90) {
+                    scoreCircle.classList.add('score-excellent');
+                } else if (score >= 70) {
+                    scoreCircle.classList.add('score-good');
+                } else if (score > 0) {
+                    scoreCircle.classList.add('score-warning');
+                } else {
+                    scoreCircle.classList.add('score-pending');
+                }
+            }
+
+            // Atualizar gráfico se existir
+            if (distributionChart) {
+                const counts = {
+                    ok: data.itens_ok || 0,
+                    nao_ok: data.itens_nok || 0,
+                    na: data.itens_na || 0,
+                    pendente: Math.max(0, (data.itens || []).length - (data.itens_ok || 0) - (data.itens_nok || 0) - (data.itens_na || 0))
+                };
+                distributionChart.data.datasets[0].data = [counts.ok, counts.nao_ok, counts.na, counts.pendente];
+                distributionChart.update();
+            }
+
+            console.log('Score atualizado via API:', {
+                score: (data.score_aprovacao || 0) + '%',
+                counts: {
+                    ok: data.itens_ok || 0,
+                    nao_ok: data.itens_nok || 0,
+                    na: data.itens_na || 0
+                }
+            });
+        }
+    } catch (error) {
+        console.error('Erro ao atualizar score via API:', error);
+        // Fallback para cálculo local
+        updateScoreDisplay();
+    }
+}
+
+// Função para atualizar o score de conformidade dinamicamente
+function updateScoreDisplay() {
+    const respostas = getCurrentResponses();
+    const counts = calculateCounts(respostas);
+
+    // Calcular total de itens (excluindo pendentes)
+    const totalItens = counts.ok + counts.nao_ok + counts.na;
+
+    // Calcular score (OK / Total * 100)
+    let score = 0;
+    if (totalItens > 0) {
+        score = Math.round((counts.ok / totalItens) * 100);
+    }
+
+    // Atualizar elementos do DOM
+    const scoreElement = document.getElementById('score-percentage');
+    const scoreCircle = document.getElementById('score-circle');
+    const itensOkElement = document.getElementById('itens-ok');
+    const itensNokElement = document.getElementById('itens-nok');
+    const itensNaElement = document.getElementById('itens-na');
+
+    // Atualizar score
+    if (scoreElement) {
+        scoreElement.textContent = totalItens > 0 ? score + '%' : '-%';
+    }
+
+    // Atualizar contadores
+    if (itensOkElement) itensOkElement.textContent = counts.ok;
+    if (itensNokElement) itensNokElement.textContent = counts.nao_ok;
+    if (itensNaElement) itensNaElement.textContent = counts.na;
+
+    // Atualizar classe do círculo do score
+    if (scoreCircle) {
+        scoreCircle.className = 'score-circle';
+        if (totalItens === 0) {
+            scoreCircle.classList.add('score-pending');
+        } else if (score >= 90) {
+            scoreCircle.classList.add('score-excellent');
+        } else if (score >= 70) {
+            scoreCircle.classList.add('score-good');
+        } else {
+            scoreCircle.classList.add('score-warning');
+        }
+    }
+
+    // Atualizar gráfico se existir
+    if (distributionChart) {
+        distributionChart.data.datasets[0].data = [counts.ok, counts.nao_ok, counts.na, counts.pendente];
+        distributionChart.update();
+    }
+
+    console.log('Score atualizado:', {
+        score: score + '%',
+        counts: counts
+    });
+}
+
+// Função para atualizar após mudanças nas respostas
+function onResponseChanged() {
+    // Aguardar um momento para garantir que a mudança foi processada
+    setTimeout(() => {
+        updateScoreDisplay();
+    }, 100);
+}
+
+// Funções de exportação
+function exportPDF() {
+    window.open('/reports/checklist/{{ checklist.id }}/pdf', '_blank');
+}
+
+function exportExcel() {
+    window.open('/reports/checklist/{{ checklist.id }}/excel', '_blank');
+}
+
+function exportCSV() {
+    window.open('/reports/checklist/{{ checklist.id }}/csv', '_blank');
+}
+
+function emailReport() {
+    const subject = 'Relatório Checklist #{{ checklist.id }} - {{ checklist.veiculo_placa }}';
+    const body = 'Segue relatório do checklist realizado em {{ checklist.dt_inicio|datetime }}.\n\nScore: {{ checklist.score_aprovacao or "N/A" }}%\nStatus: {{ checklist.status }}\nVeículo: {{ checklist.veiculo_placa }}\nMotorista: {{ checklist.motorista_nome }}';
+
+    const mailto = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.open(mailto);
+}
+
+function share() {
+    if (navigator.share) {
+        navigator.share({
+            title: 'Checklist #{{ checklist.id }}',
+            text: 'Relatório do checklist {{ checklist.veiculo_placa }} - Score: {{ checklist.score_aprovacao or "N/A" }}%',
+            url: window.location.href
+        });
+    } else {
+        // Fallback: copiar URL
+        navigator.clipboard.writeText(window.location.href).then(() => {
+            showToast('Link copiado para a área de transferência!', 'success');
+        });
+    }
+}
+
+function print() {
+    window.print();
+}
+
+function refreshData() {
+    // Primeiro tentar atualizar via API
+    updateScoreFromAPI().then(() => {
+        showToast('Dados atualizados com sucesso!', 'success');
+    }).catch(() => {
+        // Se falhar, recarregar a página
+        location.reload();
+    });
+}
+
+// Função para mostrar toasts
+function showToast(message, type = 'info') {
+    const toastHtml = `
+        <div class="toast align-items-center text-white bg-${type}" role="alert">
+            <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    `;
+
+    let container = document.querySelector('.toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+        document.body.appendChild(container);
+    }
+
+    container.insertAdjacentHTML('beforeend', toastHtml);
+
+    const toastElement = container.lastElementChild;
+    const toast = new bootstrap.Toast(toastElement);
+    toast.show();
+}
+
+
+// Funções para aprovação/reprovação de checklist
+async function approveChecklist(checklistId) {
+    if (!confirm('Confirma a aprovação deste checklist? O veículo será liberado para viagem.')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/ui/checklist/${checklistId}/approve`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                aprovado_por: 'gestor'
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            alert('Checklist aprovado com sucesso! O veículo está liberado para viagem.');
+            window.location.href = '/checklists/new'; // Retornar à tela inicial do checklist
+        } else {
+            alert('Erro ao aprovar checklist: ' + (result.error || 'Erro desconhecido'));
+        }
+    } catch (error) {
+        console.error('Erro ao aprovar checklist:', error);
+        alert('Erro ao aprovar checklist. Tente novamente.');
+    }
+}
+
+async function rejectChecklist(checklistId) {
+    const motivo = prompt('Motivo da reprovação (obrigatório):');
+    if (!motivo || motivo.trim() === '') {
+        alert('É necessário informar o motivo da reprovação.');
+        return;
+    }
+
+    if (!confirm('Confirma a reprovação deste checklist? O motorista precisará refazê-lo.')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/ui/checklist/${checklistId}/reject`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                motivo_reprovacao: motivo,
+                reprovado_por: 'gestor'
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            alert('Checklist reprovado. O motorista foi notificado e deverá refazer o checklist.');
+            window.location.href = '/checklists';
+        } else {
+            alert('Erro ao reprovar checklist: ' + (result.error || 'Erro desconhecido'));
+        }
+    } catch (error) {
+        console.error('Erro ao reprovar checklist:', error);
+        alert('Erro ao reprovar checklist. Tente novamente.');
+    }
+}
+</script>
+{% endblock %}

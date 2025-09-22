@@ -1,0 +1,21 @@
+{
+    "vehicle": "WEBAPP-TEST",
+    "type": "saida",
+    "responses": {
+        "1": {
+            "selected": ["fora_de_foco", "lampada_queimada"],
+            "others": "Teste completo do formulário web",
+            "photos": []
+        },
+        "6": {
+            "selected": ["pneus_carecas"],
+            "others": "Pneus precisam ser trocados",
+            "photos": []
+        },
+        "14": {
+            "selected": ["cinto_travado"],
+            "others": "Cinto de segurança com problemas",
+            "photos": []
+        }
+    }
+}

@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+
+{% block title %}Alertas do Sistema - Transpontual{% endblock %}
+
+{% block extra_css %}
+<style>
+    .alert-header {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-bottom: 1px solid #dee2e6;
+        padding: 1rem 1.25rem;
+        display: flex;
+        align-items: center;
+    }
+
+    .alert-item {
+        padding: 0.75rem 1.25rem;
+        border-bottom: 1px solid #f1f3f4;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .alert-item:last-child {
+        border-bottom: none;
+    }
+
+    .alert-item:hover {
+        background-color: #f8f9fa;
+        transform: translateX(2px);
+    }
+
+    .alert-content {
+        flex-grow: 1;
+    }
+
+    .alert-equipment {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 0.25rem;
+    }
+
+    .alert-description {
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+
+    .alert-timestamp {
+        color: #adb5bd;
+        font-size: 0.8rem;
+        white-space: nowrap;
+        margin-left: 1rem;
+    }
+
+    .alert-icon {
+        margin-right: 0.75rem;
+        font-size: 1.1rem;
+    }
+
+    .alert-icon.warning {
+        color: #ffc107;
+    }
+
+    .alert-icon.danger {
+        color: #dc3545;
+    }
+
+    .alert-section {
+        margin-bottom: 1.5rem;
+    }
+
+    .section-title {
+        background: #fff3cd;
+        color: #856404;
+        padding: 0.5rem 1rem;
+        margin: 0;
+        font-weight: 600;
+        font-size: 0.9rem;
+        border-radius: 0.375rem 0.375rem 0 0;
+    }
+
+    .alert-card {
+        border: 1px solid #ffeaa7;
+        border-radius: 0.375rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .no-alerts {
+        text-align: center;
+        padding: 2rem;
+        color: #6c757d;
+    }
+
+    .refresh-btn {
+        transition: transform 0.2s ease;
+    }
+
+    .refresh-btn:hover {
+        transform: rotate(180deg);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="mb-1">
+                        <i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>
+                        Alertas do Sistema
+                    </h2>
+                    <p class="text-muted mb-0">Monitore alertas de equipamentos e manutenções</p>
+                </div>
+                <div>
+                    <button class="btn btn-outline-primary" onclick="refreshAlerts()" title="Atualizar alertas">
+                        <i class="bi bi-arrow-clockwise refresh-btn"></i>
+                    </button>
+                    <span class="badge bg-warning text-dark ms-2">{{ total_alertas }} alertas</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alertas de Equipamentos -->
+    <div class="row">
+        <div class="col-12">
+            <div class="alert-section">
+                <div class="alert-card">
+                    <div class="section-title">
+                        <i class="bi bi-gear-fill me-2"></i>
+                        Alertas dos Equipamentos
+                    </div>
+
+                    {% if alertas_equipamentos %}
+                    <div class="alert-list">
+                        {% for alerta in alertas_equipamentos %}
+                        <div class="alert-item">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-exclamation-triangle-fill alert-icon {{ alerta.nivel }}"></i>
+                                <div class="alert-content">
+                                    <div class="alert-equipment">
+                                        Alerta de equipamento {{ alerta.codigo_equipamento }}
+                                    </div>
+                                    <div class="alert-description">
+                                        {{ alerta.descricao }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="alert-timestamp">
+                                {{ alerta.data_hora }}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="no-alerts">
+                        <i class="bi bi-check-circle-fill text-success fs-1 mb-3"></i>
+                        <h5>Nenhum alerta de equipamento</h5>
+                        <p class="text-muted">Todos os equipamentos estão funcionando normalmente.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row mt-4">
+        <div class="col-md-3">
+            <div class="card border-warning">
+                <div class="card-body text-center">
+                    <h5 class="card-title text-warning">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                    </h5>
+                    <h3 class="mb-1">{{ alertas_equipamentos|length }}</h3>
+                    <p class="text-muted mb-0">Alertas de Equipamentos</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-success">
+                <div class="card-body text-center">
+                    <h5 class="card-title text-success">
+                        <i class="bi bi-check-circle-fill"></i>
+                    </h5>
+                    <h3 class="mb-1">12</h3>
+                    <p class="text-muted mb-0">Equipamentos OK</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-danger">
+                <div class="card-body text-center">
+                    <h5 class="card-title text-danger">
+                        <i class="bi bi-x-circle-fill"></i>
+                    </h5>
+                    <h3 class="mb-1">{{ alertas_equipamentos|selectattr("nivel", "equalto", "danger")|list|length }}</h3>
+                    <p class="text-muted mb-0">Críticos</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-warning">
+                <div class="card-body text-center">
+                    <h5 class="card-title text-warning">
+                        <i class="bi bi-clock-fill"></i>
+                    </h5>
+                    <h3 class="mb-1">{{ alertas_equipamentos|selectattr("nivel", "equalto", "warning")|list|length }}</h3>
+                    <p class="text-muted mb-0">Preventivos</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if error %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="alert alert-danger">
+                <h5><i class="bi bi-exclamation-triangle-fill me-2"></i>Erro</h5>
+                <p class="mb-0">{{ error }}</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function refreshAlerts() {
+    const refreshBtn = document.querySelector('.refresh-btn');
+    refreshBtn.classList.add('fa-spin');
+
+    // Simula carregamento
+    setTimeout(() => {
+        location.reload();
+    }, 1000);
+}
+
+// Auto-refresh a cada 30 segundos
+setInterval(refreshAlerts, 30000);
+
+// Adiciona efeito de hover nos alertas
+document.addEventListener('DOMContentLoaded', function() {
+    const alertItems = document.querySelectorAll('.alert-item');
+
+    alertItems.forEach(item => {
+        item.addEventListener('click', function() {
+            // Futuramente pode abrir modal com detalhes do alerta
+            console.log('Alert clicked:', this);
+        });
+    });
+});
+</script>
+{% endblock %}
