@@ -1,5 +1,8 @@
 FROM python:3.11-slim
 
+# Force cache bust
+RUN echo "Cache bust: $(date)" > /tmp/cachebust
+
 WORKDIR /app
 
 # Install system dependencies
