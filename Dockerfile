@@ -1,5 +1,8 @@
 FROM python:3.11-slim
 
+# Force cache invalidation with timestamp
+RUN echo "Build timestamp: $(date)" > /build_info.txt
+
 WORKDIR /app
 
 # Install system dependencies
