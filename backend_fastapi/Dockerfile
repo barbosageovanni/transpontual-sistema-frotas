@@ -17,8 +17,8 @@ COPY app app
 # Create uploads directory
 RUN mkdir -p /app/uploads
 
-# Expose port (Railway will set PORT environment variable)
-EXPOSE $PORT
+# Expose port (Railway will set PORT environment variable at runtime)
+EXPOSE 8000
 
-# Start command (Railway will use $PORT environment variable)
-CMD uvicorn app.main:app --host 0.0.0.0 --port $PORT
+# Start command (Railway will use $PORT environment variable at runtime)
+CMD sh -c "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"
