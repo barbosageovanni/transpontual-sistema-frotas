@@ -45,7 +45,8 @@
       "Bash(set FLASK_ENV=development)",
       "Bash(fc:*)",
       "Bash(findstr:*)",
-      "Bash(set DASHBOARD_PORT=8050)"
+      "Bash(set DASHBOARD_PORT=8050)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []
