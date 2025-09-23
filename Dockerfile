@@ -29,8 +29,8 @@ RUN useradd -m -u 1001 appuser
 RUN chown -R appuser:appuser /app
 USER appuser
 
-# Expose port
-EXPOSE $PORT
+# Expose port (Railway will set PORT at runtime)
+EXPOSE 8000
 
 # Start command with container test
 CMD ["python", "test_container.py"]
