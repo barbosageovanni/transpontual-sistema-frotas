@@ -1,46 +1,19 @@
-__pycache__/
+requirements.txt
 *.pyc
-*.pyo
-*.pyd
-.Python
-env/
+__pycache__/
 .env
 .venv/
 venv/
-ENV/
-env.bak/
-venv.bak/
 .pytest_cache/
 .coverage
 htmlcov/
 .tox/
 .cache
-nosetests.xml
-coverage.xml
-*.cover
-*.py,cover
-.hypothesis/
-
-# IDEs
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Logs
 *.log
 logs/
-
-# Testing
 tests/
 test_*.py
 *_test.py
-
-# Development files
 create_*.py
 migrate_*.py
 fix_*.py
