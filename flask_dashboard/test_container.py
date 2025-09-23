@@ -35,10 +35,26 @@ except Exception as e:
 
 # Tentar iniciar na porta
 try:
-    port = int(os.getenv("PORT", "8050"))
-    print(f"🚀 Starting on port {port}...")
+    port_env = os.getenv("PORT", "8050")
+    print(f"Raw PORT env: '{port_env}'")
 
+    # Tratar casos onde PORT pode estar vazio ou inválido
+    if not port_env or port_env.strip() == "":
+        port = 8050
+        print("PORT empty, using default 8050")
+    else:
+        try:
+            port = int(port_env.strip())
+            print(f"PORT parsed successfully: {port}")
+        except ValueError:
+            port = 8050
+            print(f"PORT invalid ('{port_env}'), using default 8050")
+
+    print(f"🚀 Starting Flask on port {port}...")
     app.run(host="0.0.0.0", port=port, debug=False)
 except Exception as e:
     print(f"❌ Flask run error: {e}")
-    sys.exit(1)
+    # Não fazer exit para manter container vivo e ver logs
+    print("Container permanecerá vivo para debug...")
+    import time
+    time.sleep(3600)  # Sleep por 1 hora para debug
