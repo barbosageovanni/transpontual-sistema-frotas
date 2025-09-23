@@ -6,6 +6,11 @@ import os
 import sys
 from pathlib import Path
 
+# Configure environment for standalone mode
+os.environ.setdefault('API_BASE', 'disabled')
+os.environ.setdefault('FLASK_ENV', 'production')
+os.environ.setdefault('FLASK_DEBUG', 'False')
+
 # Add flask_dashboard to Python path
 dashboard_dir = Path(__file__).parent / "flask_dashboard"
 sys.path.insert(0, str(dashboard_dir))
@@ -22,6 +27,7 @@ def start_server():
         app = create_app()
 
         print("[OK] Flask app imported successfully from flask_dashboard")
+        print(f"[INFO] API_BASE configured as: {os.getenv('API_BASE')}")
 
         # Get port from environment (Railway sets PORT)
         port = int(os.getenv("PORT", 8050))
