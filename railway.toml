@@ -1,6 +1,5 @@
 [build]
 builder = "dockerfile"
-dockerfilePath = "Dockerfile.dashboard"
 
 [deploy]
 startCommand = "echo 'Deploy configured per service'"
