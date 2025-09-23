@@ -35,5 +35,5 @@ USER appuser
 # Expose port (Railway will set PORT at runtime)
 EXPOSE 8000
 
-# Start command with container test
-CMD ["python", "test_container.py"]
+# Start command with Flask Dashboard
+CMD ["python", "run.py"]
