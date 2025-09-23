@@ -30,5 +30,5 @@ USER appuser
 # Expose port (Railway will set PORT environment variable)
 EXPOSE $PORT
 
-# Start command with gunicorn for production
-CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT:-8000} --workers 2 --timeout 120 run:app"]
+# Start command with Flask development server for debugging
+CMD ["sh", "-c", "python run.py"]
