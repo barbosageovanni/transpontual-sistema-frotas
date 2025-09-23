@@ -4,7 +4,7 @@
 Entry point do Flask Dashboard
 """
 import os
-# Importar diretamente do dashboard principal (sem confusão)
+# Importar diretamente do dashboard principal
 from app.dashboard import create_app
 
 app = create_app()
