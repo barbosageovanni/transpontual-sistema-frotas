@@ -30,5 +30,5 @@ USER appuser
 # Expose port (Railway will set PORT environment variable)
 EXPOSE $PORT
 
-# Start command with Flask development server for debugging
-CMD ["sh", "-c", "python run.py"]
+# Start command with simple Flask app for testing
+CMD ["sh", "-c", "python app_simple.py"]
