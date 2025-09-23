@@ -24,5 +24,5 @@ RUN mkdir -p /app/uploads
 # Expose port (Railway will set PORT environment variable at runtime)
 EXPOSE 8000
 
-# Start command using our main.py entry point
-CMD ["python", "main.py"]
+# Start command - test basic functionality first
+CMD ["ls", "-la", "/app"]
