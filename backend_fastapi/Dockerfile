@@ -1,28 +1,37 @@
+# Use Python 3.11 slim image
 FROM python:3.11-slim
 
-# Force cache bust
-RUN echo "Cache bust: $(date)" > /tmp/cachebust
-
+# Set working directory
 WORKDIR /app
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     postgresql-client \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements and install Python dependencies
+# Copy and install Python dependencies
 COPY requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
-COPY . /app
-RUN ls -la /app
+COPY . .
 
 # Create uploads directory
-RUN mkdir -p /app/uploads
+RUN mkdir -p uploads
 
-# Expose port (Railway will set PORT environment variable at runtime)
+# Set environment variables
+ENV PYTHONPATH=/app
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONIOENCODING=utf-8
+
+# Expose port
 EXPOSE 8000
 
-# Start command - test basic functionality first
-CMD ["ls", "-la", "/app"]
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:8000/health || exit 1
+
+# Run the application
+CMD ["python", "main.py"]
