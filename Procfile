@@ -1,1 +1,1 @@
-web: python backend_fastapi/server.py
+web: python server.py
