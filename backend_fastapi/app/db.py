@@ -9,10 +9,10 @@ try:
 except Exception:
     pass
 
-# Use o driver psycopg (psycopg3). Se não houver env, cai no local.
+# Use o driver psycopg2. Se não houver env, cai no local.
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql+psycopg://postgres:postgres@localhost:5432/frotadb"
+    "postgresql+psycopg2://postgres:postgres@localhost:5432/frotadb"
 )
 
 engine = create_engine(DATABASE_URL, pool_pre_ping=True)
