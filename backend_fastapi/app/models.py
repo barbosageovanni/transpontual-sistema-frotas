@@ -218,21 +218,21 @@ class UsuarioPermissao(Base):
     __tablename__ = "usuario_permissoes"
 
     id = Column(Integer, primary_key=True)
-    usuario_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
+    usuario_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     modulo = Column(String(50), nullable=False)  # 'veiculos', 'financeiro', 'fiscal', etc.
     acao = Column(String(20), nullable=False)    # 'visualizar', 'criar', 'editar', 'excluir'
     permitido = Column(Boolean, default=True, nullable=False)
     criado_em = Column(DateTime, default=func.now(), nullable=False)
 
-    # Relacionamentos
-    usuario = relationship("Usuario")
+    # Relacionamentos - removido temporariamente para evitar erros
+    # usuario = relationship("Usuario")
 
 class SessaoUsuario(Base):
     """Modelo para controle de sessões ativas"""
     __tablename__ = "sessoes_usuarios"
 
     id = Column(Integer, primary_key=True)
-    usuario_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
+    usuario_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     token_sessao = Column(String(255), unique=True, nullable=False)
     ip_acesso = Column(String(45), nullable=False)
     user_agent = Column(Text)
@@ -248,7 +248,7 @@ class LogAcesso(Base):
     __tablename__ = "logs_acesso"
 
     id = Column(Integer, primary_key=True)
-    usuario_id = Column(Integer, ForeignKey("usuarios.id"), nullable=True)
+    usuario_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     ip_acesso = Column(String(45), nullable=False)
     user_agent = Column(Text)
     url_acessada = Column(String(500))
@@ -278,6 +278,6 @@ class UsuarioPerfil(Base):
     """Tabela de associação entre usuários e perfis"""
     __tablename__ = "usuario_perfis"
 
-    usuario_id = Column(Integer, ForeignKey("usuarios.id"), primary_key=True)
+    usuario_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
     perfil_id = Column(Integer, ForeignKey("perfis_acesso.id"), primary_key=True)
     atribuido_em = Column(DateTime, default=func.now(), nullable=False)
