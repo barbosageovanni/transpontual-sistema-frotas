@@ -10,12 +10,12 @@ from app.core.database import Base
 
 class Usuario(Base):
     """Modelo para usuários do sistema"""
-    __tablename__ = "usuarios"
+    __tablename__ = "users"
     
     id = Column(Integer, primary_key=True)
-    nome = Column(String(200), nullable=False)
+    nome_completo = Column(String(200), nullable=True)
     email = Column(String(255), unique=True, index=True, nullable=False)
-    senha_hash = Column(Text, nullable=False)
+    password_hash = Column(Text, nullable=True)
     papel = Column(String(20), nullable=False)
     ativo = Column(Boolean, default=True, nullable=False)
     criado_em = Column(DateTime, default=func.now(), nullable=False)

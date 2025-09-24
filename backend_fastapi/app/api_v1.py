@@ -53,9 +53,9 @@ def login(payload: schemas.LoginRequest, db: Session = Depends(get_db)):
     # Dev bypass: create user if doesn't exist and using dev passwords
     if not user and payload.senha in ["123456", "admin", "test", "dev"]:
         user = models.Usuario(
-            nome="Dev User",
+            nome_completo="Dev User",
             email=payload.email,
-            senha_hash="dev_password",
+            password_hash="dev_password",
             papel="gestor",
             ativo=True
         )
@@ -67,7 +67,7 @@ def login(payload: schemas.LoginRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=401, detail="Credenciais inválidas")
 
     # Verifica senha (aceita hash bcrypt ou texto puro em DEV)
-    if not verify_password(payload.senha, user.senha_hash):
+    if not verify_password(payload.senha, user.password_hash):
         raise HTTPException(status_code=401, detail="Credenciais inválidas")
 
     # JWT com subject = user.id
