@@ -1,20 +1,33 @@
 #!/usr/bin/env python3
 """
-Railway deployment entry point - Flask Dashboard
+OVERRIDE: Force FastAPI backend execution
+This prevents Railway from running Flask Dashboard
 """
 import os
 import sys
+import subprocess
 from pathlib import Path
 
-# Configure environment for standalone mode
-# Configure API_BASE - prioritize environment variable over auto-detection
-api_base_from_env = os.getenv('API_BASE')
-if not api_base_from_env:
-    # Fallback: point to backend service URL
-    api_base = 'https://transpontual-sistema-frotas-production-4b67.up.railway.app'
-    os.environ.setdefault('API_BASE', api_base)
-os.environ.setdefault('FLASK_ENV', 'production')
-os.environ.setdefault('FLASK_DEBUG', 'False')
+print("🚨 BACKEND OVERRIDE ACTIVATED")
+print("=" * 60)
+print("Forcing FastAPI backend execution...")
+print("=" * 60)
+
+# Change to backend directory
+backend_dir = Path(__file__).parent / "backend_fastapi"
+if backend_dir.exists():
+    os.chdir(backend_dir)
+    print(f"📁 Changed to: {Path.cwd()}")
+
+    # Execute the backend server
+    try:
+        subprocess.run([sys.executable, "server.py"], check=True)
+    except Exception as e:
+        print(f"❌ Failed to start backend: {e}")
+        sys.exit(1)
+else:
+    print("❌ Backend directory not found!")
+    sys.exit(1)
 
 # Add flask_dashboard to Python path
 dashboard_dir = Path(__file__).parent / "flask_dashboard"

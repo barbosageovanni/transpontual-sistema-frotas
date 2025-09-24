@@ -1,1 +1,1 @@
-web: python server.py
+web: cd backend_fastapi && python server.py
