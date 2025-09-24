@@ -109,32 +109,15 @@ async def root():
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint that's always responsive"""
-    result = {"status": "healthy", "api": "online", "timestamp": datetime.now().isoformat()}
-
-    # Test database connection with timeout
-    try:
-        async def test_db():
-            db = SessionLocal()
-            try:
-                db.execute(text("SELECT 1"))
-                db.close()
-                return True
-            except Exception:
-                db.close()
-                return False
-
-        # Use asyncio timeout for DB test
-        db_ok = await asyncio.wait_for(asyncio.to_thread(test_db), timeout=5.0)
-        result["database"] = "connected" if db_ok else "disconnected"
-
-    except asyncio.TimeoutError:
-        result["database"] = "timeout"
-    except Exception as e:
-        result["database"] = f"error: {str(e)[:100]}"
-
-    # Return 200 OK even if DB is having issues
-    return result
+    """Health check endpoint that's always responsive for Railway deployment"""
+    # Always return 200 OK with basic status - don't test DB in health check
+    # This prevents health check failures during startup when DB might not be ready
+    return {
+        "status": "healthy",
+        "api": "online",
+        "timestamp": datetime.now().isoformat(),
+        "service": "transpontual-fleet-api"
+    }
 
 
 # Compatibility endpoints for Flask dashboard (without /api/v1 prefix)

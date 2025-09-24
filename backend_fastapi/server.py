@@ -25,14 +25,17 @@ def start_server():
         host = "0.0.0.0"
 
         print(f"🚀 Starting server on {host}:{port}")
+        print(f"🩺 Health check available at: http://{host}:{port}/health")
 
-        # Configure uvicorn
+        # Configure uvicorn with health check optimization
         uvicorn.run(
             app,
             host=host,
             port=port,
             log_level="info",
-            access_log=True
+            access_log=True,
+            timeout_keep_alive=5,
+            timeout_graceful_shutdown=10
         )
 
     except ImportError as e:
