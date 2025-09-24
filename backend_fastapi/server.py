@@ -6,9 +6,13 @@ import os
 import sys
 from pathlib import Path
 
-# Add current directory to Python path
+# Add backend_fastapi directory to Python path
 current_dir = Path(__file__).parent
 sys.path.insert(0, str(current_dir))
+
+# Also add the parent directory (project root) to handle imports
+project_root = current_dir.parent
+sys.path.insert(0, str(project_root))
 
 def start_server():
     """Start the FastAPI server"""
