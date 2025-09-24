@@ -33,8 +33,8 @@ class Usuario(Base):
     tentativas_login = Column(Integer, default=0)
     bloqueado_ate = Column(DateTime, nullable=True)
 
-    # Relacionamentos
-    motorista = relationship("Motorista", back_populates="usuario", uselist=False)
+    # Relacionamentos - temporariamente removido para resolver erro de foreign key
+    # motorista = relationship("Motorista", back_populates="usuario", uselist=False)
 
 class Veiculo(Base):
     """Modelo para veículos da frota"""
