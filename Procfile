@@ -1,1 +1,1 @@
-web: python server.py
+web: python app_launcher.py
