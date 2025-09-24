@@ -7,16 +7,12 @@ import sys
 from pathlib import Path
 
 # Configure environment for standalone mode
-# Point API_BASE to self since Flask has API endpoints built-in
-railway_url = os.getenv('RAILWAY_PUBLIC_DOMAIN')
-if railway_url:
-    api_base = f'https://{railway_url}'
-else:
-    # Fallback para local ou usar localhost
-    port = int(os.getenv("PORT", 8050))
-    api_base = f'http://localhost:{port}'
-
-os.environ.setdefault('API_BASE', api_base)
+# Configure API_BASE - prioritize environment variable over auto-detection
+api_base_from_env = os.getenv('API_BASE')
+if not api_base_from_env:
+    # Fallback: point to backend service URL
+    api_base = 'https://transpontual-sistema-frotas-production-4b67.up.railway.app'
+    os.environ.setdefault('API_BASE', api_base)
 os.environ.setdefault('FLASK_ENV', 'production')
 os.environ.setdefault('FLASK_DEBUG', 'False')
 
