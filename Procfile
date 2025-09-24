@@ -1,1 +1,1 @@
-web: cd backend_fastapi && python server.py
+web: bash start.sh
