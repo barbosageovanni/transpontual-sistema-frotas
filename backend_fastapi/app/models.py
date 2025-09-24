@@ -66,12 +66,12 @@ class Motorista(Base):
     categoria = Column(String(5))
     validade_cnh = Column(DateTime)
     observacoes = Column(Text)
-    usuario_id = Column(Integer, ForeignKey("usuarios.id"))
+    usuario_id = Column(Integer, ForeignKey("users.id"))
     ativo = Column(Boolean, default=True, nullable=False)
     criado_em = Column(DateTime, default=func.now(), nullable=False)
     
-    # Relacionamentos
-    usuario = relationship("Usuario", back_populates="motorista")
+    # Relacionamentos - removido temporariamente para evitar erros
+    # usuario = relationship("Usuario", back_populates="motorista")
     checklists = relationship("Checklist", back_populates="motorista")
 
 class ChecklistModelo(Base):

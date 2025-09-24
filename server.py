@@ -6,7 +6,7 @@ import os
 import sys
 from pathlib import Path
 
-print("🔧 FORCED BACKEND STARTUP - FASTAPI ONLY!")
+print("FORCED BACKEND STARTUP - FASTAPI ONLY!")
 print("=" * 60)
 
 def start_server():
@@ -19,7 +19,7 @@ def start_server():
 
         sys.path.insert(0, str(backend_dir))
         os.chdir(backend_dir)
-        print(f"📁 Working directory: {Path.cwd()}")
+        print(f"Working directory: {Path.cwd()}")
 
         # Import FastAPI app and uvicorn
         from app.main import app
@@ -28,15 +28,15 @@ def start_server():
         port = int(os.getenv("PORT", 8000))
         host = "0.0.0.0"
 
-        print("✅ FastAPI app imported successfully")
-        print(f"🚀 Starting FORCED FastAPI Backend on {host}:{port}")
-        print(f"📖 API docs at: http://{host}:{port}/docs")
+        print("FastAPI app imported successfully")
+        print(f"Starting FORCED FastAPI Backend on {host}:{port}")
+        print(f"API docs at: http://{host}:{port}/docs")
 
         # Start FastAPI
         uvicorn.run(app, host=host, port=port, log_level="info")
 
     except Exception as e:
-        print(f"❌ Backend startup failed: {e}")
+        print(f"Backend startup failed: {e}")
         import traceback
         traceback.print_exc()
         sys.exit(1)
