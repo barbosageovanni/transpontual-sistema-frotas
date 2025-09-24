@@ -1,0 +1,2 @@
+web: python start_frontend.py
+release: python -c "print('Frontend deployment - no migrations needed')"

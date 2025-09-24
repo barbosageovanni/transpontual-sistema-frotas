@@ -1,38 +1,64 @@
 #!/usr/bin/env python3
 """
-OVERRIDE: Force FastAPI backend execution
-This prevents Railway from running Flask Dashboard
+Railway deployment entry point - Flask Dashboard Frontend
 """
 import os
 import sys
-import subprocess
 from pathlib import Path
 
-print("🚨 BACKEND OVERRIDE ACTIVATED")
-print("=" * 60)
-print("Forcing FastAPI backend execution...")
-print("=" * 60)
+# Configure environment for frontend
+api_base_from_env = os.getenv('API_BASE')
+if not api_base_from_env:
+    # Point to backend service
+    api_base = 'https://web-production-256fe.up.railway.app'
+    os.environ.setdefault('API_BASE', api_base)
 
-# Change to backend directory
-backend_dir = Path(__file__).parent / "backend_fastapi"
-if backend_dir.exists():
-    os.chdir(backend_dir)
-    print(f"📁 Changed to: {Path.cwd()}")
-
-    # Execute the backend server
-    try:
-        subprocess.run([sys.executable, "server.py"], check=True)
-    except Exception as e:
-        print(f"❌ Failed to start backend: {e}")
-        sys.exit(1)
-else:
-    print("❌ Backend directory not found!")
-    sys.exit(1)
+os.environ.setdefault('FLASK_ENV', 'production')
+os.environ.setdefault('FLASK_DEBUG', 'False')
 
 # Add flask_dashboard to Python path
 dashboard_dir = Path(__file__).parent / "flask_dashboard"
 sys.path.insert(0, str(dashboard_dir))
 sys.path.insert(0, str(Path(__file__).parent))
+
+def start_server():
+    """Start the Flask Dashboard server"""
+    try:
+        # Change to flask_dashboard directory for imports
+        os.chdir(dashboard_dir)
+
+        # Import the Flask app
+        from app.dashboard import create_app
+        app = create_app()
+
+        print("✅ Flask Dashboard imported successfully")
+        print(f"🔗 API_BASE configured as: {os.getenv('API_BASE')}")
+
+        # Get port from environment (Railway sets PORT)
+        port = int(os.getenv("PORT", 8050))
+        host = "0.0.0.0"
+        debug = os.getenv("FLASK_DEBUG", "False").lower() == "true"
+
+        print(f"🎨 Starting Flask Dashboard on {host}:{port}")
+        print(f"📁 Working directory: {os.getcwd()}")
+
+        # Start Flask app
+        app.run(
+            host=host,
+            port=port,
+            debug=debug
+        )
+
+    except ImportError as e:
+        print(f"❌ Failed to import Flask app: {e}")
+        sys.exit(1)
+
+    except Exception as e:
+        print(f"❌ Frontend startup failed: {e}")
+        sys.exit(1)
+
+if __name__ == "__main__":
+    start_server()
 
 def start_server():
     """Start the Flask Dashboard server"""
