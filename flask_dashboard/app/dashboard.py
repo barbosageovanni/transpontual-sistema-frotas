@@ -59,6 +59,10 @@ def create_app():
 
     # Configurações da aplicação
     api_base = os.getenv('API_BASE', 'http://localhost:8005')
+    
+    # Se API_BASE está desabilitada, usar modo standalone
+    if api_base == 'disabled':
+        api_base = None
     app.config['API_BASE_URL'] = api_base
     app.config['API_BASE'] = api_base
     app.config['API_LOGIN_EMAIL'] = os.getenv('API_LOGIN_EMAIL', 'admin@transpontual.com')
