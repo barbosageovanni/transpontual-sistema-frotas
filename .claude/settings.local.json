@@ -50,7 +50,9 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(docker build:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "WebFetch(domain:transpontual-sistema-frotas-production-6938.up.railway.app)",
+      "WebFetch(domain:transpontual-sistema-frotas-production-4b67.up.railway.app)"
     ],
     "deny": [],
     "ask": []

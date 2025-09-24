@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
 Entry point for Railway deployment with comprehensive debugging
+Updated for proper backend FastAPI deployment
 """
 import os
 import sys
