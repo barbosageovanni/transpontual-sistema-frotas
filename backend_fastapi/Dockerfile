@@ -31,4 +31,4 @@ ENV PYTHONUNBUFFERED=1
 EXPOSE 8000
 
 # Run application
-CMD ["python", "main.py"]
+CMD ["python", "server.py"]
