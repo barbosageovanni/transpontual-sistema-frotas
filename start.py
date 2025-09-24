@@ -10,6 +10,18 @@ from pathlib import Path
 def detect_and_start():
     """Auto-detect which service to start based on multiple factors"""
 
+    print("🔍 SMART SERVICE DETECTION")
+    print("=" * 50)
+
+    # Debug: Print relevant environment variables
+    railway_env = os.getenv('RAILWAY_ENVIRONMENT', 'unknown')
+    railway_url = os.getenv('RAILWAY_STATIC_URL', 'unknown')
+    railway_service = os.getenv('RAILWAY_SERVICE_NAME', 'unknown')
+    print(f"Environment: {railway_env}")
+    print(f"URL: {railway_url}")
+    print(f"Service: {railway_service}")
+    print("=" * 50)
+
     # Method 1: Check environment variable
     service_type = os.getenv('SERVICE_TYPE', '').lower()
     if service_type:
@@ -50,6 +62,14 @@ def detect_and_start():
     railway_url = os.getenv('RAILWAY_STATIC_URL', '')
     if 'backend' in railway_url or 'api' in railway_url:
         print(f"🎯 Railway URL '{railway_url}' suggests backend")
+        start_backend()
+        return
+    elif 'production-6938' in railway_url:
+        print(f"🎯 Railway URL '{railway_url}' is production-6938 - FORCING FRONTEND")
+        start_frontend()
+        return
+    elif 'production-256fe' in railway_url:
+        print(f"🎯 Railway URL '{railway_url}' is production-256fe - FORCING BACKEND")
         start_backend()
         return
 
