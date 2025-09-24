@@ -1,5 +1,0 @@
-This file indicates this repository should run the Flask Dashboard frontend service.
-Service: Flask Dashboard Frontend
-Command: python start.py (auto-detects frontend)
-Port: Uses PORT environment variable
-Health: / endpoint

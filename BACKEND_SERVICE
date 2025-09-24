@@ -1,0 +1,5 @@
+This file indicates this repository should run the FastAPI backend service.
+Service: FastAPI Backend
+Command: python start.py (auto-detects backend)
+Port: Uses PORT environment variable
+Health: /health endpoint
