@@ -1,2 +1,2 @@
-web: python main.py
+web: python start_backend.py
 release: python -c "print('Release phase - no migrations needed')"
