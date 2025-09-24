@@ -1,116 +1,46 @@
 #!/usr/bin/env python3
 """
-Railway deployment entry point - Flask Dashboard Frontend
+Railway deployment entry point - FORCED FASTAPI BACKEND
 """
 import os
 import sys
 from pathlib import Path
 
-# Configure environment for frontend
-api_base_from_env = os.getenv('API_BASE')
-if not api_base_from_env:
-    # Point to backend service
-    api_base = 'https://web-production-256fe.up.railway.app'
-    os.environ.setdefault('API_BASE', api_base)
-
-os.environ.setdefault('FLASK_ENV', 'production')
-os.environ.setdefault('FLASK_DEBUG', 'False')
-
-# Add flask_dashboard to Python path
-dashboard_dir = Path(__file__).parent / "flask_dashboard"
-sys.path.insert(0, str(dashboard_dir))
-sys.path.insert(0, str(Path(__file__).parent))
+print("🔧 FORCED BACKEND STARTUP - FASTAPI ONLY!")
+print("=" * 60)
 
 def start_server():
-    """Start the Flask Dashboard server"""
+    """Start FASTAPI Backend - FORCED"""
     try:
-        # Change to flask_dashboard directory for imports
-        os.chdir(dashboard_dir)
+        # Change to backend directory
+        backend_dir = Path(__file__).parent / "backend_fastapi"
+        if not backend_dir.exists():
+            raise Exception("backend_fastapi directory not found")
 
-        # Import the Flask app
-        from app.dashboard import create_app
-        app = create_app()
+        sys.path.insert(0, str(backend_dir))
+        os.chdir(backend_dir)
+        print(f"📁 Working directory: {Path.cwd()}")
 
-        print("✅ Flask Dashboard imported successfully")
-        print(f"🔗 API_BASE configured as: {os.getenv('API_BASE')}")
+        # Import FastAPI app and uvicorn
+        from app.main import app
+        import uvicorn
 
-        # Get port from environment (Railway sets PORT)
-        port = int(os.getenv("PORT", 8050))
+        port = int(os.getenv("PORT", 8000))
         host = "0.0.0.0"
-        debug = os.getenv("FLASK_DEBUG", "False").lower() == "true"
 
-        print(f"🎨 Starting Flask Dashboard on {host}:{port}")
-        print(f"📁 Working directory: {os.getcwd()}")
+        print("✅ FastAPI app imported successfully")
+        print(f"🚀 Starting FORCED FastAPI Backend on {host}:{port}")
+        print(f"📖 API docs at: http://{host}:{port}/docs")
 
-        # Start Flask app
-        app.run(
-            host=host,
-            port=port,
-            debug=debug
-        )
-
-    except ImportError as e:
-        print(f"❌ Failed to import Flask app: {e}")
-        sys.exit(1)
+        # Start FastAPI
+        uvicorn.run(app, host=host, port=port, log_level="info")
 
     except Exception as e:
-        print(f"❌ Frontend startup failed: {e}")
-        sys.exit(1)
-
-if __name__ == "__main__":
-    start_server()
-
-def start_server():
-    """Start the Flask Dashboard server"""
-    try:
-        # Change to flask_dashboard directory for imports
-        os.chdir(dashboard_dir)
-
-        # Import the Flask app
-        from app.dashboard import create_app
-        app = create_app()
-
-        print("[OK] Flask app imported successfully from flask_dashboard")
-        print(f"[INFO] API_BASE configured as: {os.getenv('API_BASE')}")
-
-        # Get port from environment (Railway sets PORT)
-        port = int(os.getenv("PORT", 8050))
-        host = "0.0.0.0"
-        debug = os.getenv("FLASK_DEBUG", "False").lower() == "true"
-
-        print(f"[INFO] Starting Flask server on {host}:{port}")
-        print(f"[INFO] Working directory: {os.getcwd()}")
-        print(f"[INFO] Debug mode: {debug}")
-
-        # Start Flask app
-        app.run(
-            host=host,
-            port=port,
-            debug=debug
-        )
-
-    except ImportError as e:
-        print(f"[ERROR] Failed to import Flask app: {e}")
-        print(f"Current directory: {os.getcwd()}")
-        print(f"Python path: {sys.path}")
-        print("Files in current directory:")
-        for item in Path.cwd().iterdir():
-            print(f"  {item}")
-
-        print("\nFiles in flask_dashboard:")
-        if dashboard_dir.exists():
-            for item in dashboard_dir.iterdir():
-                print(f"  {item}")
-        else:
-            print("  flask_dashboard directory not found!")
-
-        sys.exit(1)
-
-    except Exception as e:
-        print(f"[ERROR] Server startup failed: {e}")
+        print(f"❌ Backend startup failed: {e}")
         import traceback
         traceback.print_exc()
         sys.exit(1)
 
 if __name__ == "__main__":
     start_server()
+
