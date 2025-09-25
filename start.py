@@ -10,7 +10,7 @@ from pathlib import Path
 def detect_and_start():
     """Auto-detect which service to start based on multiple factors"""
 
-    print("🔍 SMART SERVICE DETECTION")
+    print("SMART SERVICE DETECTION")
     print("=" * 50)
 
     # Debug: Print relevant environment variables
@@ -24,19 +24,26 @@ def detect_and_start():
 
     # Method 1: Check Railway URL FIRST (HIGHEST PRIORITY)
     railway_url = os.getenv('RAILWAY_STATIC_URL', '')
+    railway_service = os.getenv('RAILWAY_SERVICE_NAME', '').lower()
+
+    # ABSOLUTE PRIORITY: If this is production-6938, ONLY run Flask Dashboard
     if 'production-6938' in railway_url:
-        print(f"🎯 Railway URL '{railway_url}' is production-6938 - FORCING FRONTEND")
+        print(f"DETECTED FRONTEND SERVICE: {railway_url}")
+        print("FORCING FLASK DASHBOARD - NO FASTAPI ALLOWED!")
         start_frontend()
         return
+
+    # Backend service
     elif 'production-256fe' in railway_url:
-        print(f"🎯 Railway URL '{railway_url}' is production-256fe - FORCING BACKEND")
+        print(f"DETECTED BACKEND SERVICE: {railway_url}")
+        print("FORCING FASTAPI BACKEND - NO FLASK ALLOWED!")
         start_backend()
         return
 
     # Method 2: Check environment variable
     service_type = os.getenv('SERVICE_TYPE', '').lower()
     if service_type:
-        print(f"🎯 SERVICE_TYPE detected: {service_type}")
+        print(f"SERVICE_TYPE detected: {service_type}")
         if service_type == 'backend':
             start_backend()
             return
@@ -49,33 +56,33 @@ def detect_and_start():
     frontend_indicator = Path("FRONTEND_SERVICE")
 
     if backend_indicator.exists():
-        print("🎯 BACKEND_SERVICE file detected - Starting FastAPI")
+        print("BACKEND_SERVICE file detected - Starting FastAPI")
         start_backend()
         return
 
     if frontend_indicator.exists():
-        print("🎯 FRONTEND_SERVICE file detected - Starting Flask Dashboard")
+        print("FRONTEND_SERVICE file detected - Starting Flask Dashboard")
         start_frontend()
         return
 
     # Method 4: Check Railway service name pattern (fallback)
     service_name = os.getenv('RAILWAY_SERVICE_NAME', '').lower()
     if 'backend' in service_name or 'api' in service_name:
-        print(f"🎯 Railway service name '{service_name}' suggests backend")
+        print(f"Railway service name '{service_name}' suggests backend")
         start_backend()
         return
     elif 'frontend' in service_name or 'dashboard' in service_name:
-        print(f"🎯 Railway service name '{service_name}' suggests frontend")
+        print(f"Railway service name '{service_name}' suggests frontend")
         start_frontend()
         return
 
     # Default: Start backend (FastAPI)
-    print("🎯 No specific indicators found - defaulting to FastAPI backend")
+    print("No specific indicators found - defaulting to FastAPI backend")
     start_backend()
 
 def start_backend():
     """Start FastAPI Backend"""
-    print("🔧 STARTING FASTAPI BACKEND")
+    print("STARTING FASTAPI BACKEND")
     print("=" * 50)
 
     try:
@@ -106,37 +113,49 @@ def start_backend():
         sys.exit(1)
 
 def start_frontend():
-    """Start Flask Dashboard Frontend"""
-    print("🎨 STARTING FLASK DASHBOARD")
+    """Start Flask Dashboard Frontend - ABSOLUTELY NO FASTAPI"""
+    print("STARTING FLASK DASHBOARD FRONTEND")
+    print("THIS IS THE FRONTEND - NO FASTAPI SHOULD RUN")
     print("=" * 50)
 
     try:
-        # Configure API_BASE
+        # Configure API_BASE to point to the backend service
         api_base_from_env = os.getenv('API_BASE')
         if not api_base_from_env:
             api_base = 'https://web-production-256fe.up.railway.app'
-            os.environ.setdefault('API_BASE', api_base)
-            print(f"API_BASE set to: {api_base}")
+            os.environ['API_BASE'] = api_base
+            print(f"✅ API_BASE configured: {api_base}")
 
-        os.environ.setdefault('FLASK_ENV', 'production')
+        # Set Flask environment
+        os.environ['FLASK_ENV'] = 'production'
+        os.environ['FLASK_APP'] = 'run.py'
 
+        # Change to dashboard directory
         dashboard_dir = Path(__file__).parent / "flask_dashboard"
+        if not dashboard_dir.exists():
+            raise Exception(f"Flask dashboard directory not found: {dashboard_dir}")
+
         sys.path.insert(0, str(dashboard_dir))
         os.chdir(dashboard_dir)
+        print(f"✅ Working directory: {Path.cwd()}")
 
-        print(f"Working directory: {Path.cwd()}")
+        # Import Flask app directly
+        print("🔄 Importing Flask Dashboard...")
+        from run import app
+        print("✅ Flask Dashboard imported successfully")
 
-        from app.dashboard import create_app
-        app = create_app()
-
+        # Configure server
         port = int(os.getenv("PORT", 8050))
         host = "0.0.0.0"
         debug = os.getenv("FLASK_DEBUG", "False").lower() == "true"
 
-        print("Flask app imported successfully")
-        print(f"Starting Flask Dashboard on {host}:{port}")
-        print(f"This is the FRONTEND Dashboard")
+        print(f"Starting Flask Dashboard Frontend")
+        print(f"   Host: {host}:{port}")
+        print(f"   Debug: {debug}")
+        print(f"   Backend API: {os.getenv('API_BASE')}")
+        print("THIS IS THE DASHBOARD FRONTEND")
 
+        # Start Flask app
         app.run(host=host, port=port, debug=debug)
 
     except Exception as e:
