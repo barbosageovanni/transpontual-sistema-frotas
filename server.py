@@ -37,9 +37,39 @@ def start_flask_dashboard():
         dashboard_dir = Path(__file__).parent / "flask_dashboard"
         sys.path.insert(0, str(dashboard_dir))
 
-        # Import Flask app directly
-        from app.dashboard import create_app
-        app = create_app()
+        # Debug: Check what files exist
+        print(f"📁 Dashboard directory: {dashboard_dir}")
+        print(f"📁 Directory exists: {dashboard_dir.exists()}")
+
+        if dashboard_dir.exists():
+            print("📂 Files in flask_dashboard:")
+            for item in dashboard_dir.iterdir():
+                print(f"  {item.name}")
+
+            app_dir = dashboard_dir / "app"
+            if app_dir.exists():
+                print("📂 Files in flask_dashboard/app:")
+                for item in app_dir.iterdir():
+                    print(f"  {item.name}")
+
+        # Try simple Flask app first if dashboard.py doesn't exist
+        dashboard_file = dashboard_dir / "app" / "dashboard.py"
+        if dashboard_file.exists():
+            print("✅ dashboard.py found, importing...")
+            from app.dashboard import create_app
+            app = create_app()
+        else:
+            print("❌ dashboard.py not found, using simple Flask app...")
+            from flask import Flask, jsonify
+            app = Flask(__name__)
+
+            @app.route('/')
+            def home():
+                return jsonify({
+                    "message": "Transpontual API Proxy",
+                    "status": "running",
+                    "dashboard": "dashboard.py not found"
+                })
 
         # Configure API proxy (Flask Dashboard will proxy /api/* to FastAPI)
         port = int(os.getenv("PORT", 8080))
