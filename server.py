@@ -38,7 +38,7 @@ def start_flask_dashboard():
         sys.path.insert(0, str(dashboard_dir))
 
         # Import Flask app
-        from dashboard import create_app
+        from app.dashboard import create_app
         app = create_app()
 
         # Configure API proxy (Flask Dashboard will proxy /api/* to FastAPI)
