@@ -1,0 +1,16 @@
+# Ignore files that might cause Railway autodetect issues
+backend_fastapi/
+Dockerfile.backend*
+Procfile.backend
+requirements-backend.txt
+server.py
+*.bak
+
+# Only use flask_dashboard for frontend service
+__pycache__/
+*.pyc
+.env
+.git/
+node_modules/
+uploads/
+*.log

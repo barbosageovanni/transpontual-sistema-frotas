@@ -1,6 +1,7 @@
 [build]
 builder = "dockerfile"
 dockerfilePath = "flask_dashboard/Dockerfile"
+buildContext = "."
 
 [deploy]
-startCommand = "python run.py"
+startCommand = "cd flask_dashboard && python run.py"

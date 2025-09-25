@@ -30,5 +30,5 @@ USER appuser
 # Expose port (Railway will set PORT environment variable)
 EXPOSE 8050
 
-# Start command with container test
-CMD ["python", "test_container.py"]
+# Start Flask Dashboard directly
+CMD ["python", "run.py"]
