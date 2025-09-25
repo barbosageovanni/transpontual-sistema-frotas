@@ -32,7 +32,14 @@ def start_fastapi_backend():
         # Set Railway environment variables directly if not found
         if not os.getenv('DATABASE_URL'):
             print("⚠️ Setting DATABASE_URL from hardcoded value...")
-            os.environ['DATABASE_URL'] = "postgresql://postgres:Mariaana953%407334@db.lijtncazuwnbydeqtoyz.supabase.co:5432/postgres?sslmode=require"
+            # Try different connection approaches for Railway compatibility
+            db_options = [
+                "postgresql://postgres:Mariaana953%407334@db.lijtncazuwnbydeqtoyz.supabase.co:5432/postgres?sslmode=require",
+                "postgresql://postgres:Mariaana953%407334@aws-0-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require",
+                "postgresql://postgres.lijtncazuwnbydeqtoyz:Mariaana953%407334@aws-0-us-east-1.pooler.supabase.com:5432/postgres"
+            ]
+            os.environ['DATABASE_URL'] = db_options[0]  # Start with first option
+            os.environ['DATABASE_BACKUP_URLS'] = '|'.join(db_options[1:])  # Store alternatives
             os.environ['JWT_SECRET'] = "dev-jwt-secret-change-in-production"
             os.environ['ENV'] = "production"
 

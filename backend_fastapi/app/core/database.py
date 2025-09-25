@@ -9,22 +9,50 @@ from app.core.config import get_settings
 
 
 # Load database URL from settings (env/.env)
-DATABASE_URL: str = get_settings().DATABASE_URL
+import os
 
-# SQLAlchemy engine with improved timeout settings
+def get_database_url():
+    """Get database URL with fallback options for Railway"""
+    settings = get_settings()
+    primary_url = settings.DATABASE_URL
+
+    # Try alternative URLs if primary fails
+    backup_urls = os.getenv('DATABASE_BACKUP_URLS', '').split('|')
+
+    all_urls = [primary_url] + [url for url in backup_urls if url.strip()]
+
+    for url in all_urls:
+        if url.strip():
+            try:
+                print(f"🔄 Trying database connection: {url.split('@')[1].split('/')[0] if '@' in url else 'unknown'}")
+                test_engine = create_engine(url, connect_args={"connect_timeout": 5})
+                test_engine.connect()
+                print(f"✅ Database connection successful!")
+                return url
+            except Exception as e:
+                print(f"❌ Connection failed: {str(e)[:100]}...")
+                continue
+
+    print(f"⚠️ All database connections failed, using primary URL")
+    return primary_url
+
+DATABASE_URL: str = get_database_url()
+
+# SQLAlchemy engine with Railway optimized settings
 engine = create_engine(
     DATABASE_URL,
     pool_pre_ping=True,
     echo=False,
     future=True,
     connect_args={
-        "connect_timeout": 10,
-        "application_name": "transpontual_api"
-    } if "postgresql" in DATABASE_URL else {"timeout": 10},
-    pool_size=3,
-    max_overflow=5,
-    pool_recycle=1800,  # 30 minutes
-    pool_timeout=30,
+        "connect_timeout": 30,
+        "application_name": "transpontual_api_railway",
+        "sslmode": "require"
+    } if "postgresql" in DATABASE_URL else {"timeout": 30},
+    pool_size=2,
+    max_overflow=3,
+    pool_recycle=3600,  # 1 hour
+    pool_timeout=45,
 )
 
 # Session factory
