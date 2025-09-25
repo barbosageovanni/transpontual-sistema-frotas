@@ -37,7 +37,7 @@ def start_flask_dashboard():
         dashboard_dir = Path(__file__).parent / "flask_dashboard"
         sys.path.insert(0, str(dashboard_dir))
 
-        # Import Flask app
+        # Import Flask app (create_app is in app/dashboard.py)
         from app.dashboard import create_app
         app = create_app()
 
