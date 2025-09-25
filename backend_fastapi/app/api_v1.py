@@ -660,6 +660,15 @@ def checklist_stats_summary(db: Session = Depends(get_db)):
 @api_router.get("/checklist/stats/resumo")
 def checklist_stats_resumo(dias: int = 30, db: Session = Depends(get_db)):
     """Resumo de estatísticas de checklist (compatibilidade)"""
+    if not is_database_available() or db is None:
+        # Return demo stats for offline mode
+        return {
+            "total_checklists": 150,
+            "aprovados": 120,
+            "reprovados": 30,
+            "taxa_aprovacao": 80.0,
+            "offline_mode": True
+        }
     return checklist_stats_summary(db)
 
 @api_router.get("/metrics/top-itens-reprovados")

@@ -401,8 +401,14 @@ def create_app():
         else:
             alertas_manutencao = []
 
+        # Garantir que é uma lista válida
+        if not isinstance(alertas_manutencao, list):
+            alertas_manutencao = []
+
         alerts = []
-        for i, alerta in enumerate(alertas_manutencao[:8]):  # Limitar a 8 alertas
+        # Usar try/except como proteção adicional
+        try:
+            for i, alerta in enumerate(alertas_manutencao[:8]):  # Limitar a 8 alertas
             nivel = "danger" if alerta.get("status") == "vencida" else "warning"
 
             alerts.append({
@@ -451,6 +457,20 @@ def create_app():
                     "descricao": "Revisão Geral",
                     "data_hora": (now - timedelta(hours=5)).strftime("%d.%m %H:%M"),
                     "nivel": "danger"
+                }
+            ]
+
+        except Exception as e:
+            print(f"❌ Erro ao processar alertas: {e}")
+            # Usar alertas de exemplo em caso de erro
+            alerts = [
+                {
+                    "id": 1,
+                    "tipo": "Alerta de equipamento",
+                    "codigo_equipamento": "DEMO-001",
+                    "descricao": "Demonstração - Sistema em modo offline",
+                    "data_hora": now.strftime("%d.%m %H:%M"),
+                    "nivel": "warning"
                 }
             ]
 
