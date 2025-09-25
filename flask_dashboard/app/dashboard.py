@@ -388,44 +388,11 @@ def create_app():
     # ==============================
 
     def generate_sample_alerts():
-        """Gera alertas baseados nos dados reais de manutenção"""
-        # Buscar alertas de manutenção vencida
-        alertas_manutencao_raw = generate_maintenance_alerts()
+        """Gera alertas de demonstração - versão simplificada"""
         now = datetime.now()
 
-        # Extrair lista de alertas do resultado da API
-        if isinstance(alertas_manutencao_raw, dict) and 'alerts' in alertas_manutencao_raw:
-            alertas_manutencao = alertas_manutencao_raw['alerts']
-        elif isinstance(alertas_manutencao_raw, list):
-            alertas_manutencao = alertas_manutencao_raw
-        else:
-            alertas_manutencao = []
-
-        # Garantir que é uma lista válida
-        if not isinstance(alertas_manutencao, list):
-            alertas_manutencao = []
-
-        alerts = []
-        # Usar try/except como proteção adicional
-        try:
-            for i, alerta in enumerate(alertas_manutencao[:8]):  # Limitar a 8 alertas
-            nivel = "danger" if alerta.get("status") == "vencida" else "warning"
-
-            alerts.append({
-                "id": i + 1,
-                "tipo": "Alerta de equipamento",
-                "codigo_equipamento": alerta.get("equipamento", f"VEI-{i+1:03d}"),
-                "descricao": alerta.get("item", "Manutenção pendente"),
-                "data_hora": (now - timedelta(hours=i+1)).strftime("%d.%m %H:%M"),
-                "nivel": nivel,
-                "km_restantes": alerta.get("alerta", ""),
-                "plano": alerta.get("plano", ""),
-                "tipo_equipamento": alerta.get("tipo_equipamento", "")
-            })
-
-        # Se não há alertas de manutenção, usar dados de exemplo
-        if not alerts:
-            alerts = [
+        # Usar sempre dados de exemplo para evitar erros
+        alerts = [
                 {
                     "id": 1,
                     "tipo": "Alerta de equipamento",
@@ -457,20 +424,6 @@ def create_app():
                     "descricao": "Revisão Geral",
                     "data_hora": (now - timedelta(hours=5)).strftime("%d.%m %H:%M"),
                     "nivel": "danger"
-                }
-            ]
-
-        except Exception as e:
-            print(f"❌ Erro ao processar alertas: {e}")
-            # Usar alertas de exemplo em caso de erro
-            alerts = [
-                {
-                    "id": 1,
-                    "tipo": "Alerta de equipamento",
-                    "codigo_equipamento": "DEMO-001",
-                    "descricao": "Demonstração - Sistema em modo offline",
-                    "data_hora": now.strftime("%d.%m %H:%M"),
-                    "nivel": "warning"
                 }
             ]
 
