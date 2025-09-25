@@ -177,10 +177,43 @@ def get_user(user_id: int, db: Session = Depends(get_db), current_user: models.U
 # Veículos
 @api_router.get("/vehicles", response_model=List[schemas.VeiculoResponse])
 def list_vehicles(db: Session = Depends(get_db)):
+    if not is_database_available() or db is None:
+        # Return demo vehicles for offline mode
+        return [
+            {
+                "id": 1,
+                "placa": "ABC-1234",
+                "modelo": "Caminhão Demo",
+                "ano": 2020,
+                "km_atual": 50000,
+                "status": "ativo",
+                "combustivel": "diesel"
+            },
+            {
+                "id": 2,
+                "placa": "DEF-5678",
+                "modelo": "Van Demo",
+                "ano": 2021,
+                "km_atual": 30000,
+                "status": "ativo",
+                "combustivel": "flex"
+            }
+        ]
     return db.query(models.Veiculo).all()
 
 @api_router.get("/vehicles/{vehicle_id}", response_model=schemas.VeiculoResponse)
 def get_vehicle(vehicle_id: int, db: Session = Depends(get_db)):
+    if not is_database_available() or db is None:
+        # Return demo vehicle for offline mode
+        return {
+            "id": vehicle_id,
+            "placa": f"DEMO-{vehicle_id:04d}",
+            "modelo": "Veículo Demo",
+            "ano": 2020,
+            "km_atual": 50000,
+            "status": "ativo",
+            "combustivel": "diesel"
+        }
     veiculo = db.query(models.Veiculo).filter(models.Veiculo.id == vehicle_id).first()
     if not veiculo:
         raise HTTPException(status_code=404, detail="Veículo não encontrado")
@@ -1711,3 +1744,36 @@ def initialize_default_profiles(
         return {"message": "Perfis padrão criados com sucesso"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao criar perfis: {str(e)}")
+
+# Maintenance alerts endpoint
+@api_router.get("/maintenance/alerts-data")
+def get_maintenance_alerts(db: Session = Depends(get_db)):
+    if not is_database_available() or db is None:
+        # Return demo maintenance alerts for offline mode
+        return {
+            "alerts": [
+                {
+                    "id": 1,
+                    "veiculo_id": 1,
+                    "veiculo_placa": "ABC-1234",
+                    "tipo": "Revisão",
+                    "descricao": "Revisão de 50.000km",
+                    "vencimento": "2024-01-15",
+                    "prioridade": "alta"
+                },
+                {
+                    "id": 2,
+                    "veiculo_id": 2,
+                    "veiculo_placa": "DEF-5678",
+                    "tipo": "Troca de óleo",
+                    "descricao": "Troca de óleo do motor",
+                    "vencimento": "2024-01-20",
+                    "prioridade": "media"
+                }
+            ],
+            "total": 2,
+            "offline_mode": True
+        }
+
+    # Normal database operations would go here
+    return {"alerts": [], "total": 0, "offline_mode": False}
