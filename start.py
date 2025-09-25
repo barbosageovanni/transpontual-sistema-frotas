@@ -22,7 +22,18 @@ def detect_and_start():
     print(f"Service: {railway_service}")
     print("=" * 50)
 
-    # Method 1: Check environment variable
+    # Method 1: Check Railway URL FIRST (HIGHEST PRIORITY)
+    railway_url = os.getenv('RAILWAY_STATIC_URL', '')
+    if 'production-6938' in railway_url:
+        print(f"🎯 Railway URL '{railway_url}' is production-6938 - FORCING FRONTEND")
+        start_frontend()
+        return
+    elif 'production-256fe' in railway_url:
+        print(f"🎯 Railway URL '{railway_url}' is production-256fe - FORCING BACKEND")
+        start_backend()
+        return
+
+    # Method 2: Check environment variable
     service_type = os.getenv('SERVICE_TYPE', '').lower()
     if service_type:
         print(f"🎯 SERVICE_TYPE detected: {service_type}")
@@ -33,7 +44,7 @@ def detect_and_start():
             start_frontend()
             return
 
-    # Method 2: Check for service indicator files
+    # Method 3: Check for service indicator files (LOWER PRIORITY)
     backend_indicator = Path("BACKEND_SERVICE")
     frontend_indicator = Path("FRONTEND_SERVICE")
 
@@ -47,7 +58,7 @@ def detect_and_start():
         start_frontend()
         return
 
-    # Method 3: Check Railway service name pattern
+    # Method 4: Check Railway service name pattern (fallback)
     service_name = os.getenv('RAILWAY_SERVICE_NAME', '').lower()
     if 'backend' in service_name or 'api' in service_name:
         print(f"🎯 Railway service name '{service_name}' suggests backend")
@@ -56,21 +67,6 @@ def detect_and_start():
     elif 'frontend' in service_name or 'dashboard' in service_name:
         print(f"🎯 Railway service name '{service_name}' suggests frontend")
         start_frontend()
-        return
-
-    # Method 4: Check URL pattern
-    railway_url = os.getenv('RAILWAY_STATIC_URL', '')
-    if 'backend' in railway_url or 'api' in railway_url:
-        print(f"🎯 Railway URL '{railway_url}' suggests backend")
-        start_backend()
-        return
-    elif 'production-6938' in railway_url:
-        print(f"🎯 Railway URL '{railway_url}' is production-6938 - FORCING FRONTEND")
-        start_frontend()
-        return
-    elif 'production-256fe' in railway_url:
-        print(f"🎯 Railway URL '{railway_url}' is production-256fe - FORCING BACKEND")
-        start_backend()
         return
 
     # Default: Start backend (FastAPI)
