@@ -1,5 +1,6 @@
 [build]
 builder = "dockerfile"
+dockerfilePath = "flask_dashboard/Dockerfile"
 
 [deploy]
-startCommand = "sh -c 'python start_railway_frontend.py'"
+startCommand = "python run.py"
