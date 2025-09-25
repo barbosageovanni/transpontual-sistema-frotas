@@ -52,12 +52,19 @@ def start_flask_dashboard():
                 for item in app_dir.iterdir():
                     print(f"  {item.name}")
 
-        # Try simple Flask app first if dashboard.py doesn't exist
+        # Try importing dashboard
         dashboard_file = dashboard_dir / "app" / "dashboard.py"
         if dashboard_file.exists():
             print("✅ dashboard.py found, importing...")
-            from app.dashboard import create_app
-            app = create_app()
+
+            # Use importlib for dynamic import
+            import importlib.util
+            spec = importlib.util.spec_from_file_location("dashboard", dashboard_file)
+            dashboard_module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(dashboard_module)
+
+            app = dashboard_module.create_app()
+            print("✅ Dashboard app created successfully!")
         else:
             print("❌ dashboard.py not found, using simple Flask app...")
             from flask import Flask, jsonify
