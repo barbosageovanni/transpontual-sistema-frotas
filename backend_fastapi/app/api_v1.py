@@ -53,14 +53,26 @@ def login(payload: schemas.LoginRequest, db: Session = Depends(get_db)):
         print("⚠️ Database offline - using demo login")
         # Demo login for offline mode
         if payload.email == "admin@transpontual.com" and payload.senha in ["admin123", "123456", "admin"]:
-            # Create demo user object
-            from app.schemas import UsuarioResponse
+            # Create demo user object matching UsuarioResponse schema
+            from datetime import datetime
             demo_user = {
                 "id": 1,
-                "nome_completo": "Admin Demo",
+                "nome": "Admin Demo",  # Changed from nome_completo to nome
                 "email": "admin@transpontual.com",
                 "papel": "gestor",
-                "ativo": True
+                "ativo": True,
+                "criado_em": datetime.now(),  # Added required field
+                "ultimo_acesso": None,
+                "ultimo_ip": None,
+                "tentativas_login": 0,
+                "bloqueado_ate": None,
+                "horario_inicio": None,
+                "horario_fim": None,
+                "dias_semana": None,
+                "ips_permitidos": None,
+                "localizacao_restrita": False,
+                "data_validade": None,
+                "max_sessoes": 1
             }
             token = create_access_token({"sub": "1", "email": payload.email})
             return {
