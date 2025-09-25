@@ -3,4 +3,4 @@ builder = "dockerfile"
 dockerfilePath = "Dockerfile"
 
 [deploy]
-startCommand = "sh -c 'gunicorn --bind 0.0.0.0:${PORT:-8050} --workers 2 --timeout 120 run:app'"
+startCommand = "python run.py"
