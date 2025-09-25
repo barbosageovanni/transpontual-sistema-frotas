@@ -65,6 +65,29 @@ def start_flask_dashboard():
 
             app = dashboard_module.create_app()
             print("✅ Dashboard app created successfully!")
+
+            # Check templates directory
+            templates_dir = dashboard_dir / "app" / "templates"
+            if templates_dir.exists():
+                print(f"📂 Templates directory exists: {templates_dir}")
+                errors_dir = templates_dir / "errors"
+                if errors_dir.exists():
+                    print("📂 Errors templates directory exists")
+                    for template in errors_dir.glob("*.html"):
+                        print(f"  📄 {template.name}")
+                else:
+                    print("❌ Errors templates directory missing")
+            else:
+                print("❌ Templates directory missing")
+
+            # Override error handlers with simple responses
+            @app.errorhandler(404)
+            def handle_404(e):
+                return {"error": "Not Found", "status": 404}, 404
+
+            @app.errorhandler(500)
+            def handle_500(e):
+                return {"error": "Internal Server Error", "status": 500}, 500
         else:
             print("❌ dashboard.py not found, using simple Flask app...")
             from flask import Flask, jsonify
