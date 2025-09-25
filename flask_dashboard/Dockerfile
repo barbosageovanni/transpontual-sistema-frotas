@@ -28,7 +28,7 @@ RUN chown -R appuser:appuser /app
 USER appuser
 
 # Expose port (Railway will set PORT environment variable)
-EXPOSE $PORT
+EXPOSE 8050
 
 # Start command with container test
 CMD ["python", "test_container.py"]
