@@ -1,7 +1,5 @@
 [build]
-builder = "dockerfile"
-dockerfilePath = "flask_dashboard/Dockerfile"
-buildContext = "."
+builder = "nixpacks"
 
 [deploy]
-startCommand = "cd flask_dashboard && python run.py"
+startCommand = "python server.py"

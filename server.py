@@ -1,46 +1,72 @@
 #!/usr/bin/env python3
 """
-Railway deployment entry point - FORCED FASTAPI BACKEND
+Transpontual - Unified Server (Dashboard + API)
+Runs Flask Dashboard with FastAPI proxy for API routes
 """
 import os
 import sys
 from pathlib import Path
+import threading
+import time
 
-print("FORCED BACKEND STARTUP - FASTAPI ONLY!")
-print("=" * 60)
-
-def start_server():
-    """Start FASTAPI Backend - FORCED"""
+def start_fastapi_backend():
+    """Start FastAPI backend in background"""
     try:
-        # Change to backend directory
+        print("🔌 Starting FastAPI Backend...")
+
+        # Add backend to path
         backend_dir = Path(__file__).parent / "backend_fastapi"
-        if not backend_dir.exists():
-            raise Exception("backend_fastapi directory not found")
-
         sys.path.insert(0, str(backend_dir))
-        os.chdir(backend_dir)
-        print(f"Working directory: {Path.cwd()}")
 
-        # Import FastAPI app and uvicorn
+        # Import and start FastAPI
         from app.main import app
         import uvicorn
 
-        port = int(os.getenv("PORT", 8000))
-        host = "0.0.0.0"
-
-        print("FastAPI app imported successfully")
-        print(f"Starting FORCED FastAPI Backend on {host}:{port}")
-        print(f"API docs at: http://{host}:{port}/docs")
-
-        # Start FastAPI
-        uvicorn.run(app, host=host, port=port, log_level="info")
+        # Run FastAPI on internal port
+        uvicorn.run(app, host="127.0.0.1", port=8005, log_level="info")
 
     except Exception as e:
-        print(f"Backend startup failed: {e}")
+        print(f"❌ FastAPI Backend failed: {e}")
+
+def start_flask_dashboard():
+    """Start Flask Dashboard with API proxy"""
+    try:
+        print("🌐 Starting Flask Dashboard...")
+
+        # Add dashboard to path
+        dashboard_dir = Path(__file__).parent / "flask_dashboard"
+        sys.path.insert(0, str(dashboard_dir))
+
+        # Import Flask app
+        from dashboard import create_app
+        app = create_app()
+
+        # Configure API proxy (Flask Dashboard will proxy /api/* to FastAPI)
+        port = int(os.getenv("PORT", 8080))
+        host = "0.0.0.0"
+
+        print(f"🚀 Starting Unified Server on {host}:{port}")
+        print(f"📊 Dashboard: http://{host}:{port}/")
+        print(f"🔌 API: http://{host}:{port}/api/*")
+
+        # Start Flask Dashboard
+        app.run(host=host, port=port, debug=False)
+
+    except Exception as e:
+        print(f"❌ Flask Dashboard failed: {e}")
         import traceback
         traceback.print_exc()
-        sys.exit(1)
 
 if __name__ == "__main__":
-    start_server()
+    print("🚀 Transpontual Unified Server Starting...")
+
+    # Start FastAPI in background thread
+    api_thread = threading.Thread(target=start_fastapi_backend, daemon=True)
+    api_thread.start()
+
+    # Wait a moment for FastAPI to start
+    time.sleep(3)
+
+    # Start Flask Dashboard (main thread)
+    start_flask_dashboard()
 
