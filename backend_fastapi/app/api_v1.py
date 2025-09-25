@@ -636,6 +636,16 @@ def kpi_summary(db: Session = Depends(get_db)):
 # Checklist stats para testes
 @api_router.get("/checklist/stats/summary")
 def checklist_stats_summary(db: Session = Depends(get_db)):
+    if not is_database_available() or db is None:
+        # Return demo stats for offline mode
+        return {
+            "total_checklists": 150,
+            "aprovados": 120,
+            "reprovados": 30,
+            "taxa_aprovacao": 80.0,
+            "offline_mode": True
+        }
+
     total = db.query(models.Checklist).count()
     aprovados = db.query(models.Checklist).filter(models.Checklist.status == "aprovado").count()
     reprovados = db.query(models.Checklist).filter(models.Checklist.status == "reprovado").count()

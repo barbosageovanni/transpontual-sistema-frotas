@@ -390,8 +390,16 @@ def create_app():
     def generate_sample_alerts():
         """Gera alertas baseados nos dados reais de manutenção"""
         # Buscar alertas de manutenção vencida
-        alertas_manutencao = generate_maintenance_alerts()
+        alertas_manutencao_raw = generate_maintenance_alerts()
         now = datetime.now()
+
+        # Extrair lista de alertas do resultado da API
+        if isinstance(alertas_manutencao_raw, dict) and 'alerts' in alertas_manutencao_raw:
+            alertas_manutencao = alertas_manutencao_raw['alerts']
+        elif isinstance(alertas_manutencao_raw, list):
+            alertas_manutencao = alertas_manutencao_raw
+        else:
+            alertas_manutencao = []
 
         alerts = []
         for i, alerta in enumerate(alertas_manutencao[:8]):  # Limitar a 8 alertas
