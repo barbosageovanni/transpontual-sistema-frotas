@@ -44,7 +44,7 @@ def test_database_connection(url):
             test_value = result.scalar()
 
         connection_time = time.time() - start_time
-        print(f"✅ Connection successful in {connection_time:.2f}s (result: {test_value})")
+        print(f"SUCCESS: Connection successful in {connection_time:.2f}s (result: {test_value})")
 
         test_engine.dispose()
         return True
@@ -52,13 +52,13 @@ def test_database_connection(url):
     except Exception as e:
         error_msg = str(e)
         if "network is unreachable" in error_msg.lower():
-            print(f"❌ Network unreachable - Railway may be blocking external connections")
+            print(f"ERROR: Network unreachable - Railway may be blocking external connections")
         elif "connection timed out" in error_msg.lower():
-            print(f"❌ Connection timeout - host may be unreachable")
+            print(f"ERROR: Connection timeout - host may be unreachable")
         elif "authentication failed" in error_msg.lower():
-            print(f"❌ Authentication failed - check credentials")
+            print(f"ERROR: Authentication failed - check credentials")
         else:
-            print(f"❌ DB test failed: {error_msg[:100]}...")
+            print(f"ERROR: DB test failed: {error_msg[:100]}...")
         return False
 
 def get_working_database_url():
@@ -88,12 +88,12 @@ def get_working_database_url():
         if url and url.strip():
             print(f"🔄 Testing database: {url.split('@')[1].split('/')[0] if '@' in url else 'unknown'}")
             if test_database_connection(url):
-                print(f"✅ Database connection successful!")
+                print(f"SUCCESS: Database connection successful!")
                 DATABASE_URL = url
                 DATABASE_AVAILABLE = True
                 return url
 
-    print("❌ All database connections failed - running in offline mode")
+    print("ERROR: All database connections failed - running in offline mode")
     DATABASE_URL = settings.DATABASE_URL  # Fallback to original
     DATABASE_AVAILABLE = False
     return DATABASE_URL
@@ -143,7 +143,7 @@ def get_db():
     try:
         yield db
     except Exception as e:
-        print(f"❌ Database session error: {e}")
+        print(f"ERROR: Database session error: {e}")
         db.rollback()
         yield None
     finally:

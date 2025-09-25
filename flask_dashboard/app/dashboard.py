@@ -545,46 +545,80 @@ def create_app():
                 kpis_data['multas_pendentes'] = 0
                 kpis_data['multas_vencidas'] = 0
 
-        # Buscar dados para gráficos
-        top_itens_response = api_request('/api/v1/metrics/top-itens-reprovados', params={'dias': days})
-        if isinstance(top_itens_response, dict):
-            top_itens = top_itens_response.get('itens_reprovados', [])
-        elif isinstance(top_itens_response, list):
-            top_itens = top_itens_response
-        else:
-            top_itens = []
+            # Buscar dados para gráficos
+            logger.info("Buscando dados de top itens reprovados...")
+            try:
+                top_itens_response = api_request('/api/v1/metrics/top-itens-reprovados', params={'dias': days})
+                logger.info(f"Resposta top itens: {type(top_itens_response)} - {bool(top_itens_response)}")
+            except Exception as e:
+                logger.error(f"Erro ao buscar top itens: {e}")
+                top_itens_response = None
+            if isinstance(top_itens_response, dict):
+                top_itens = top_itens_response.get('itens_reprovados', [])
+            elif isinstance(top_itens_response, list):
+                top_itens = top_itens_response
+            else:
+                top_itens = []
+            logger.info(f"Top itens processados: {len(top_itens) if top_itens else 0}")
 
-        performance_response = api_request('/api/v1/metrics/performance-motoristas', params={'dias': days})
-        if isinstance(performance_response, dict):
-            performance_motoristas = performance_response.get('motoristas', [])
-        elif isinstance(performance_response, list):
-            performance_motoristas = performance_response
-        else:
-            performance_motoristas = []
+            logger.info("Buscando dados de performance de motoristas...")
+            try:
+                performance_response = api_request('/api/v1/metrics/performance-motoristas', params={'dias': days})
+                logger.info(f"Resposta performance: {type(performance_response)} - {bool(performance_response)}")
+            except Exception as e:
+                logger.error(f"Erro ao buscar performance: {e}")
+                performance_response = None
 
-        bloqueios_response = api_request('/api/v1/checklist/bloqueios', params={'dias': 7})
-        if isinstance(bloqueios_response, dict):
-            bloqueios = bloqueios_response.get('bloqueios', [])
-        elif isinstance(bloqueios_response, list):
-            bloqueios = bloqueios_response
-        else:
-            bloqueios = []
+            if isinstance(performance_response, dict):
+                performance_motoristas = performance_response.get('motoristas', [])
+            elif isinstance(performance_response, list):
+                performance_motoristas = performance_response
+            else:
+                performance_motoristas = []
+            logger.info(f"Performance motoristas: {len(performance_motoristas) if performance_motoristas else 0}")
 
-        # Buscar veículos para filtro
-        veiculos = api_request('/api/v1/vehicles') or []
+            logger.info("Buscando dados de bloqueios...")
+            try:
+                bloqueios_response = api_request('/api/v1/checklist/bloqueios', params={'dias': 7})
+                logger.info(f"Resposta bloqueios: {type(bloqueios_response)} - {bool(bloqueios_response)}")
+            except Exception as e:
+                logger.error(f"Erro ao buscar bloqueios: {e}")
+                bloqueios_response = None
 
-        # Buscar dados de saúde da API
-        try:
-            health_data = api_request('/health')
-            if not health_data:
+            if isinstance(bloqueios_response, dict):
+                bloqueios = bloqueios_response.get('bloqueios', [])
+            elif isinstance(bloqueios_response, list):
+                bloqueios = bloqueios_response
+            else:
+                bloqueios = []
+            logger.info(f"Bloqueios: {len(bloqueios) if bloqueios else 0}")
+
+            # Buscar veículos para filtro
+            logger.info("Buscando lista de veículos...")
+            try:
+                veiculos = api_request('/api/v1/vehicles') or []
+                logger.info(f"Veículos encontrados: {len(veiculos) if veiculos else 0}")
+            except Exception as e:
+                logger.error(f"Erro ao buscar veículos: {e}")
+                veiculos = []
+
+            # Buscar dados de saúde da API
+            logger.info("Buscando dados de saúde da API...")
+            try:
+                health_data = api_request('/health')
+                if not health_data:
+                    health_data = {"status": "error", "database": "disconnected"}
+                logger.info(f"Health data: {health_data}")
+            except Exception as e:
+                logger.error(f"Erro ao buscar health: {e}")
+                print(f"Erro ao buscar health: {e}")
                 health_data = {"status": "error", "database": "disconnected"}
-        except Exception as e:
-            print(f"Erro ao buscar health: {e}")
-            health_data = {"status": "error", "database": "disconnected"}
 
-        # Gerar alertas de exemplo
-        alertas = generate_sample_alerts()
-        alertas_equipamentos = [a for a in alertas if a["tipo"] == "Alerta de equipamento"]
+            # Gerar alertas de exemplo
+            logger.info("Gerando alertas de exemplo...")
+            alertas = generate_sample_alerts()
+            alertas_equipamentos = [a for a in alertas if a["tipo"] == "Alerta de equipamento"]
+            logger.info(f"Alertas gerados: {len(alertas)}, equipamentos: {len(alertas_equipamentos)}")
 
             # Preparar dados para gráficos Plotly
             logger.info("=== INICIANDO GERAÇÃO DE GRÁFICOS ===")
