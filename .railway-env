@@ -1,4 +1,4 @@
-DATABASE_URL=postgresql://postgres:Mariaana953%407334@db.lijtncazuwnbydeqtoyz.supabase.co:5432/postgres?sslmode=require
+DATABASE_URL=postgresql://postgres.lijtncazuwnbydeqtoyz:Mariaana953@7334@aws-0-us-east-1.pooler.supabase.com:6543/postgres
 JWT_SECRET=dev-jwt-secret-change-in-production
 JWT_EXPIRES_MINUTES=1440
 STORAGE_DIR=./uploads
@@ -8,3 +8,12 @@ FLASK_SECRET_KEY=transpontual-secret-key-2024
 API_BASE=http://localhost:8005
 API_LOGIN_EMAIL=admin@transpontual.com
 API_LOGIN_PASSWORD=admin123
+
+# Railway network optimizations
+PYTHONUNBUFFERED=1
+RAILWAY_STATIC_URL=
+RAILWAY_GIT_COMMIT_SHA=
+SUPABASE_HOST=aws-0-us-east-1.pooler.supabase.com
+SUPABASE_PORT=6543
+PGCONNECT_TIMEOUT=15
+PGCOMMAND_TIMEOUT=30

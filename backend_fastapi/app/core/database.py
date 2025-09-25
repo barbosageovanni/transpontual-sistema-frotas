@@ -18,19 +18,47 @@ DATABASE_AVAILABLE = False
 def test_database_connection(url):
     """Test if database connection works"""
     try:
-        from sqlalchemy import create_engine
+        from sqlalchemy import create_engine, text
+        import time
+
+        start_time = time.time()
+
+        # Create engine with Railway-optimized settings
         test_engine = create_engine(
             url,
+            pool_pre_ping=True,
             connect_args={
-                "connect_timeout": 10,
-                "sslmode": "require" if "postgresql" in url else None
-            }
+                "connect_timeout": 15,
+                "application_name": "transpontual_test",
+                "sslmode": "require" if "postgresql" in url else None,
+                "options": "-c timezone=UTC"
+            },
+            pool_timeout=20,
+            pool_recycle=300
         )
-        connection = test_engine.connect()
-        connection.close()
+
+        # Test actual connection
+        with test_engine.connect() as connection:
+            # Simple query to verify connection works
+            result = connection.execute(text("SELECT 1 as test"))
+            test_value = result.scalar()
+
+        connection_time = time.time() - start_time
+        print(f"✅ Connection successful in {connection_time:.2f}s (result: {test_value})")
+
+        test_engine.dispose()
         return True
+
     except Exception as e:
-        print(f"❌ DB test failed for {url.split('@')[1].split('/')[0] if '@' in url else 'url'}: {str(e)[:50]}...")
+        error_msg = str(e)
+        if "network is unreachable" in error_msg.lower():
+            print(f"❌ Network unreachable - Railway may be blocking external connections")
+        elif "connection timed out" in error_msg.lower():
+            print(f"❌ Connection timeout - host may be unreachable")
+        elif "authentication failed" in error_msg.lower():
+            print(f"❌ Authentication failed - check credentials")
+        else:
+            print(f"❌ DB test failed: {error_msg[:100]}...")
         return False
 
 def get_working_database_url():
@@ -42,11 +70,18 @@ def get_working_database_url():
 
     settings = get_settings()
 
-    # All possible database URLs to try
+    # All possible database URLs to try (Railway-optimized)
     urls_to_try = [
-        settings.DATABASE_URL,
+        # Pooler connection (usually works better with Railway)
+        "postgresql://postgres.lijtncazuwnbydeqtoyz:Mariaana953@7334@aws-0-us-east-1.pooler.supabase.com:6543/postgres",
+        # Direct connection with IPv4 DNS
+        "postgresql://postgres:Mariaana953%407334@db.lijtncazuwnbydeqtoyz.supabase.co:5432/postgres?sslmode=require",
+        # Pooler with standard port
         "postgresql://postgres:Mariaana953%407334@aws-0-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require",
-        "postgresql://postgres.lijtncazuwnbydeqtoyz:Mariaana953%407334@aws-0-us-east-1.pooler.supabase.com:5432/postgres",
+        # Alternative pooler format
+        "postgresql://postgres.lijtncazuwnbydeqtoyz:Mariaana953@7334@aws-0-us-east-1.pooler.supabase.com:5432/postgres",
+        # Original from settings
+        settings.DATABASE_URL,
     ]
 
     for url in urls_to_try:
