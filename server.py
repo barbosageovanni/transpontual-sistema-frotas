@@ -14,6 +14,34 @@ def start_fastapi_backend():
     try:
         print("🔌 Starting FastAPI Backend...")
 
+        # Load environment variables - try multiple sources
+        from dotenv import load_dotenv
+
+        # Try .env first
+        env_file = Path(__file__).parent / ".env"
+        if env_file.exists():
+            load_dotenv(env_file)
+            print("✅ .env file loaded")
+
+        # Try .railway-env for Railway deployment
+        railway_env = Path(__file__).parent / ".railway-env"
+        if railway_env.exists():
+            load_dotenv(railway_env)
+            print("✅ .railway-env file loaded")
+
+        # Set Railway environment variables directly if not found
+        if not os.getenv('DATABASE_URL'):
+            print("⚠️ Setting DATABASE_URL from hardcoded value...")
+            os.environ['DATABASE_URL'] = "postgresql://postgres:Mariaana953%407334@db.lijtncazuwnbydeqtoyz.supabase.co:5432/postgres?sslmode=require"
+            os.environ['JWT_SECRET'] = "dev-jwt-secret-change-in-production"
+            os.environ['ENV'] = "production"
+
+        # Check database URL
+        db_url = os.getenv('DATABASE_URL')
+        print(f"🗄️ DATABASE_URL: {'Set' if db_url else 'Not set'}")
+        if db_url:
+            print(f"🗄️ Database host: {db_url.split('@')[1].split('/')[0] if '@' in db_url else 'unknown'}")
+
         # Add backend to path
         backend_dir = Path(__file__).parent / "backend_fastapi"
         sys.path.insert(0, str(backend_dir))
