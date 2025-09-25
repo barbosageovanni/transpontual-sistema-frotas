@@ -59,12 +59,32 @@ def start_flask_dashboard():
 
             # Use importlib for dynamic import
             import importlib.util
-            spec = importlib.util.spec_from_file_location("dashboard", dashboard_file)
-            dashboard_module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(dashboard_module)
 
-            app = dashboard_module.create_app()
-            print("✅ Dashboard app created successfully!")
+            # Set working directory to flask_dashboard for proper imports
+            original_cwd = os.getcwd()
+            os.chdir(dashboard_dir)
+
+            try:
+                spec = importlib.util.spec_from_file_location("dashboard", dashboard_file)
+                dashboard_module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(dashboard_module)
+
+                app = dashboard_module.create_app()
+                print("✅ Dashboard app created successfully!")
+
+                # Fix template folder path
+                templates_path = dashboard_dir / "app" / "templates"
+                static_path = dashboard_dir / "app" / "static"
+
+                app.template_folder = str(templates_path)
+                app.static_folder = str(static_path)
+
+                print(f"📁 Template folder: {app.template_folder}")
+                print(f"📁 Static folder: {app.static_folder}")
+
+            finally:
+                # Restore original working directory
+                os.chdir(original_cwd)
 
             # Check templates directory
             templates_dir = dashboard_dir / "app" / "templates"
