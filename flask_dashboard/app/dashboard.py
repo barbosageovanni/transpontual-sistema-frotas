@@ -433,24 +433,51 @@ def create_app():
     @login_required
     def dashboard():
         """Dashboard principal com KPIs e resumos"""
-        # Motoristas são redirecionados diretamente para o checklist
-        user_role = session.get('user_role', 'motorista')
-        if user_role == 'motorista':
-            return redirect(url_for('checklist_new'))
-        # Parâmetros de filtro
-        days = request.args.get('days', 30, type=int)
-        veiculo_id = request.args.get('veiculo_id', type=int)
+        import logging
+        import traceback
 
-        # Buscar dados dos KPIs
-        kpis_params = {'dias': days}
-        if veiculo_id:
-            kpis_params['veiculo_id'] = veiculo_id
+        # Configure logging
+        logging.basicConfig(level=logging.DEBUG)
+        logger = logging.getLogger(__name__)
 
-        kpis_data = api_request('/api/v1/checklist/stats/resumo', params=kpis_params)
+        try:
+            logger.info("=== INÍCIO DA FUNÇÃO DASHBOARD ===")
+            print("=== INÍCIO DA FUNÇÃO DASHBOARD ===")
 
-        # Buscar veículos inativos para "placas bloqueadas"
-        if kpis_data:
-            vehicles_response = api_request('/api/v1/vehicles')
+            # Motoristas são redirecionados diretamente para o checklist
+            user_role = session.get('user_role', 'motorista')
+            logger.info(f"Usuário com role: {user_role}")
+            if user_role == 'motorista':
+                logger.info("Redirecionando motorista para checklist")
+                return redirect(url_for('checklist_new'))
+            # Parâmetros de filtro
+            days = request.args.get('days', 30, type=int)
+            veiculo_id = request.args.get('veiculo_id', type=int)
+            logger.info(f"Parâmetros: days={days}, veiculo_id={veiculo_id}")
+
+            # Buscar dados dos KPIs
+            kpis_params = {'dias': days}
+            if veiculo_id:
+                kpis_params['veiculo_id'] = veiculo_id
+            logger.info(f"Fazendo chamada API com parâmetros: {kpis_params}")
+
+            try:
+                kpis_data = api_request('/api/v1/checklist/stats/resumo', params=kpis_params)
+                logger.info(f"Dados KPIs recebidos: {type(kpis_data)} - {bool(kpis_data)}")
+            except Exception as e:
+                logger.error(f"Erro na chamada API KPIs: {e}")
+                kpis_data = None
+
+            # Buscar veículos inativos para "placas bloqueadas"
+            logger.info("Iniciando busca de veículos inativos...")
+            if kpis_data:
+                logger.info("Fazendo chamada API para veículos...")
+                try:
+                    vehicles_response = api_request('/api/v1/vehicles')
+                    logger.info(f"Resposta de veículos: {type(vehicles_response)} - {bool(vehicles_response)}")
+                except Exception as e:
+                    logger.error(f"Erro na chamada API de veículos: {e}")
+                    vehicles_response = None
             placas_bloqueadas = []
 
             if vehicles_response:
@@ -559,32 +586,95 @@ def create_app():
         alertas = generate_sample_alerts()
         alertas_equipamentos = [a for a in alertas if a["tipo"] == "Alerta de equipamento"]
 
-        # Preparar dados para gráficos Plotly
-        charts = {}
+            # Preparar dados para gráficos Plotly
+            logger.info("=== INICIANDO GERAÇÃO DE GRÁFICOS ===")
+            charts = {}
 
-        # Gráfico de evolução temporal
-        if kpis_data and 'evolucao_semanal' in kpis_data:
-            evolucao = kpis_data['evolucao_semanal']
+            # Gráfico de evolução temporal
+            logger.info("Processando gráfico de evolução temporal...")
+            try:
+                logger.info(f"KPIs data: {type(kpis_data)}, tem evolucao_semanal: {'evolucao_semanal' in (kpis_data or {})}")
+                if kpis_data and 'evolucao_semanal' in kpis_data:
+                    evolucao = kpis_data['evolucao_semanal']
+                    logger.info(f"Evolução encontrada: {type(evolucao)}, len: {len(evolucao) if isinstance(evolucao, list) else 'N/A'}")
+                # Garantir que evolucao é uma lista válida
+                if not isinstance(evolucao, list) or not evolucao:
+                    raise ValueError("Evolução não é uma lista válida")
+
+                charts['evolucao'] = {
+                    'data': [
+                        go.Scatter(
+                            x=[item.get('data', '') for item in evolucao],
+                            y=[item.get('aprovados', 0) for item in evolucao],
+                            name='Aprovados',
+                            line=dict(color='#10b981')
+                        ),
+                        go.Scatter(
+                            x=[item.get('data', '') for item in evolucao],
+                            y=[item.get('reprovados', 0) for item in evolucao],
+                            name='Reprovados',
+                            line=dict(color='#ef4444')
+                        )
+                    ],
+                    'layout': {
+                        'title': 'Evolução dos Checklists (7 dias)',
+                        'xaxis': {'title': 'Data'},
+                        'yaxis': {'title': 'Quantidade'},
+                        'hovermode': 'x unified'
+                    }
+                }
+            else:
+                # Dados de exemplo se não há evolução_semanal
+                from datetime import datetime, timedelta
+                today = datetime.now()
+                evolucao_demo = []
+                for i in range(7):
+                    date = today - timedelta(days=6-i)
+                    evolucao_demo.append({
+                        'data': date.strftime('%d/%m'),
+                        'aprovados': 10 + i * 2,
+                        'reprovados': 3 + i
+                    })
+
+                charts['evolucao'] = {
+                    'data': [
+                        go.Scatter(
+                            x=[item['data'] for item in evolucao_demo],
+                            y=[item['aprovados'] for item in evolucao_demo],
+                            name='Aprovados',
+                            line=dict(color='#10b981')
+                        ),
+                        go.Scatter(
+                            x=[item['data'] for item in evolucao_demo],
+                            y=[item['reprovados'] for item in evolucao_demo],
+                            name='Reprovados',
+                            line=dict(color='#ef4444')
+                        )
+                    ],
+                    'layout': {
+                        'title': 'Evolução dos Checklists (7 dias) - Demo',
+                        'xaxis': {'title': 'Data'},
+                        'yaxis': {'title': 'Quantidade'},
+                        'hovermode': 'x unified'
+                    }
+                }
+        except Exception as e:
+            print(f"❌ Erro ao processar gráfico de evolução: {e}")
+            # Gráfico de fallback simples
             charts['evolucao'] = {
-                'data': [
-                    go.Scatter(
-                        x=[item['data'] for item in evolucao],
-                        y=[item['aprovados'] for item in evolucao],
-                        name='Aprovados',
-                        line=dict(color='#10b981')
-                    ),
-                    go.Scatter(
-                        x=[item['data'] for item in evolucao],
-                        y=[item['reprovados'] for item in evolucao],
-                        name='Reprovados',
-                        line=dict(color='#ef4444')
-                    )
-                ],
+                'data': [],
                 'layout': {
-                    'title': 'Evolução dos Checklists (7 dias)',
-                    'xaxis': {'title': 'Data'},
-                    'yaxis': {'title': 'Quantidade'},
-                    'hovermode': 'x unified'
+                    'title': 'Gráfico indisponível - Sistema em modo offline',
+                    'annotations': [
+                        {
+                            'text': 'Dados não disponíveis',
+                            'x': 0.5,
+                            'y': 0.5,
+                            'xref': 'paper',
+                            'yref': 'paper',
+                            'showarrow': False
+                        }
+                    ]
                 }
             }
 
@@ -607,23 +697,41 @@ def create_app():
                 }
             }
 
-        # Converter gráficos para JSON
-        charts_json = {}
-        for key, chart in charts.items():
-            charts_json[key] = json.dumps(chart, cls=plotly.utils.PlotlyJSONEncoder)
+            # Converter gráficos para JSON
+            logger.info("Convertendo gráficos para JSON...")
+            charts_json = {}
+            for key, chart in charts.items():
+                try:
+                    logger.info(f"Convertendo gráfico: {key}")
+                    charts_json[key] = json.dumps(chart, cls=plotly.utils.PlotlyJSONEncoder)
+                    logger.info(f"Gráfico {key} convertido com sucesso")
+                except Exception as e:
+                    logger.error(f"Erro ao converter gráfico {key}: {e}")
+                    charts_json[key] = json.dumps({'data': [], 'layout': {'title': f'Erro no gráfico {key}'}})
 
-        return render_template('dashboard/professional.html',
-                             kpis=kpis_data,
-                             charts=charts_json,
-                             top_itens=top_itens,
-                             performance_motoristas=performance_motoristas,
-                             bloqueios=bloqueios,
-                             veiculos=veiculos,
-                             current_days=days,
-                             current_veiculo=veiculo_id,
-                             alertas_equipamentos=alertas_equipamentos,
-                             total_alertas=len(alertas),
-                             health=health_data)
+            logger.info("Renderizando template...")
+            logger.info(f"Dados para template - kpis: {bool(kpis_data)}, charts: {len(charts_json)}, veiculos: {len(veiculos) if veiculos else 0}")
+
+            return render_template('dashboard/professional.html',
+                                 kpis=kpis_data,
+                                 charts=charts_json,
+                                 top_itens=top_itens,
+                                 performance_motoristas=performance_motoristas,
+                                 bloqueios=bloqueios,
+                                 veiculos=veiculos,
+                                 current_days=days,
+                                 current_veiculo=veiculo_id,
+                                 alertas_equipamentos=alertas_equipamentos,
+                                 total_alertas=len(alertas),
+                                 health=health_data)
+
+        except Exception as e:
+            logger.error(f"❌ ERRO GERAL NO DASHBOARD: {e}")
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            print(f"❌ ERRO GERAL NO DASHBOARD: {e}")
+            print(f"Traceback: {traceback.format_exc()}")
+            # Retornar resposta de erro simples
+            return f"Erro interno no dashboard: {str(e)}", 500
 
     # ==============================
     # GESTÃO DE CHECKLISTS
