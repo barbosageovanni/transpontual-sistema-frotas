@@ -9,7 +9,7 @@ from sqlalchemy.sql import func
 from typing import List, Optional
 from pydantic import BaseModel
 
-from app.core.database import get_db
+from app.core.database import get_db, is_database_available
 from app import models, schemas
 from app.routers import checklist as checklist_router
 from app.core.security import create_access_token, verify_password, get_current_user
@@ -48,31 +48,60 @@ def debug_db_info(db: Session = Depends(get_db)):
 # Auth básico
 @api_router.post("/auth/login", response_model=schemas.Token)
 def login(payload: schemas.LoginRequest, db: Session = Depends(get_db)):
-    user = db.query(models.Usuario).filter(models.Usuario.email == payload.email).first()
+    # Check if database is available
+    if not is_database_available() or db is None:
+        print("⚠️ Database offline - using demo login")
+        # Demo login for offline mode
+        if payload.email == "admin@transpontual.com" and payload.senha in ["admin123", "123456", "admin"]:
+            # Create demo user object
+            from app.schemas import UsuarioResponse
+            demo_user = {
+                "id": 1,
+                "nome_completo": "Admin Demo",
+                "email": "admin@transpontual.com",
+                "papel": "gestor",
+                "ativo": True
+            }
+            token = create_access_token({"sub": "1", "email": payload.email})
+            return {
+                "access_token": token,
+                "token_type": "bearer",
+                "user": demo_user
+            }
+        else:
+            raise HTTPException(status_code=401, detail="Credenciais inválidas (modo offline)")
 
-    # Dev bypass: create user if doesn't exist and using dev passwords
-    if not user and payload.senha in ["123456", "admin", "test", "dev"]:
-        user = models.Usuario(
-            nome_completo="Dev User",
-            email=payload.email,
-            password_hash="dev_password",
-            papel="gestor",
-            ativo=True
-        )
-        db.add(user)
-        db.commit()
-        db.refresh(user)
+    # Normal database operations
+    try:
+        user = db.query(models.Usuario).filter(models.Usuario.email == payload.email).first()
 
-    if not user:
-        raise HTTPException(status_code=401, detail="Credenciais inválidas")
+        # Dev bypass: create user if doesn't exist and using dev passwords
+        if not user and payload.senha in ["123456", "admin", "test", "dev"]:
+            user = models.Usuario(
+                nome_completo="Dev User",
+                email=payload.email,
+                password_hash="dev_password",
+                papel="gestor",
+                ativo=True
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
 
-    # Verifica senha (aceita hash bcrypt ou texto puro em DEV)
-    if not verify_password(payload.senha, user.password_hash):
-        raise HTTPException(status_code=401, detail="Credenciais inválidas")
+        if not user:
+            raise HTTPException(status_code=401, detail="Credenciais inválidas")
 
-    # JWT com subject = user.id
-    token = create_access_token({"sub": str(user.id), "email": user.email})
-    return {"access_token": token, "token_type": "bearer", "user": user}
+        # Verifica senha (aceita hash bcrypt ou texto puro em DEV)
+        if not verify_password(payload.senha, user.password_hash):
+            raise HTTPException(status_code=401, detail="Credenciais inválidas")
+
+        # JWT com subject = user.id
+        token = create_access_token({"sub": str(user.id), "email": user.email})
+        return {"access_token": token, "token_type": "bearer", "user": user}
+
+    except Exception as e:
+        print(f"❌ Login database error: {e}")
+        raise HTTPException(status_code=500, detail=f"Erro de conexão: {str(e)[:50]}...")
 
 # Usuário atual (protégido)
 @api_router.get("/users/me", response_model=schemas.UsuarioResponse)

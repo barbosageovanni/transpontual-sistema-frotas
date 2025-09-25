@@ -11,32 +11,60 @@ from app.core.config import get_settings
 # Load database URL from settings (env/.env)
 import os
 
-def get_database_url():
-    """Get database URL with fallback options for Railway"""
+# Try to get a working database URL
+DATABASE_URL = None
+DATABASE_AVAILABLE = False
+
+def test_database_connection(url):
+    """Test if database connection works"""
+    try:
+        from sqlalchemy import create_engine
+        test_engine = create_engine(
+            url,
+            connect_args={
+                "connect_timeout": 10,
+                "sslmode": "require" if "postgresql" in url else None
+            }
+        )
+        connection = test_engine.connect()
+        connection.close()
+        return True
+    except Exception as e:
+        print(f"❌ DB test failed for {url.split('@')[1].split('/')[0] if '@' in url else 'url'}: {str(e)[:50]}...")
+        return False
+
+def get_working_database_url():
+    """Get a working database URL with fallback"""
+    global DATABASE_URL, DATABASE_AVAILABLE
+
+    if DATABASE_URL and DATABASE_AVAILABLE:
+        return DATABASE_URL
+
     settings = get_settings()
-    primary_url = settings.DATABASE_URL
 
-    # Try alternative URLs if primary fails
-    backup_urls = os.getenv('DATABASE_BACKUP_URLS', '').split('|')
+    # All possible database URLs to try
+    urls_to_try = [
+        settings.DATABASE_URL,
+        "postgresql://postgres:Mariaana953%407334@aws-0-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require",
+        "postgresql://postgres.lijtncazuwnbydeqtoyz:Mariaana953%407334@aws-0-us-east-1.pooler.supabase.com:5432/postgres",
+    ]
 
-    all_urls = [primary_url] + [url for url in backup_urls if url.strip()]
-
-    for url in all_urls:
-        if url.strip():
-            try:
-                print(f"🔄 Trying database connection: {url.split('@')[1].split('/')[0] if '@' in url else 'unknown'}")
-                test_engine = create_engine(url, connect_args={"connect_timeout": 5})
-                test_engine.connect()
+    for url in urls_to_try:
+        if url and url.strip():
+            print(f"🔄 Testing database: {url.split('@')[1].split('/')[0] if '@' in url else 'unknown'}")
+            if test_database_connection(url):
                 print(f"✅ Database connection successful!")
+                DATABASE_URL = url
+                DATABASE_AVAILABLE = True
                 return url
-            except Exception as e:
-                print(f"❌ Connection failed: {str(e)[:100]}...")
-                continue
 
-    print(f"⚠️ All database connections failed, using primary URL")
-    return primary_url
+    print("❌ All database connections failed - running in offline mode")
+    DATABASE_URL = settings.DATABASE_URL  # Fallback to original
+    DATABASE_AVAILABLE = False
+    return DATABASE_URL
 
-DATABASE_URL: str = get_database_url()
+# Get working database URL
+DATABASE_URL = get_working_database_url()
 
 # SQLAlchemy engine with Railway optimized settings
 engine = create_engine(
@@ -70,11 +98,29 @@ class Base(DeclarativeBase):
 
 def get_db():
     """FastAPI dependency to provide a DB session."""
+    if not DATABASE_AVAILABLE:
+        # Return a mock database session for offline mode
+        print("⚠️ Using offline mode - no database operations available")
+        yield None
+        return
+
     db = SessionLocal()
     try:
         yield db
+    except Exception as e:
+        print(f"❌ Database session error: {e}")
+        db.rollback()
+        yield None
     finally:
-        db.close()
+        try:
+            db.close()
+        except:
+            pass
+
+
+def is_database_available():
+    """Check if database is available"""
+    return DATABASE_AVAILABLE
 
 
 def create_tables():
