@@ -1,0 +1,7 @@
+FORCE_DEPLOY_TIMESTAMP=2025-09-26-10:51:00
+KEYERROR_FIX_APPLIED=true
+EMERGENCY_WRAPPER_ACTIVE=true
+
+# This file forces Railway to detect changes and trigger redeploy
+# The KeyError fix has been applied to flask_dashboard/app/dashboard.py
+# Multiple protection layers are now in place
