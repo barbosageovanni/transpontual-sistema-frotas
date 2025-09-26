@@ -268,7 +268,35 @@ def update_vehicle(vehicle_id: int, body: dict, db: Session = Depends(get_db)):
 # Motoristas
 @api_router.get("/drivers", response_model=List[schemas.MotoristaResponse])
 def list_drivers(db: Session = Depends(get_db)):
-    return db.query(models.Motorista).all()
+    if not is_database_available() or db is None:
+        return [
+            {
+                "id": 1,
+                "nome": "João Silva - Demo",
+                "email": "joao@demo.com",
+                "telefone": "(11) 99999-9999",
+                "cnh": "12345678901",
+                "validade_cnh": "2025-12-31",
+                "ativo": True,
+                "usuario_id": None
+            },
+            {
+                "id": 2,
+                "nome": "Maria Santos - Demo",
+                "email": "maria@demo.com",
+                "telefone": "(11) 88888-8888",
+                "cnh": "10987654321",
+                "validade_cnh": "2026-06-30",
+                "ativo": True,
+                "usuario_id": None
+            }
+        ]
+
+    try:
+        return db.query(models.Motorista).all()
+    except Exception as e:
+        print(f"Database error in list_drivers: {e}")
+        return []
 
 @api_router.post("/drivers", response_model=schemas.MotoristaResponse, status_code=201)
 def create_driver(body: schemas.MotoristaCreate, db: Session = Depends(get_db)):
