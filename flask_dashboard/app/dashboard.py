@@ -388,44 +388,81 @@ def create_app():
     # ==============================
 
     def generate_sample_alerts():
-        """Gera alertas de demonstração - versão simplificada"""
+        """Gera alertas de demonstração com tratamento seguro de dados da API"""
         now = datetime.now()
 
-        # Usar sempre dados de exemplo para evitar erros
+        try:
+            # Tentar buscar dados da API primeiro
+            alertas_response = api_request('/api/v1/maintenance/alerts-data')
+
+            if alertas_response and isinstance(alertas_response, dict):
+                # Extrair alertas da resposta da API
+                alertas_manutencao = alertas_response.get('alerts', [])
+
+                # Se alertas_manutencao é um dicionário, converter para lista
+                if isinstance(alertas_manutencao, dict):
+                    alertas_list = list(alertas_manutencao.values())
+                elif isinstance(alertas_manutencao, list):
+                    alertas_list = alertas_manutencao
+                else:
+                    alertas_list = []
+
+                # Processar alertas da API (limitando a 8)
+                alerts = []
+                for i, alerta in enumerate(alertas_list[:8]):  # Slice seguro
+                    if isinstance(alerta, dict):
+                        alert_item = {
+                            "id": alerta.get('id', i + 1),
+                            "tipo": "Alerta de equipamento",
+                            "codigo_equipamento": alerta.get('equipment_code', f"EQ-{i+1:04d}"),
+                            "descricao": alerta.get('description', f"Manutenção pendente {i+1}"),
+                            "data_hora": alerta.get('date', now.strftime("%d.%m %H:%M")),
+                            "nivel": alerta.get('level', 'warning')
+                        }
+                        alerts.append(alert_item)
+
+                # Se conseguimos processar alertas da API, retornar
+                if alerts:
+                    return alerts
+
+        except Exception as e:
+            print(f"Erro ao buscar alertas da API: {e}")
+
+        # Fallback: usar dados de exemplo se API falhar
         alerts = [
-                {
-                    "id": 1,
-                    "tipo": "Alerta de equipamento",
-                    "codigo_equipamento": "ATA-4352",
-                    "descricao": "Troca de Óleo",
-                    "data_hora": (now - timedelta(hours=2)).strftime("%d.%m %H:%M"),
-                    "nivel": "warning"
-                },
-                {
-                    "id": 2,
-                    "tipo": "Alerta de equipamento",
-                    "codigo_equipamento": "XAV-0001",
-                    "descricao": "Revisão dos Freios",
-                    "data_hora": (now - timedelta(hours=3)).strftime("%d.%m %H:%M"),
-                    "nivel": "danger"
-                },
-                {
-                    "id": 3,
-                    "tipo": "Alerta de equipamento",
-                    "codigo_equipamento": "MAR-L001",
-                    "descricao": "Troca de Filtros",
-                    "data_hora": (now - timedelta(hours=4)).strftime("%d.%m %H:%M"),
-                    "nivel": "warning"
-                },
-                {
-                    "id": 4,
-                    "tipo": "Alerta de equipamento",
-                    "codigo_equipamento": "XAV-0002",
-                    "descricao": "Revisão Geral",
-                    "data_hora": (now - timedelta(hours=5)).strftime("%d.%m %H:%M"),
-                    "nivel": "danger"
-                }
-            ]
+            {
+                "id": 1,
+                "tipo": "Alerta de equipamento",
+                "codigo_equipamento": "ATA-4352",
+                "descricao": "Troca de Óleo - Demonstração",
+                "data_hora": (now - timedelta(hours=2)).strftime("%d.%m %H:%M"),
+                "nivel": "warning"
+            },
+            {
+                "id": 2,
+                "tipo": "Alerta de equipamento",
+                "codigo_equipamento": "XAV-0001",
+                "descricao": "Revisão dos Freios - Demonstração",
+                "data_hora": (now - timedelta(hours=3)).strftime("%d.%m %H:%M"),
+                "nivel": "danger"
+            },
+            {
+                "id": 3,
+                "tipo": "Alerta de equipamento",
+                "codigo_equipamento": "MAR-L001",
+                "descricao": "Troca de Filtros - Demonstração",
+                "data_hora": (now - timedelta(hours=4)).strftime("%d.%m %H:%M"),
+                "nivel": "warning"
+            },
+            {
+                "id": 4,
+                "tipo": "Alerta de equipamento",
+                "codigo_equipamento": "XAV-0002",
+                "descricao": "Revisão Geral - Demonstração",
+                "data_hora": (now - timedelta(hours=5)).strftime("%d.%m %H:%M"),
+                "nivel": "danger"
+            }
+        ]
 
         return alerts
 
