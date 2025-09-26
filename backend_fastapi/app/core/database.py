@@ -73,14 +73,14 @@ def get_working_database_url():
 
     settings = get_settings()
 
-    # All possible database URLs to try (IPv4 ONLY for Render compatibility)
+    # All possible database URLs to try (optimized for Render deployment)
     urls_to_try = [
-        # IPv4-only URLs (resolve IPv6 hostname to IPv4)
-        "postgresql://postgres:Mariaana953%407334@52.45.94.110:5432/postgres?sslmode=require&connect_timeout=15",  # IPv4 for db.lijtncazuwnbydeqtoyz.supabase.co
-        "postgresql://postgres.lijtncazuwnbydeqtoyz:Mariaana953%407334@52.45.94.110:5432/postgres?sslmode=require&connect_timeout=15",
-        # IPv4 pooler connections
-        "postgresql://postgres:Mariaana953%407334@aws-0-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require&connect_timeout=15",
-        "postgresql://postgres.lijtncazuwnbydeqtoyz:Mariaana953%407334@aws-0-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require&connect_timeout=15",
+        # Primary: Direct Supabase connection with optimized settings
+        "postgresql://postgres:Mariaana953%407334@db.lijtncazuwnbydeqtoyz.supabase.co:5432/postgres?sslmode=require&connect_timeout=30&tcp_keepalives_idle=10&tcp_keepalives_interval=5&tcp_keepalives_count=3",
+        "postgresql://postgres.lijtncazuwnbydeqtoyz:Mariaana953%407334@db.lijtncazuwnbydeqtoyz.supabase.co:5432/postgres?sslmode=require&connect_timeout=30&tcp_keepalives_idle=10",
+        # Alternative: Pooler connections (may have better routing)
+        "postgresql://postgres.lijtncazuwnbydeqtoyz:Mariaana953%407334@aws-0-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require&connect_timeout=30",
+        "postgresql://postgres:Mariaana953%407334@aws-0-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require&connect_timeout=30",
         # Original from settings (fallback)
         settings.DATABASE_URL,
     ]

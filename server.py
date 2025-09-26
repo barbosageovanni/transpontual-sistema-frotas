@@ -30,18 +30,16 @@ def start_fastapi_backend():
             print("SUCCESS: .railway-env file loaded")
 
         # Set environment variables for Render deployment
-        if not os.getenv('DATABASE_URL'):
-            print("WARNING: Setting DATABASE_URL from hardcoded value...")
-            # IPv4-ONLY connection strings for Render deployment (no IPv6)
-            db_options = [
-                "postgresql://postgres:Mariaana953%407334@52.45.94.110:5432/postgres?sslmode=require&connect_timeout=15",  # IPv4 for db.lijtncazuwnbydeqtoyz.supabase.co
-                "postgresql://postgres.lijtncazuwnbydeqtoyz:Mariaana953%407334@52.45.94.110:5432/postgres?sslmode=require&connect_timeout=15",
-                "postgresql://postgres:Mariaana953%407334@aws-0-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require&connect_timeout=15",
-            ]
-            os.environ['DATABASE_URL'] = db_options[0]  # Start with working direct connection
-            os.environ['DATABASE_BACKUP_URLS'] = '|'.join(db_options[1:])  # Store alternatives
-            os.environ['JWT_SECRET'] = "kj9q-Xfby"  # Render JWT secret
-            os.environ['ENV'] = "production"
+        print("Setting required environment variables for Render...")
+
+        # Always set these for Render deployment (override any existing values)
+        os.environ['DATABASE_URL'] = "postgresql://postgres:Mariaana953%407334@db.lijtncazuwnbydeqtoyz.supabase.co:5432/postgres?sslmode=require&connect_timeout=30&tcp_keepalives_idle=10&tcp_keepalives_interval=5&tcp_keepalives_count=3"
+        os.environ['JWT_SECRET'] = "kj9q-Xfby"
+        os.environ['ENV'] = "production"
+        os.environ['API_BASE'] = "http://localhost:8005"
+        os.environ['FLASK_SECRET_KEY'] = "render-production-secret-key-2025"
+
+        print("SUCCESS: Environment variables configured for Render deployment")
 
         # Check database URL
         db_url = os.getenv('DATABASE_URL')
