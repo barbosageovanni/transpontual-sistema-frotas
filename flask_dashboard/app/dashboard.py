@@ -30,7 +30,7 @@ if hasattr(sys.stderr, 'reconfigure'):
 env_path = os.path.join(os.path.dirname(__file__), '.env')
 load_dotenv(env_path)
 from functools import wraps
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, Response
 from flask import send_file, make_response, abort
 import json
 import csv
@@ -5718,6 +5718,56 @@ def create_app():
     def financial_redirect():
         """Redireciona para o sistema de faturamento dashboard_baker"""
         return redirect("http://localhost:5000/")
+
+    # ==============================
+    # API PROXY ROUTES (for Render deployment)
+    # ==============================
+    @app.route('/api/<path:path>', methods=['GET', 'POST', 'PUT', 'DELETE', 'PATCH'])
+    def api_proxy(path):
+        """Proxy all /api/* requests to FastAPI backend"""
+        try:
+            # Internal FastAPI URL
+            fastapi_url = f"http://127.0.0.1:8005/api/{path}"
+
+            # Forward the request with the same method, headers, and data
+            headers = dict(request.headers)
+            # Remove host header to avoid conflicts
+            headers.pop('Host', None)
+
+            # Make the request to FastAPI
+            if request.method == 'GET':
+                response = requests.get(fastapi_url, headers=headers, params=request.args, timeout=30)
+            elif request.method == 'POST':
+                if request.is_json:
+                    response = requests.post(fastapi_url, headers=headers, json=request.get_json(), params=request.args, timeout=30)
+                else:
+                    response = requests.post(fastapi_url, headers=headers, data=request.get_data(), params=request.args, timeout=30)
+            elif request.method == 'PUT':
+                if request.is_json:
+                    response = requests.put(fastapi_url, headers=headers, json=request.get_json(), params=request.args, timeout=30)
+                else:
+                    response = requests.put(fastapi_url, headers=headers, data=request.get_data(), params=request.args, timeout=30)
+            elif request.method == 'DELETE':
+                response = requests.delete(fastapi_url, headers=headers, params=request.args, timeout=30)
+            elif request.method == 'PATCH':
+                if request.is_json:
+                    response = requests.patch(fastapi_url, headers=headers, json=request.get_json(), params=request.args, timeout=30)
+                else:
+                    response = requests.patch(fastapi_url, headers=headers, data=request.get_data(), params=request.args, timeout=30)
+
+            # Return the response from FastAPI
+            return Response(
+                response.content,
+                status=response.status_code,
+                headers=dict(response.headers)
+            )
+
+        except requests.exceptions.ConnectionError:
+            return jsonify({"error": "FastAPI backend not available"}), 503
+        except requests.exceptions.Timeout:
+            return jsonify({"error": "FastAPI backend timeout"}), 504
+        except Exception as e:
+            return jsonify({"error": f"Proxy error: {str(e)}"}), 500
 
     return app
 
