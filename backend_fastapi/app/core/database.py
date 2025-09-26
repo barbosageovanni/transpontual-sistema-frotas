@@ -73,13 +73,13 @@ def get_working_database_url():
     # All possible database URLs to try (Railway-optimized)
     urls_to_try = [
         # Pooler connection (usually works better with Railway)
-        "postgresql://postgres.lijtncazuwnbydeqtoyz:Mariaana953@7334@aws-0-us-east-1.pooler.supabase.com:6543/postgres",
+        "postgresql://postgres.lijtncazuwnbydeqtoyz:Mariaana953%407334@aws-0-us-east-1.pooler.supabase.com:6543/postgres?sslmode=require",
         # Direct connection with IPv4 DNS
         "postgresql://postgres:Mariaana953%407334@db.lijtncazuwnbydeqtoyz.supabase.co:5432/postgres?sslmode=require",
         # Pooler with standard port
         "postgresql://postgres:Mariaana953%407334@aws-0-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require",
         # Alternative pooler format
-        "postgresql://postgres.lijtncazuwnbydeqtoyz:Mariaana953@7334@aws-0-us-east-1.pooler.supabase.com:5432/postgres",
+        "postgresql://postgres.lijtncazuwnbydeqtoyz:Mariaana953%407334@aws-0-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require",
         # Original from settings
         settings.DATABASE_URL,
     ]

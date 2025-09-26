@@ -753,25 +753,25 @@ def create_app():
                             'hovermode': 'x unified'
                         }
                     }
-        except Exception as e:
-            print(f"❌ Erro ao processar gráfico de evolução: {e}")
-            # Gráfico de fallback simples
-            charts['evolucao'] = {
-                'data': [],
-                'layout': {
-                    'title': 'Gráfico indisponível - Sistema em modo offline',
-                    'annotations': [
-                        {
-                            'text': 'Dados não disponíveis',
-                            'x': 0.5,
-                            'y': 0.5,
-                            'xref': 'paper',
-                            'yref': 'paper',
-                            'showarrow': False
-                        }
-                    ]
+            except Exception as e:
+                print(f"❌ Erro ao processar gráfico de evolução: {e}")
+                # Gráfico de fallback simples
+                charts['evolucao'] = {
+                    'data': [],
+                    'layout': {
+                        'title': 'Gráfico indisponível - Sistema em modo offline',
+                        'annotations': [
+                            {
+                                'text': 'Dados não disponíveis',
+                                'x': 0.5,
+                                'y': 0.5,
+                                'xref': 'paper',
+                                'yref': 'paper',
+                                'showarrow': False
+                            }
+                        ]
+                    }
                 }
-            }
 
         # Gráfico de top itens reprovados
         if top_itens:
