@@ -1,3 +1,4 @@
+# Force redeploy - KeyError fix applied 2025-09-26 09:30
 [build]
 builder = "nixpacks"
 
