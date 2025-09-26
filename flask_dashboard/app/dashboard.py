@@ -5722,6 +5722,21 @@ def create_app():
     # ==============================
     # API PROXY ROUTES (for Render deployment)
     # ==============================
+    @app.route('/health', methods=['GET'])
+    def health_proxy():
+        """Proxy health check to FastAPI backend"""
+        try:
+            response = requests.get("http://127.0.0.1:8005/health", timeout=10)
+            return Response(
+                response.content,
+                status=response.status_code,
+                headers=dict(response.headers)
+            )
+        except requests.exceptions.ConnectionError:
+            return jsonify({"error": "FastAPI backend not available", "status": "offline"}), 503
+        except Exception as e:
+            return jsonify({"error": f"Health check failed: {str(e)}", "status": "error"}), 500
+
     @app.route('/api/<path:path>', methods=['GET', 'POST', 'PUT', 'DELETE', 'PATCH'])
     def api_proxy(path):
         """Proxy all /api/* requests to FastAPI backend"""
