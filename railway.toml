@@ -1,6 +1,12 @@
-# CRITICAL REDEPLOY - Both Flask and FastAPI fixes 2025-09-26 11:29
+# Railway Configuration - Fresh Deploy 2025-09-26
 [build]
 builder = "nixpacks"
 
 [deploy]
 startCommand = "python server.py"
+healthcheckPath = "/health"
+healthcheckTimeout = 300
+restartPolicyType = "on_failure"
+
+[environments.production]
+variables = {}
