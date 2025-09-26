@@ -73,16 +73,15 @@ def get_working_database_url():
 
     settings = get_settings()
 
-    # All possible database URLs to try (IPv4 prioritized)
+    # All possible database URLs to try (IPv4 ONLY for Render compatibility)
     urls_to_try = [
-        # IPv4 pooler connections (best for cloud deployment)
-        "postgresql://postgres:Mariaana953%407334@aws-0-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require&connect_timeout=10",
-        "postgresql://postgres.lijtncazuwnbydeqtoyz:Mariaana953%407334@aws-0-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require&connect_timeout=10",
-        # Pooler with port 6543 (transaction mode)
-        "postgresql://postgres.lijtncazuwnbydeqtoyz:Mariaana953%407334@aws-0-us-east-1.pooler.supabase.com:6543/postgres?sslmode=require&connect_timeout=10",
-        # Direct connection (may have IPv6 issues)
-        "postgresql://postgres:Mariaana953%407334@db.lijtncazuwnbydeqtoyz.supabase.co:5432/postgres?sslmode=require&connect_timeout=10",
-        # Original from settings
+        # IPv4-only URLs (resolve IPv6 hostname to IPv4)
+        "postgresql://postgres:Mariaana953%407334@52.45.94.110:5432/postgres?sslmode=require&connect_timeout=15",  # IPv4 for db.lijtncazuwnbydeqtoyz.supabase.co
+        "postgresql://postgres.lijtncazuwnbydeqtoyz:Mariaana953%407334@52.45.94.110:5432/postgres?sslmode=require&connect_timeout=15",
+        # IPv4 pooler connections
+        "postgresql://postgres:Mariaana953%407334@aws-0-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require&connect_timeout=15",
+        "postgresql://postgres.lijtncazuwnbydeqtoyz:Mariaana953%407334@aws-0-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require&connect_timeout=15",
+        # Original from settings (fallback)
         settings.DATABASE_URL,
     ]
 

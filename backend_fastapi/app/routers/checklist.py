@@ -145,6 +145,10 @@ def list_checklist_models(
     db: Session = Depends(get_db),
     current_user: models.Usuario = Depends(get_current_user),
 ):
+    # Check database availability
+    if db is None:
+        return []
+
     return db.query(models.ChecklistModelo).filter(models.ChecklistModelo.ativo == True).all()
 
 

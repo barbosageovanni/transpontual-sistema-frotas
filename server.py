@@ -32,11 +32,11 @@ def start_fastapi_backend():
         # Set environment variables for Render deployment
         if not os.getenv('DATABASE_URL'):
             print("WARNING: Setting DATABASE_URL from hardcoded value...")
-            # IPv4-only connection strings for better compatibility (prioritize working direct connection)
+            # IPv4-ONLY connection strings for Render deployment (no IPv6)
             db_options = [
-                "postgresql://postgres:Mariaana953%407334@db.lijtncazuwnbydeqtoyz.supabase.co:5432/postgres?sslmode=require&connect_timeout=10",
-                "postgresql://postgres.lijtncazuwnbydeqtoyz:Mariaana953%407334@aws-0-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require",
-                "postgresql://postgres:Mariaana953%407334@aws-0-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require",
+                "postgresql://postgres:Mariaana953%407334@52.45.94.110:5432/postgres?sslmode=require&connect_timeout=15",  # IPv4 for db.lijtncazuwnbydeqtoyz.supabase.co
+                "postgresql://postgres.lijtncazuwnbydeqtoyz:Mariaana953%407334@52.45.94.110:5432/postgres?sslmode=require&connect_timeout=15",
+                "postgresql://postgres:Mariaana953%407334@aws-0-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require&connect_timeout=15",
             ]
             os.environ['DATABASE_URL'] = db_options[0]  # Start with working direct connection
             os.environ['DATABASE_BACKUP_URLS'] = '|'.join(db_options[1:])  # Store alternatives
