@@ -1,0 +1,2 @@
+KeyError fix applied - timestamp: 2025-09-26 09:25:00
+This file forces Railway to detect changes and redeploy.
