@@ -773,24 +773,24 @@ def create_app():
                     }
                 }
 
-        # Gráfico de top itens reprovados
-        if top_itens:
-            charts['top_itens'] = {
-                'data': [
-                    go.Bar(
-                        x=[item['taxa_reprovacao'] for item in top_itens[:10]],
-                        y=[item['descricao'][:30] + '...' if len(item['descricao']) > 30 else item['descricao'] for item in top_itens[:10]],
-                        orientation='h',
-                        marker=dict(color='#f59e0b')
-                    )
-                ],
-                'layout': {
-                    'title': 'Top 10 Itens com Maior Taxa de Reprovação',
-                    'xaxis': {'title': 'Taxa de Reprovação (%)'},
-                    'yaxis': {'title': ''},
-                    'margin': {'l': 200}
+            # Gráfico de top itens reprovados
+            if top_itens:
+                charts['top_itens'] = {
+                    'data': [
+                        go.Bar(
+                            x=[item['taxa_reprovacao'] for item in top_itens[:10]],
+                            y=[item['descricao'][:30] + '...' if len(item['descricao']) > 30 else item['descricao'] for item in top_itens[:10]],
+                            orientation='h',
+                            marker=dict(color='#f59e0b')
+                        )
+                    ],
+                    'layout': {
+                        'title': 'Top 10 Itens com Maior Taxa de Reprovação',
+                        'xaxis': {'title': 'Taxa de Reprovação (%)'},
+                        'yaxis': {'title': ''},
+                        'margin': {'l': 200}
+                    }
                 }
-            }
 
             # Converter gráficos para JSON
             logger.info("Convertendo gráficos para JSON...")
