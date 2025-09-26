@@ -5722,6 +5722,32 @@ def create_app():
     # ==============================
     # API PROXY ROUTES (for Render deployment)
     # ==============================
+    @app.route('/backend-status', methods=['GET'])
+    def backend_status():
+        """Check FastAPI backend status"""
+        try:
+            response = requests.get("http://127.0.0.1:8005/health", timeout=5)
+            return jsonify({
+                "fastapi_status": "online",
+                "status_code": response.status_code,
+                "response": response.json()
+            })
+        except requests.exceptions.ConnectionError:
+            return jsonify({
+                "fastapi_status": "offline",
+                "error": "Connection refused - FastAPI not running on port 8005"
+            }), 503
+        except requests.exceptions.Timeout:
+            return jsonify({
+                "fastapi_status": "timeout",
+                "error": "FastAPI taking too long to respond"
+            }), 504
+        except Exception as e:
+            return jsonify({
+                "fastapi_status": "error",
+                "error": str(e)
+            }), 500
+
     @app.route('/health', methods=['GET'])
     def health_proxy():
         """Proxy health check to FastAPI backend"""
