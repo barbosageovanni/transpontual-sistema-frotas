@@ -399,33 +399,49 @@ def create_app():
             print(f"🔧 [KEYERROR-FIX] Resposta da API: {type(alertas_response)} - {alertas_response}")
 
             if alertas_response and isinstance(alertas_response, dict):
-                # Extrair alertas da resposta da API
+                # Extrair alertas da resposta da API com proteção extra
                 alertas_manutencao = alertas_response.get('alerts', [])
+                print(f"🔧 [KEYERROR-FIX] Alertas extraídos: {type(alertas_manutencao)} - {alertas_manutencao}")
 
-                # Se alertas_manutencao é um dicionário, converter para lista
-                if isinstance(alertas_manutencao, dict):
-                    alertas_list = list(alertas_manutencao.values())
-                elif isinstance(alertas_manutencao, list):
-                    alertas_list = alertas_manutencao
-                else:
+                # Conversão segura para lista
+                alertas_list = []
+                try:
+                    if isinstance(alertas_manutencao, dict):
+                        alertas_list = list(alertas_manutencao.values()) if alertas_manutencao else []
+                    elif isinstance(alertas_manutencao, (list, tuple)):
+                        alertas_list = list(alertas_manutencao) if alertas_manutencao else []
+                    else:
+                        alertas_list = []
+                    print(f"🔧 [KEYERROR-FIX] Lista convertida: {len(alertas_list)} items")
+                except Exception as convert_error:
+                    print(f"🔧 [KEYERROR-FIX] Erro na conversão: {convert_error}")
                     alertas_list = []
 
-                # Processar alertas da API (limitando a 8)
+                # Processar alertas da API (limitando a 8) com proteção extra
                 alerts = []
-                for i, alerta in enumerate(alertas_list[:8]):  # Slice seguro
-                    if isinstance(alerta, dict):
-                        alert_item = {
-                            "id": alerta.get('id', i + 1),
-                            "tipo": "Alerta de equipamento",
-                            "codigo_equipamento": alerta.get('equipment_code', f"EQ-{i+1:04d}"),
-                            "descricao": alerta.get('description', f"Manutenção pendente {i+1}"),
-                            "data_hora": alerta.get('date', now.strftime("%d.%m %H:%M")),
-                            "nivel": alerta.get('level', 'warning')
-                        }
-                        alerts.append(alert_item)
+                try:
+                    safe_list = alertas_list[:8] if alertas_list and len(alertas_list) > 0 else []
+                    for i, alerta in enumerate(safe_list):
+                        try:
+                            if isinstance(alerta, dict):
+                                alert_item = {
+                                    "id": alerta.get('id', i + 1),
+                                    "tipo": "Alerta de equipamento",
+                                    "codigo_equipamento": alerta.get('equipment_code', f"EQ-{i+1:04d}"),
+                                    "descricao": alerta.get('description', f"Manutenção pendente {i+1}"),
+                                    "data_hora": alerta.get('date', now.strftime("%d.%m %H:%M")),
+                                    "nivel": alerta.get('level', 'warning')
+                                }
+                                alerts.append(alert_item)
+                        except Exception as item_error:
+                            print(f"🔧 [KEYERROR-FIX] Erro processando item {i}: {item_error}")
+                            continue
+                except Exception as process_error:
+                    print(f"🔧 [KEYERROR-FIX] Erro no processamento da lista: {process_error}")
 
                 # Se conseguimos processar alertas da API, retornar
                 if alerts:
+                    print(f"🔧 [KEYERROR-FIX] Retornando {len(alerts)} alertas da API")
                     return alerts
 
         except Exception as e:
