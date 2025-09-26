@@ -691,67 +691,68 @@ def create_app():
                 if kpis_data and 'evolucao_semanal' in kpis_data:
                     evolucao = kpis_data['evolucao_semanal']
                     logger.info(f"Evolução encontrada: {type(evolucao)}, len: {len(evolucao) if isinstance(evolucao, list) else 'N/A'}")
-                # Garantir que evolucao é uma lista válida
-                if not isinstance(evolucao, list) or not evolucao:
-                    raise ValueError("Evolução não é uma lista válida")
 
-                charts['evolucao'] = {
-                    'data': [
-                        go.Scatter(
-                            x=[item.get('data', '') for item in evolucao],
-                            y=[item.get('aprovados', 0) for item in evolucao],
-                            name='Aprovados',
-                            line=dict(color='#10b981')
-                        ),
-                        go.Scatter(
-                            x=[item.get('data', '') for item in evolucao],
-                            y=[item.get('reprovados', 0) for item in evolucao],
-                            name='Reprovados',
-                            line=dict(color='#ef4444')
-                        )
-                    ],
-                    'layout': {
-                        'title': 'Evolução dos Checklists (7 dias)',
-                        'xaxis': {'title': 'Data'},
-                        'yaxis': {'title': 'Quantidade'},
-                        'hovermode': 'x unified'
-                    }
-                }
-            else:
-                # Dados de exemplo se não há evolução_semanal
-                from datetime import datetime, timedelta
-                today = datetime.now()
-                evolucao_demo = []
-                for i in range(7):
-                    date = today - timedelta(days=6-i)
-                    evolucao_demo.append({
-                        'data': date.strftime('%d/%m'),
-                        'aprovados': 10 + i * 2,
-                        'reprovados': 3 + i
-                    })
+                    # Garantir que evolucao é uma lista válida
+                    if not isinstance(evolucao, list) or not evolucao:
+                        raise ValueError("Evolução não é uma lista válida")
 
-                charts['evolucao'] = {
-                    'data': [
-                        go.Scatter(
-                            x=[item['data'] for item in evolucao_demo],
-                            y=[item['aprovados'] for item in evolucao_demo],
-                            name='Aprovados',
-                            line=dict(color='#10b981')
-                        ),
-                        go.Scatter(
-                            x=[item['data'] for item in evolucao_demo],
-                            y=[item['reprovados'] for item in evolucao_demo],
-                            name='Reprovados',
-                            line=dict(color='#ef4444')
-                        )
-                    ],
-                    'layout': {
-                        'title': 'Evolução dos Checklists (7 dias) - Demo',
-                        'xaxis': {'title': 'Data'},
-                        'yaxis': {'title': 'Quantidade'},
-                        'hovermode': 'x unified'
+                    charts['evolucao'] = {
+                        'data': [
+                            go.Scatter(
+                                x=[item.get('data', '') for item in evolucao],
+                                y=[item.get('aprovados', 0) for item in evolucao],
+                                name='Aprovados',
+                                line=dict(color='#10b981')
+                            ),
+                            go.Scatter(
+                                x=[item.get('data', '') for item in evolucao],
+                                y=[item.get('reprovados', 0) for item in evolucao],
+                                name='Reprovados',
+                                line=dict(color='#ef4444')
+                            )
+                        ],
+                        'layout': {
+                            'title': 'Evolução dos Checklists (7 dias)',
+                            'xaxis': {'title': 'Data'},
+                            'yaxis': {'title': 'Quantidade'},
+                            'hovermode': 'x unified'
+                        }
                     }
-                }
+                else:
+                    # Dados de exemplo se não há evolução_semanal
+                    from datetime import datetime, timedelta
+                    today = datetime.now()
+                    evolucao_demo = []
+                    for i in range(7):
+                        date = today - timedelta(days=6-i)
+                        evolucao_demo.append({
+                            'data': date.strftime('%d/%m'),
+                            'aprovados': 10 + i * 2,
+                            'reprovados': 3 + i
+                        })
+
+                    charts['evolucao'] = {
+                        'data': [
+                            go.Scatter(
+                                x=[item['data'] for item in evolucao_demo],
+                                y=[item['aprovados'] for item in evolucao_demo],
+                                name='Aprovados',
+                                line=dict(color='#10b981')
+                            ),
+                            go.Scatter(
+                                x=[item['data'] for item in evolucao_demo],
+                                y=[item['reprovados'] for item in evolucao_demo],
+                                name='Reprovados',
+                                line=dict(color='#ef4444')
+                            )
+                        ],
+                        'layout': {
+                            'title': 'Evolução dos Checklists (7 dias) - Demo',
+                            'xaxis': {'title': 'Data'},
+                            'yaxis': {'title': 'Quantidade'},
+                            'hovermode': 'x unified'
+                        }
+                    }
         except Exception as e:
             print(f"❌ Erro ao processar gráfico de evolução: {e}")
             # Gráfico de fallback simples
