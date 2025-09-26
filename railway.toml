@@ -1,4 +1,4 @@
-# Force redeploy - KeyError fix applied 2025-09-26 09:30
+# CRITICAL REDEPLOY - Both Flask and FastAPI fixes 2025-09-26 11:29
 [build]
 builder = "nixpacks"
 
