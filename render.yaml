@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: transpontual-sistema-frotas
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python server.py
+    plan: free
+    region: oregon
+    branch: main
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: PYTHONPATH
+        value: /opt/render/project/src
+      - key: PYTHONIOENCODING
+        value: utf-8

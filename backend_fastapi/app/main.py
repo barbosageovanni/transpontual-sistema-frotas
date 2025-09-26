@@ -30,12 +30,23 @@ app = FastAPI(
 )
 
 
+# CORS configuration for Render deployment
+allowed_origins = [
+    "http://localhost:3000",  # Local development
+    "http://localhost:8080",  # Local Flask
+    "http://localhost:10000", # Render port
+    "https://*.onrender.com", # Render domains
+    "https://web-production-3d416.up.railway.app",  # Current Railway
+    "https://transpontual-sistema-frotas.onrender.com",  # Future Render URL
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
+    expose_headers=["X-Process-Time"],
 )
 
 

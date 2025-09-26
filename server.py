@@ -29,10 +29,10 @@ def start_fastapi_backend():
             load_dotenv(railway_env)
             print("SUCCESS: .railway-env file loaded")
 
-        # Set Railway environment variables directly if not found
+        # Set environment variables for Render deployment
         if not os.getenv('DATABASE_URL'):
             print("⚠️ Setting DATABASE_URL from hardcoded value...")
-            # Try different connection approaches for Railway compatibility
+            # Render-compatible connection strings
             db_options = [
                 "postgresql://postgres:Mariaana953%407334@db.lijtncazuwnbydeqtoyz.supabase.co:5432/postgres?sslmode=require",
                 "postgresql://postgres:Mariaana953%407334@aws-0-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require",
@@ -40,7 +40,7 @@ def start_fastapi_backend():
             ]
             os.environ['DATABASE_URL'] = db_options[0]  # Start with first option
             os.environ['DATABASE_BACKUP_URLS'] = '|'.join(db_options[1:])  # Store alternatives
-            os.environ['JWT_SECRET'] = "dev-jwt-secret-change-in-production"
+            os.environ['JWT_SECRET'] = "kj9q-Xfby"  # Render JWT secret
             os.environ['ENV'] = "production"
 
         # Check database URL
@@ -157,7 +157,7 @@ def start_flask_dashboard():
                 })
 
         # Configure API proxy (Flask Dashboard will proxy /api/* to FastAPI)
-        port = int(os.getenv("PORT", 8080))
+        port = int(os.getenv("PORT", 10000))  # Render default port
         host = "0.0.0.0"
 
         print(f"🚀 Starting Unified Server on {host}:{port}")
