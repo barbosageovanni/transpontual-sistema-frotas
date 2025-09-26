@@ -651,11 +651,39 @@ def create_app():
                 print(f"Erro ao buscar health: {e}")
                 health_data = {"status": "error", "database": "disconnected"}
 
-            # Gerar alertas de exemplo
+            # Gerar alertas de exemplo com proteção extra contra KeyError
             logger.info("Gerando alertas de exemplo...")
-            alertas = generate_sample_alerts()
-            alertas_equipamentos = [a for a in alertas if a["tipo"] == "Alerta de equipamento"]
-            logger.info(f"Alertas gerados: {len(alertas)}, equipamentos: {len(alertas_equipamentos)}")
+            try:
+                alertas = generate_sample_alerts()
+                logger.info(f"Alertas gerados com sucesso: {type(alertas)}")
+            except Exception as e:
+                logger.error(f"ERRO CRÍTICO na função generate_sample_alerts: {e}")
+                print(f"ERRO CRÍTICO na função generate_sample_alerts: {e}")
+                # Fallback de emergência com alertas estáticos
+                from datetime import datetime, timedelta
+                now = datetime.now()
+                alertas = [
+                    {
+                        "id": 1,
+                        "tipo": "Alerta de equipamento",
+                        "codigo_equipamento": "FALLBACK-001",
+                        "descricao": "Sistema de Emergência - Alerta 1",
+                        "data_hora": now.strftime("%d.%m %H:%M"),
+                        "nivel": "warning"
+                    },
+                    {
+                        "id": 2,
+                        "tipo": "Alerta de equipamento",
+                        "codigo_equipamento": "FALLBACK-002",
+                        "descricao": "Sistema de Emergência - Alerta 2",
+                        "data_hora": (now - timedelta(hours=1)).strftime("%d.%m %H:%M"),
+                        "nivel": "danger"
+                    }
+                ]
+                logger.info("Usando alertas de emergência devido a erro")
+
+            alertas_equipamentos = [a for a in alertas if a.get("tipo") == "Alerta de equipamento"]
+            logger.info(f"Alertas processados: {len(alertas)}, equipamentos: {len(alertas_equipamentos)}")
 
             # Preparar dados para gráficos Plotly
             logger.info("=== INICIANDO GERAÇÃO DE GRÁFICOS ===")
