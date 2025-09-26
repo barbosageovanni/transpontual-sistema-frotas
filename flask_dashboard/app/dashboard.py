@@ -390,10 +390,13 @@ def create_app():
     def generate_sample_alerts():
         """Gera alertas de demonstração com tratamento seguro de dados da API"""
         now = datetime.now()
+        print(f"🔧 [KEYERROR-FIX] Iniciando generate_sample_alerts - timestamp: {now}")
 
         try:
             # Tentar buscar dados da API primeiro
+            print("🔧 [KEYERROR-FIX] Fazendo chamada para API...")
             alertas_response = api_request('/api/v1/maintenance/alerts-data')
+            print(f"🔧 [KEYERROR-FIX] Resposta da API: {type(alertas_response)} - {alertas_response}")
 
             if alertas_response and isinstance(alertas_response, dict):
                 # Extrair alertas da resposta da API
@@ -426,9 +429,13 @@ def create_app():
                     return alerts
 
         except Exception as e:
-            print(f"Erro ao buscar alertas da API: {e}")
+            print(f"🔧 [KEYERROR-FIX] ERRO na função generate_sample_alerts: {e}")
+            print(f"🔧 [KEYERROR-FIX] Traceback completo:")
+            import traceback
+            traceback.print_exc()
 
-        # Fallback: usar dados de exemplo se API falhar
+        # FALLBACK UNIVERSAL: usar dados de exemplo se API falhar ou der qualquer erro
+        print("🔧 [KEYERROR-FIX] Usando fallback de alertas estáticos...")
         alerts = [
             {
                 "id": 1,
