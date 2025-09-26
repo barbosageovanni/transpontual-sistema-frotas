@@ -23,18 +23,21 @@ def test_database_connection(url):
 
         start_time = time.time()
 
-        # Create engine with Railway-optimized settings
+        # Create engine with IPv4-optimized settings
         test_engine = create_engine(
             url,
             pool_pre_ping=True,
             connect_args={
-                "connect_timeout": 15,
-                "application_name": "transpontual_test",
+                "connect_timeout": 10,
+                "application_name": "transpontual_render",
                 "sslmode": "require" if "postgresql" in url else None,
-                "options": "-c timezone=UTC"
+                "options": "-c timezone=UTC",
+                # Force IPv4 if possible
+                "host": url.split('@')[1].split(':')[0] if '@' in url else None
             },
-            pool_timeout=20,
-            pool_recycle=300
+            pool_timeout=15,
+            pool_recycle=300,
+            echo=False
         )
 
         # Test actual connection
@@ -70,16 +73,15 @@ def get_working_database_url():
 
     settings = get_settings()
 
-    # All possible database URLs to try (Railway-optimized)
+    # All possible database URLs to try (IPv4 prioritized)
     urls_to_try = [
-        # Pooler connection (usually works better with Railway)
-        "postgresql://postgres.lijtncazuwnbydeqtoyz:Mariaana953%407334@aws-0-us-east-1.pooler.supabase.com:6543/postgres?sslmode=require",
-        # Direct connection with IPv4 DNS
-        "postgresql://postgres:Mariaana953%407334@db.lijtncazuwnbydeqtoyz.supabase.co:5432/postgres?sslmode=require",
-        # Pooler with standard port
-        "postgresql://postgres:Mariaana953%407334@aws-0-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require",
-        # Alternative pooler format
-        "postgresql://postgres.lijtncazuwnbydeqtoyz:Mariaana953%407334@aws-0-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require",
+        # IPv4 pooler connections (best for cloud deployment)
+        "postgresql://postgres:Mariaana953%407334@aws-0-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require&connect_timeout=10",
+        "postgresql://postgres.lijtncazuwnbydeqtoyz:Mariaana953%407334@aws-0-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require&connect_timeout=10",
+        # Pooler with port 6543 (transaction mode)
+        "postgresql://postgres.lijtncazuwnbydeqtoyz:Mariaana953%407334@aws-0-us-east-1.pooler.supabase.com:6543/postgres?sslmode=require&connect_timeout=10",
+        # Direct connection (may have IPv6 issues)
+        "postgresql://postgres:Mariaana953%407334@db.lijtncazuwnbydeqtoyz.supabase.co:5432/postgres?sslmode=require&connect_timeout=10",
         # Original from settings
         settings.DATABASE_URL,
     ]
