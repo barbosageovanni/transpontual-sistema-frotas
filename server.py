@@ -31,23 +31,23 @@ def start_fastapi_backend():
 
         # Set environment variables for Render deployment
         if not os.getenv('DATABASE_URL'):
-            print("⚠️ Setting DATABASE_URL from hardcoded value...")
-            # IPv4-only connection strings for better compatibility
+            print("WARNING: Setting DATABASE_URL from hardcoded value...")
+            # IPv4-only connection strings for better compatibility (prioritize working direct connection)
             db_options = [
-                "postgresql://postgres:Mariaana953%407334@aws-0-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require",
-                "postgresql://postgres.lijtncazuwnbydeqtoyz:Mariaana953%407334@aws-0-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require",
                 "postgresql://postgres:Mariaana953%407334@db.lijtncazuwnbydeqtoyz.supabase.co:5432/postgres?sslmode=require&connect_timeout=10",
+                "postgresql://postgres.lijtncazuwnbydeqtoyz:Mariaana953%407334@aws-0-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require",
+                "postgresql://postgres:Mariaana953%407334@aws-0-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require",
             ]
-            os.environ['DATABASE_URL'] = db_options[0]  # Start with first option
+            os.environ['DATABASE_URL'] = db_options[0]  # Start with working direct connection
             os.environ['DATABASE_BACKUP_URLS'] = '|'.join(db_options[1:])  # Store alternatives
             os.environ['JWT_SECRET'] = "kj9q-Xfby"  # Render JWT secret
             os.environ['ENV'] = "production"
 
         # Check database URL
         db_url = os.getenv('DATABASE_URL')
-        print(f"🗄️ DATABASE_URL: {'Set' if db_url else 'Not set'}")
+        print(f"DATABASE_URL: {'Set' if db_url else 'Not set'}")
         if db_url:
-            print(f"🗄️ Database host: {db_url.split('@')[1].split('/')[0] if '@' in db_url else 'unknown'}")
+            print(f"Database host: {db_url.split('@')[1].split('/')[0] if '@' in db_url else 'unknown'}")
 
         # Add backend to path
         backend_dir = Path(__file__).parent / "backend_fastapi"
@@ -160,9 +160,9 @@ def start_flask_dashboard():
         port = int(os.getenv("PORT", 10000))  # Render default port
         host = "0.0.0.0"
 
-        print(f"🚀 Starting Unified Server on {host}:{port}")
-        print(f"📊 Dashboard: http://{host}:{port}/")
-        print(f"API: API: http://{host}:{port}/api/*")
+        print(f"Starting Unified Server on {host}:{port}")
+        print(f"Dashboard: http://{host}:{port}/")
+        print(f"API: http://{host}:{port}/api/*")
 
         # Start Flask Dashboard
         app.run(host=host, port=port, debug=False)
@@ -173,8 +173,8 @@ def start_flask_dashboard():
         traceback.print_exc()
 
 if __name__ == "__main__":
-    print("🚀 Transpontual Unified Server Starting... [KEYERROR-FIX-ACTIVE]")
-    print("🔧 EMERGENCY: KeyError fix applied - timestamp: 2025-09-26 11:30")
+    print("Transpontual Unified Server Starting... [KEYERROR-FIX-ACTIVE]")
+    print("EMERGENCY: KeyError fix applied - timestamp: 2025-09-26 11:30")
 
     # Start FastAPI in background thread
     api_thread = threading.Thread(target=start_fastapi_backend, daemon=True)

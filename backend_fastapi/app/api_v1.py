@@ -443,6 +443,17 @@ def list_checklists(
             actual_limit = per_page
             actual_offset = (page - 1) * per_page
 
+        # Double-check database session is valid before querying
+        if db is None:
+            return {
+                "total": 0,
+                "checklists": [],
+                "page": page,
+                "per_page": per_page,
+                "offline_mode": True,
+                "message": "Database session is None"
+            }
+
         # Construir query com filtros
         query = db.query(models.Checklist)
 

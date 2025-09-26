@@ -88,7 +88,7 @@ def get_working_database_url():
 
     for url in urls_to_try:
         if url and url.strip():
-            print(f"🔄 Testing database: {url.split('@')[1].split('/')[0] if '@' in url else 'unknown'}")
+            print(f"TESTING: Database connection: {url.split('@')[1].split('/')[0] if '@' in url else 'unknown'}")
             if test_database_connection(url):
                 print(f"SUCCESS: Database connection successful!")
                 DATABASE_URL = url
@@ -137,7 +137,7 @@ def get_db():
     """FastAPI dependency to provide a DB session."""
     if not DATABASE_AVAILABLE:
         # Return a mock database session for offline mode
-        print("⚠️ Using offline mode - no database operations available")
+        print("WARNING: Using offline mode - no database operations available")
         yield None
         return
 
