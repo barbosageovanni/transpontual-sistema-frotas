@@ -449,6 +449,7 @@ def create_app():
             print(f"🔧 [KEYERROR-FIX] Traceback completo:")
             import traceback
             traceback.print_exc()
+
         # FALLBACK UNIVERSAL: usar dados de exemplo se API falhar ou der qualquer erro
         print("🔧 [KEYERROR-FIX] Usando fallback de alertas estáticos...")
         alerts = [
