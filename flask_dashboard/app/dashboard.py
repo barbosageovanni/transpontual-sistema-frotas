@@ -936,6 +936,8 @@ def create_app():
         # Garantir que checklists_pendentes seja sempre uma lista
         if isinstance(checklists_pendentes_response, list):
             checklists_pendentes = checklists_pendentes_response
+        elif isinstance(checklists_pendentes_response, dict) and 'pendentes' in checklists_pendentes_response:
+            checklists_pendentes = checklists_pendentes_response['pendentes']
         else:
             checklists_pendentes = []
 

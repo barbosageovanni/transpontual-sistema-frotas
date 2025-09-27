@@ -491,6 +491,15 @@ async def start_checklist_compat(checklist_data: dict, db: Session = Depends(get
 async def get_pending_checklists_compat(db: Session = Depends(get_db)):
     """Get checklists pending approval"""
     try:
+        # Check if database is available
+        if db is None:
+            print("WARNING: Database not available - returning empty pending checklists")
+            return {
+                "pendentes": [],
+                "total": 0,
+                "message": "Banco de dados não disponível - modo offline"
+            }
+
         checklists = db.query(models.Checklist).filter(
             models.Checklist.status == "aguardando_aprovacao"
         ).outerjoin(models.Veiculo).outerjoin(models.Motorista).all()
@@ -514,7 +523,11 @@ async def get_pending_checklists_compat(db: Session = Depends(get_db)):
         print(f"Error getting pending checklists: {e}")
         import traceback
         traceback.print_exc()
-        return []
+        return {
+            "pendentes": [],
+            "total": 0,
+            "message": f"Erro ao buscar checklists: {str(e)}"
+        }
 
 @app.get("/checklist/{checklist_id}")
 async def get_checklist_compat(checklist_id: int, db: Session = Depends(get_db)):
