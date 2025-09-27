@@ -190,8 +190,8 @@ def start_flask_dashboard():
         traceback.print_exc()
 
 if __name__ == "__main__":
-    print("Transpontual Unified Server Starting... [KEYERROR-FIX-ACTIVE]")
-    print("EMERGENCY: KeyError fix applied - timestamp: 2025-09-26 11:30")
+    print("Transpontual Unified Server Starting... [DATABASE-FIX-ACTIVE]")
+    print("CRITICAL: Database connection fix applied - timestamp: 2025-09-27 15:30")
 
     # Start FastAPI in background thread
     api_thread = threading.Thread(target=start_fastapi_backend, daemon=True)
