@@ -931,7 +931,13 @@ def create_app():
         veiculos = api_request('/api/v1/vehicles') or []
         motoristas = api_request('/api/v1/drivers') or []
         modelos = api_request('/api/v1/checklist/modelos') or []
-        checklists_pendentes = api_request('/api/v1/checklist/pending') or []
+        checklists_pendentes_response = api_request('/api/v1/checklist/pending')
+
+        # Garantir que checklists_pendentes seja sempre uma lista
+        if isinstance(checklists_pendentes_response, list):
+            checklists_pendentes = checklists_pendentes_response
+        else:
+            checklists_pendentes = []
 
         return render_template('checklists/new.html',
                              veiculos=veiculos,
