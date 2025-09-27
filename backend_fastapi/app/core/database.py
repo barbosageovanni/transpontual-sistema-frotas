@@ -86,14 +86,20 @@ def get_working_database_url():
     global DATABASE_URL, DATABASE_AVAILABLE
 
     if DATABASE_URL and DATABASE_AVAILABLE:
+        print(f"INFO: Using cached database connection")
         return DATABASE_URL
 
     settings = get_settings()
 
+    # Check environment variables
+    env_url = os.getenv('DATABASE_URL')
+    print(f"ENV: DATABASE_URL from environment: {'SET' if env_url else 'NOT SET'}")
+    print(f"ENV: Settings DATABASE_URL: {'SET' if settings.DATABASE_URL else 'NOT SET'}")
+
     # All possible database URLs to try (optimized for Render deployment)
     urls_to_try = [
         # Primary: Environment variable (should be set by Render)
-        os.getenv('DATABASE_URL'),
+        env_url,
         # Fallback: Direct Supabase connection with optimized settings for Render
         "postgresql://postgres:Mariaana953%407334@db.lijtncazuwnbydeqtoyz.supabase.co:5432/postgres?sslmode=require&connect_timeout=30&tcp_keepalives_idle=10&tcp_keepalives_interval=5&tcp_keepalives_count=3",
         "postgresql://postgres.lijtncazuwnbydeqtoyz:Mariaana953%407334@db.lijtncazuwnbydeqtoyz.supabase.co:5432/postgres?sslmode=require&connect_timeout=30&tcp_keepalives_idle=10",
@@ -104,14 +110,19 @@ def get_working_database_url():
         settings.DATABASE_URL,
     ]
 
-    for url in urls_to_try:
+    print(f"INFO: Testing {len([u for u in urls_to_try if u])} database URLs...")
+
+    for i, url in enumerate(urls_to_try, 1):
         if url and url.strip():
-            print(f"TESTING: Database connection: {url.split('@')[1].split('/')[0] if '@' in url else 'unknown'}")
+            host = url.split('@')[1].split('/')[0] if '@' in url else 'unknown'
+            print(f"TESTING {i}: Database connection to {host}")
             if test_database_connection(url):
-                print(f"SUCCESS: Database connection successful!")
+                print(f"SUCCESS: Database connection {i} successful to {host}")
                 DATABASE_URL = url
                 DATABASE_AVAILABLE = True
                 return url
+            else:
+                print(f"FAILED {i}: Database connection to {host}")
 
     print("ERROR: All database connections failed - running in offline mode")
     DATABASE_URL = settings.DATABASE_URL  # Fallback to original

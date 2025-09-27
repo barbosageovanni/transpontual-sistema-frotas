@@ -130,6 +130,44 @@ async def health_check():
         "service": "transpontual-fleet-api"
     }
 
+@app.get("/debug/database")
+async def debug_database():
+    """Debug endpoint to check database connection status"""
+    import os
+    from app.core.database import DATABASE_URL, DATABASE_AVAILABLE, test_connection
+
+    # Get environment variables
+    env_db_url = os.getenv('DATABASE_URL')
+
+    return {
+        "database_available": DATABASE_AVAILABLE,
+        "current_database_url": DATABASE_URL[:50] + "..." if DATABASE_URL else None,
+        "env_database_url": env_db_url[:50] + "..." if env_db_url else None,
+        "connection_test": test_connection(),
+        "environment": os.getenv('ENV', 'not_set'),
+        "timestamp": datetime.now().isoformat()
+    }
+
+@app.post("/debug/reconnect")
+async def force_reconnect():
+    """Force database reconnection"""
+    import os
+    from app.core import database
+
+    # Reset database globals
+    database.DATABASE_URL = None
+    database.DATABASE_AVAILABLE = False
+
+    # Get new connection
+    new_url = database.get_working_database_url()
+
+    return {
+        "message": "Database reconnection attempted",
+        "new_url": new_url[:50] + "..." if new_url else None,
+        "available": database.DATABASE_AVAILABLE,
+        "timestamp": datetime.now().isoformat()
+    }
+
 
 # Compatibility endpoints for Flask dashboard (without /api/v1 prefix)
 @app.get("/vehicles")
