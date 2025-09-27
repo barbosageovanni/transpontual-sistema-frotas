@@ -74,8 +74,16 @@ def get_settings() -> Settings:
     Carrega variáveis de ambiente de um arquivo .env mesmo quando o
     processo é iniciado dentro de subpastas (ex.: backend_fastapi/).
     """
-    # 1) Tenta carregar .env da raiz do repositório (onde há docker-compose.yml)
+    # 1) Para Render, tenta carregar .env.render primeiro
     here = Path(__file__).resolve()
+    for parent in here.parents:
+        render_env = parent / ".env.render"
+        if render_env.is_file():
+            print(f"Loading Render environment: {render_env}")
+            load_dotenv(render_env, override=True)
+            break
+
+    # 2) Tenta carregar .env da raiz do repositório (onde há docker-compose.yml)
     repo_env_loaded = False
     for parent in here.parents:
         if (parent / "docker-compose.yml").is_file() and (parent / ".env").is_file():
@@ -83,9 +91,15 @@ def get_settings() -> Settings:
             repo_env_loaded = True
             break
 
-    # 2) Fallback: carrega o .env do diretório atual se existir
+    # 3) Fallback: carrega o .env do diretório atual se existir
     if not repo_env_loaded:
         cwd_env = Path.cwd() / ".env"
         if cwd_env.is_file():
             load_dotenv(cwd_env, override=False)
+
+    # 4) Force DATABASE_URL if not set (Render fallback)
+    if not os.getenv('DATABASE_URL'):
+        os.environ['DATABASE_URL'] = "postgresql://postgres:Mariaana953%407334@db.lijtncazuwnbydeqtoyz.supabase.co:5432/postgres?sslmode=require&connect_timeout=30&tcp_keepalives_idle=10&tcp_keepalives_interval=5&tcp_keepalives_count=3"
+        print("FALLBACK: DATABASE_URL set from hardcoded fallback")
+
     return Settings()

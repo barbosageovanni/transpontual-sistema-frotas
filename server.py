@@ -29,6 +29,12 @@ def start_fastapi_backend():
             load_dotenv(railway_env)
             print("SUCCESS: .railway-env file loaded")
 
+        # Try .env.render for Render deployment
+        render_env = Path(__file__).parent / ".env.render"
+        if render_env.exists():
+            load_dotenv(render_env, override=True)
+            print("SUCCESS: .env.render file loaded")
+
         # Set environment variables for Render deployment
         print("Setting required environment variables for Render...")
 
