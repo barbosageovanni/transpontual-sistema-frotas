@@ -32,12 +32,25 @@ def start_fastapi_backend():
         # Set environment variables for Render deployment
         print("Setting required environment variables for Render...")
 
-        # Always set these for Render deployment (override any existing values)
-        os.environ['DATABASE_URL'] = "postgresql://postgres:Mariaana953%407334@db.lijtncazuwnbydeqtoyz.supabase.co:5432/postgres?sslmode=require&connect_timeout=30&tcp_keepalives_idle=10&tcp_keepalives_interval=5&tcp_keepalives_count=3"
-        os.environ['JWT_SECRET'] = "kj9q-Xfby"
-        os.environ['ENV'] = "production"
-        os.environ['API_BASE'] = "http://localhost:8005"
-        os.environ['FLASK_SECRET_KEY'] = "render-production-secret-key-2025"
+        # Set defaults only if not already set by Render environment
+        if not os.getenv('DATABASE_URL'):
+            os.environ['DATABASE_URL'] = "postgresql://postgres:Mariaana953%407334@db.lijtncazuwnbydeqtoyz.supabase.co:5432/postgres?sslmode=require&connect_timeout=30&tcp_keepalives_idle=10&tcp_keepalives_interval=5&tcp_keepalives_count=3"
+            print("DATABASE_URL: Set from fallback")
+        else:
+            print("DATABASE_URL: Using Render environment variable")
+
+        if not os.getenv('JWT_SECRET'):
+            os.environ['JWT_SECRET'] = "kj9q-Xfby-render-prod-2025"
+            print("JWT_SECRET: Set from fallback")
+        else:
+            print("JWT_SECRET: Using Render environment variable")
+
+        # Always set these for consistency
+        os.environ.setdefault('ENV', 'production')
+        os.environ.setdefault('API_BASE', 'http://localhost:8005')
+        os.environ.setdefault('FLASK_SECRET_KEY', 'render-production-secret-key-2025-supabase')
+        os.environ.setdefault('DEBUG', 'false')
+        os.environ.setdefault('LOG_LEVEL', 'INFO')
 
         print("SUCCESS: Environment variables configured for Render deployment")
 

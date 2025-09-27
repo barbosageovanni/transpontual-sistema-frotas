@@ -9,15 +9,38 @@ services:
     branch: main
     healthCheckPath: /health
     envVars:
+      # Database Configuration (Supabase)
       - key: DATABASE_URL
+        value: postgresql://postgres:Mariaana953%407334@db.lijtncazuwnbydeqtoyz.supabase.co:5432/postgres?sslmode=require&connect_timeout=30&tcp_keepalives_idle=10&tcp_keepalives_interval=5&tcp_keepalives_count=3
+      - key: SUPABASE_URL
+        value: https://lijtncazuwnbydeqtoyz.supabase.co
+      - key: SUPABASE_KEY
         sync: false
+      # Security
       - key: JWT_SECRET
-        sync: false
+        value: kj9q-Xfby-render-prod-2025
+      - key: JWT_EXPIRES_MINUTES
+        value: 1440
+      # Application Configuration
       - key: ENV
         value: production
+      - key: DEBUG
+        value: false
+      - key: LOG_LEVEL
+        value: INFO
+      # Server Configuration
       - key: PORT
         value: 10000
+      - key: API_BASE
+        value: http://localhost:8005
+      # Python Configuration
       - key: PYTHONPATH
         value: /opt/render/project/src
       - key: PYTHONIOENCODING
         value: utf-8
+      # Flask Configuration
+      - key: FLASK_SECRET_KEY
+        value: render-production-secret-key-2025-supabase
+      # CORS Configuration
+      - key: ALLOWED_ORIGINS
+        value: '["https://transpontual-sistema-frotas.onrender.com", "http://localhost:3000", "*"]'

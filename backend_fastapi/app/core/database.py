@@ -20,23 +20,32 @@ def test_database_connection(url):
     try:
         from sqlalchemy import create_engine, text
         import time
+        import socket
 
         start_time = time.time()
 
-        # Create engine with IPv4-optimized settings
+        # Force IPv4 resolution for Render deployment
+        original_getaddrinfo = socket.getaddrinfo
+        def ipv4_only_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):
+            return original_getaddrinfo(host, port, socket.AF_INET, type, proto, flags)
+
+        socket.getaddrinfo = ipv4_only_getaddrinfo
+
+        # Create engine with Render-optimized settings
         test_engine = create_engine(
             url,
             pool_pre_ping=True,
             connect_args={
-                "connect_timeout": 10,
-                "application_name": "transpontual_render",
+                "connect_timeout": 30,
+                "application_name": "transpontual_render_test",
                 "sslmode": "require" if "postgresql" in url else None,
                 "options": "-c timezone=UTC",
-                # Force IPv4 if possible
-                "host": url.split('@')[1].split(':')[0] if '@' in url else None
+                "tcp_keepalives_idle": "10",
+                "tcp_keepalives_interval": "5",
+                "tcp_keepalives_count": "3"
             },
-            pool_timeout=15,
-            pool_recycle=300,
+            pool_timeout=45,
+            pool_recycle=1800,
             echo=False
         )
 
@@ -50,16 +59,24 @@ def test_database_connection(url):
         print(f"SUCCESS: Connection successful in {connection_time:.2f}s (result: {test_value})")
 
         test_engine.dispose()
+
+        # Restore original getaddrinfo
+        socket.getaddrinfo = original_getaddrinfo
         return True
 
     except Exception as e:
+        # Restore original getaddrinfo on error
+        socket.getaddrinfo = original_getaddrinfo
+
         error_msg = str(e)
         if "network is unreachable" in error_msg.lower():
-            print(f"ERROR: Network unreachable - Railway may be blocking external connections")
+            print(f"ERROR: Network unreachable - Render may be blocking external connections")
         elif "connection timed out" in error_msg.lower():
             print(f"ERROR: Connection timeout - host may be unreachable")
         elif "authentication failed" in error_msg.lower():
             print(f"ERROR: Authentication failed - check credentials")
+        elif "ipv6" in error_msg.lower() or "address family" in error_msg.lower():
+            print(f"ERROR: IPv6 connection issue - forcing IPv4")
         else:
             print(f"ERROR: DB test failed: {error_msg[:100]}...")
         return False
@@ -75,13 +92,15 @@ def get_working_database_url():
 
     # All possible database URLs to try (optimized for Render deployment)
     urls_to_try = [
-        # Primary: Direct Supabase connection with optimized settings
+        # Primary: Environment variable (should be set by Render)
+        os.getenv('DATABASE_URL'),
+        # Fallback: Direct Supabase connection with optimized settings for Render
         "postgresql://postgres:Mariaana953%407334@db.lijtncazuwnbydeqtoyz.supabase.co:5432/postgres?sslmode=require&connect_timeout=30&tcp_keepalives_idle=10&tcp_keepalives_interval=5&tcp_keepalives_count=3",
         "postgresql://postgres.lijtncazuwnbydeqtoyz:Mariaana953%407334@db.lijtncazuwnbydeqtoyz.supabase.co:5432/postgres?sslmode=require&connect_timeout=30&tcp_keepalives_idle=10",
-        # Alternative: Pooler connections (may have better routing)
+        # Alternative: Pooler connections (may have better routing for Render)
         "postgresql://postgres.lijtncazuwnbydeqtoyz:Mariaana953%407334@aws-0-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require&connect_timeout=30",
         "postgresql://postgres:Mariaana953%407334@aws-0-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require&connect_timeout=30",
-        # Original from settings (fallback)
+        # Original from settings (final fallback)
         settings.DATABASE_URL,
     ]
 
@@ -102,7 +121,7 @@ def get_working_database_url():
 # Get working database URL
 DATABASE_URL = get_working_database_url()
 
-# SQLAlchemy engine with Railway optimized settings
+# SQLAlchemy engine with Render optimized settings
 engine = create_engine(
     DATABASE_URL,
     pool_pre_ping=True,
@@ -110,12 +129,15 @@ engine = create_engine(
     future=True,
     connect_args={
         "connect_timeout": 30,
-        "application_name": "transpontual_api_railway",
-        "sslmode": "require"
+        "application_name": "transpontual_api_render",
+        "sslmode": "require",
+        "tcp_keepalives_idle": "10",
+        "tcp_keepalives_interval": "5",
+        "tcp_keepalives_count": "3"
     } if "postgresql" in DATABASE_URL else {"timeout": 30},
     pool_size=2,
     max_overflow=3,
-    pool_recycle=3600,  # 1 hour
+    pool_recycle=1800,  # 30 minutes for better connection management
     pool_timeout=45,
 )
 
