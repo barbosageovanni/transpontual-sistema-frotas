@@ -136,16 +136,36 @@ async def debug_database():
     import os
     from app.core.database import DATABASE_URL, DATABASE_AVAILABLE, test_connection
 
-    # Get environment variables
-    env_db_url = os.getenv('DATABASE_URL')
+    # Get all relevant environment variables
+    env_vars = {
+        'DATABASE_URL': os.getenv('DATABASE_URL', 'NOT_SET')[:60] + "..." if os.getenv('DATABASE_URL') else 'NOT_SET',
+        'ENV': os.getenv('ENV', 'NOT_SET'),
+        'PORT': os.getenv('PORT', 'NOT_SET'),
+        'PYTHONPATH': os.getenv('PYTHONPATH', 'NOT_SET'),
+        'RENDER': os.getenv('RENDER', 'NOT_SET'),
+    }
+
+    # Test database connection
+    connection_test = test_connection()
+
+    # Get current working directory and check for env files
+    import pathlib
+    cwd = pathlib.Path.cwd()
+    env_files = {
+        '.env': (cwd / '.env').exists(),
+        '.env.render': (cwd / '.env.render').exists(),
+        'backend_fastapi/.env': (cwd / 'backend_fastapi' / '.env').exists(),
+    }
 
     return {
         "database_available": DATABASE_AVAILABLE,
-        "current_database_url": DATABASE_URL[:50] + "..." if DATABASE_URL else None,
-        "env_database_url": env_db_url[:50] + "..." if env_db_url else None,
-        "connection_test": test_connection(),
-        "environment": os.getenv('ENV', 'not_set'),
-        "timestamp": datetime.now().isoformat()
+        "current_database_url": DATABASE_URL[:60] + "..." if DATABASE_URL else None,
+        "connection_test_result": connection_test,
+        "environment_variables": env_vars,
+        "env_files_found": env_files,
+        "current_directory": str(cwd),
+        "timestamp": datetime.now().isoformat(),
+        "ipv4_patch_status": "Should be active if logs show PATCH messages"
     }
 
 @app.post("/debug/reconnect")
@@ -154,19 +174,71 @@ async def force_reconnect():
     import os
     from app.core import database
 
-    # Reset database globals
-    database.DATABASE_URL = None
-    database.DATABASE_AVAILABLE = False
+    old_status = database.DATABASE_AVAILABLE
+    old_url = database.DATABASE_URL
 
-    # Get new connection
-    new_url = database.get_working_database_url()
+    try:
+        print("FORCE RECONNECT: Resetting database connection...")
 
-    return {
-        "message": "Database reconnection attempted",
-        "new_url": new_url[:50] + "..." if new_url else None,
-        "available": database.DATABASE_AVAILABLE,
-        "timestamp": datetime.now().isoformat()
-    }
+        # Reset database globals
+        database.DATABASE_URL = None
+        database.DATABASE_AVAILABLE = False
+
+        # Clear SQLAlchemy engine cache if needed
+        if hasattr(database, 'engine'):
+            database.engine.dispose()
+            print("FORCE RECONNECT: Engine disposed")
+
+        # Get new connection
+        new_url = database.get_working_database_url()
+
+        # Recreate engine
+        if database.DATABASE_AVAILABLE:
+            # Recreate the engine with new URL
+            from app.core.database import create_engine
+            if "postgresql" in new_url:
+                connect_args = {
+                    "application_name": "transpontual_api_render_reconnect",
+                    "options": "-c timezone=UTC"
+                }
+                if "connect_timeout" not in new_url:
+                    connect_args["connect_timeout"] = 30
+                if "sslmode" not in new_url:
+                    connect_args["sslmode"] = "require"
+            else:
+                connect_args = {"timeout": 30}
+
+            database.engine = create_engine(
+                new_url,
+                pool_pre_ping=True,
+                echo=False,
+                future=True,
+                connect_args=connect_args,
+                pool_size=2,
+                max_overflow=3,
+                pool_recycle=1800,
+                pool_timeout=45,
+            )
+            print("FORCE RECONNECT: New engine created")
+
+        return {
+            "message": "Database reconnection completed",
+            "old_status": old_status,
+            "new_status": database.DATABASE_AVAILABLE,
+            "old_url": old_url[:50] + "..." if old_url else None,
+            "new_url": new_url[:50] + "..." if new_url else None,
+            "success": database.DATABASE_AVAILABLE,
+            "timestamp": datetime.now().isoformat()
+        }
+
+    except Exception as e:
+        return {
+            "message": "Database reconnection failed",
+            "error": str(e),
+            "old_status": old_status,
+            "current_status": database.DATABASE_AVAILABLE,
+            "timestamp": datetime.now().isoformat()
+        }
 
 
 # Compatibility endpoints for Flask dashboard (without /api/v1 prefix)
