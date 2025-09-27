@@ -137,7 +137,7 @@ def list_users(
 
     # Filtro por papel
     if papel:
-        query = query.filter(models.Usuario.papel == papel)
+        query = query.filter(models.Usuario.tipo_usuario == papel)
 
     # Filtro por status
     if status:
@@ -1883,3 +1883,4 @@ def get_maintenance_alerts(db: Session = Depends(get_db)):
 
     # Normal database operations would go here
     return {"alerts": [], "total": 0, "offline_mode": False}
+

@@ -30,7 +30,7 @@ class StatusChecklist(str, Enum):
 
 # Base
 class BaseSchema(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 # Auth
 class Token(BaseSchema):
@@ -209,3 +209,4 @@ class UploadResponse(BaseSchema):
 
 # Pydantic forward refs
 Token.model_rebuild()
+

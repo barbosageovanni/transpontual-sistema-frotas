@@ -29,6 +29,75 @@ class Usuario(Base):
     ultimo_login = Column(DateTime, nullable=True)
     total_logins = Column(Integer, default=0)
 
+    @property
+    def nome(self):
+        """Return primary display name for the user."""
+        return self.nome_completo or self.username
+
+    @nome.setter
+    def nome(self, value):
+        self.nome_completo = value
+
+    @property
+    def papel(self):
+        if getattr(self, "tipo_usuario", None):
+            return self.tipo_usuario
+        if getattr(self, "role", None):
+            return self.role
+        return "admin" if getattr(self, "is_admin", False) else "gestor"
+
+    @papel.setter
+    def papel(self, value):
+        self.tipo_usuario = value
+
+    @property
+    def criado_em(self):
+        return getattr(self, "created_at", None)
+
+    @property
+    def ultimo_acesso(self):
+        return getattr(self, "ultimo_login", None) or getattr(self, "last_login", None)
+
+    @property
+    def ultimo_ip(self):
+        return getattr(self, "last_ip", None)
+
+    @property
+    def tentativas_login(self):
+        return getattr(self, "login_count", 0) or 0
+
+    @property
+    def bloqueado_ate(self):
+        return getattr(self, "banned_until", None)
+
+    @property
+    def horario_inicio(self):
+        return getattr(self, "_horario_inicio", None)
+
+    @property
+    def horario_fim(self):
+        return getattr(self, "_horario_fim", None)
+
+    @property
+    def dias_semana(self):
+        return getattr(self, "_dias_semana", None)
+
+    @property
+    def ips_permitidos(self):
+        return getattr(self, "_ips_permitidos", None)
+
+    @property
+    def localizacao_restrita(self):
+        return getattr(self, "_localizacao_restrita", False)
+
+    @property
+    def data_validade(self):
+        return getattr(self, "_data_validade", None)
+
+    @property
+    def max_sessoes(self):
+        return getattr(self, "_max_sessoes", 1)
+
     # Relacionamentos - temporariamente removido para resolver erro de foreign key
     # motorista = relationship("Motorista", back_populates="usuario", uselist=False)
 
@@ -277,3 +346,4 @@ class UsuarioPerfil(Base):
     usuario_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
     perfil_id = Column(Integer, ForeignKey("perfis_acesso.id"), primary_key=True)
     atribuido_em = Column(DateTime, default=func.now(), nullable=False)
+
