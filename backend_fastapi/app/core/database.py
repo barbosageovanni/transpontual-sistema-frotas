@@ -32,18 +32,23 @@ def test_database_connection(url):
         socket.getaddrinfo = ipv4_only_getaddrinfo
 
         # Create engine with Render-optimized settings
+        connect_args = {
+            "application_name": "transpontual_render_test",
+            "options": "-c timezone=UTC"
+        }
+
+        # Add connect_timeout if not in URL
+        if "connect_timeout" not in url:
+            connect_args["connect_timeout"] = 30
+
+        # Add SSL mode if not in URL
+        if "sslmode" not in url and "postgresql" in url:
+            connect_args["sslmode"] = "require"
+
         test_engine = create_engine(
             url,
             pool_pre_ping=True,
-            connect_args={
-                "connect_timeout": 30,
-                "application_name": "transpontual_render_test",
-                "sslmode": "require" if "postgresql" in url else None,
-                "options": "-c timezone=UTC",
-                "tcp_keepalives_idle": "10",
-                "tcp_keepalives_interval": "5",
-                "tcp_keepalives_count": "3"
-            },
+            connect_args=connect_args,
             pool_timeout=45,
             pool_recycle=1800,
             echo=False
@@ -100,12 +105,14 @@ def get_working_database_url():
     urls_to_try = [
         # Primary: Environment variable (should be set by Render)
         env_url,
-        # Fallback: Direct Supabase connection with optimized settings for Render
-        "postgresql://postgres:Mariaana953%407334@db.lijtncazuwnbydeqtoyz.supabase.co:5432/postgres?sslmode=require&connect_timeout=30&tcp_keepalives_idle=10&tcp_keepalives_interval=5&tcp_keepalives_count=3",
-        "postgresql://postgres.lijtncazuwnbydeqtoyz:Mariaana953%407334@db.lijtncazuwnbydeqtoyz.supabase.co:5432/postgres?sslmode=require&connect_timeout=30&tcp_keepalives_idle=10",
+        # Fallback: Direct Supabase connection with clean URL for Render
+        "postgresql://postgres:Mariaana953%407334@db.lijtncazuwnbydeqtoyz.supabase.co:5432/postgres?sslmode=require&connect_timeout=30",
+        "postgresql://postgres.lijtncazuwnbydeqtoyz:Mariaana953%407334@db.lijtncazuwnbydeqtoyz.supabase.co:5432/postgres?sslmode=require&connect_timeout=30",
         # Alternative: Pooler connections (may have better routing for Render)
         "postgresql://postgres.lijtncazuwnbydeqtoyz:Mariaana953%407334@aws-0-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require&connect_timeout=30",
         "postgresql://postgres:Mariaana953%407334@aws-0-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require&connect_timeout=30",
+        # Basic connection without query parameters
+        "postgresql://postgres:Mariaana953%407334@db.lijtncazuwnbydeqtoyz.supabase.co:5432/postgres",
         # Original from settings (final fallback)
         settings.DATABASE_URL,
     ]
@@ -133,19 +140,26 @@ def get_working_database_url():
 DATABASE_URL = get_working_database_url()
 
 # SQLAlchemy engine with Render optimized settings
+if "postgresql" in DATABASE_URL:
+    connect_args = {
+        "application_name": "transpontual_api_render",
+        "options": "-c timezone=UTC"
+    }
+    # Add connect_timeout if not in URL
+    if "connect_timeout" not in DATABASE_URL:
+        connect_args["connect_timeout"] = 30
+    # Add SSL mode if not in URL
+    if "sslmode" not in DATABASE_URL:
+        connect_args["sslmode"] = "require"
+else:
+    connect_args = {"timeout": 30}
+
 engine = create_engine(
     DATABASE_URL,
     pool_pre_ping=True,
     echo=False,
     future=True,
-    connect_args={
-        "connect_timeout": 30,
-        "application_name": "transpontual_api_render",
-        "sslmode": "require",
-        "tcp_keepalives_idle": "10",
-        "tcp_keepalives_interval": "5",
-        "tcp_keepalives_count": "3"
-    } if "postgresql" in DATABASE_URL else {"timeout": 30},
+    connect_args=connect_args,
     pool_size=2,
     max_overflow=3,
     pool_recycle=1800,  # 30 minutes for better connection management

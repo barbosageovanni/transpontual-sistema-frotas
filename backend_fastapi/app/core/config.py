@@ -99,7 +99,7 @@ def get_settings() -> Settings:
 
     # 4) Force DATABASE_URL if not set (Render fallback)
     if not os.getenv('DATABASE_URL'):
-        os.environ['DATABASE_URL'] = "postgresql://postgres:Mariaana953%407334@db.lijtncazuwnbydeqtoyz.supabase.co:5432/postgres?sslmode=require&connect_timeout=30&tcp_keepalives_idle=10&tcp_keepalives_interval=5&tcp_keepalives_count=3"
+        os.environ['DATABASE_URL'] = "postgresql://postgres:Mariaana953%407334@db.lijtncazuwnbydeqtoyz.supabase.co:5432/postgres?sslmode=require&connect_timeout=30"
         print("FALLBACK: DATABASE_URL set from hardcoded fallback")
 
     return Settings()
