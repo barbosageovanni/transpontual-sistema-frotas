@@ -11,27 +11,23 @@ from app.core.database import Base
 class Usuario(Base):
     """Modelo para usuários do sistema"""
     __tablename__ = "users"
-    
+
     id = Column(Integer, primary_key=True)
+    username = Column(String(255), nullable=False)
     nome_completo = Column(String(200), nullable=True)
     email = Column(String(255), unique=True, index=True, nullable=False)
-    password_hash = Column(Text, nullable=True)
-    papel = Column(String(20), nullable=False)
+    password_hash = Column(String(255), nullable=False)
+    departamento = Column(String(100), nullable=True)
+    cargo = Column(String(100), nullable=True)
+    is_admin = Column(Boolean, default=False)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=func.now())
+    last_login = Column(DateTime, nullable=True)
+    login_count = Column(Integer, default=0)
+    tipo_usuario = Column(String(50), nullable=True)
     ativo = Column(Boolean, default=True, nullable=False)
-    criado_em = Column(DateTime, default=func.now(), nullable=False)
-    
-    # Novos campos para controle de acesso avançado
-    horario_inicio = Column(Time, nullable=True, comment="Horário inicial permitido (ex: 08:00)")
-    horario_fim = Column(Time, nullable=True, comment="Horário final permitido (ex: 18:00)")
-    dias_semana = Column(String(20), nullable=True, comment="Dias permitidos (ex: 1,2,3,4,5)")
-    ips_permitidos = Column(Text, nullable=True, comment="IPs permitidos separados por vírgula")
-    localizacao_restrita = Column(Boolean, default=False, comment="Restringir por localização")
-    data_validade = Column(Date, nullable=True, comment="Data de validade do acesso")
-    max_sessoes = Column(Integer, default=1, comment="Máximo de sessões simultâneas")
-    ultimo_acesso = Column(DateTime, nullable=True)
-    ultimo_ip = Column(String(45), nullable=True)
-    tentativas_login = Column(Integer, default=0)
-    bloqueado_ate = Column(DateTime, nullable=True)
+    ultimo_login = Column(DateTime, nullable=True)
+    total_logins = Column(Integer, default=0)
 
     # Relacionamentos - temporariamente removido para resolver erro de foreign key
     # motorista = relationship("Motorista", back_populates="usuario", uselist=False)
