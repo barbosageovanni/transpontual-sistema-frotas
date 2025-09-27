@@ -193,14 +193,16 @@ def get_db():
         yield db
     except Exception as e:
         print(f"ERROR: Database session error: {e}")
-        db.rollback()
-        yield None
+        try:
+            db.rollback()
+        except Exception as rollback_error:
+            print(f"ERROR: Failed to rollback session: {rollback_error}")
+        raise
     finally:
         try:
             db.close()
-        except:
-            pass
-
+        except Exception as close_error:
+            print(f"ERROR: Failed to close session: {close_error}")
 
 def is_database_available():
     """Check if database is available"""
