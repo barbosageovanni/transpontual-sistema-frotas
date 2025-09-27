@@ -7,9 +7,21 @@ from sqlalchemy.orm import sessionmaker, DeclarativeBase
 
 from app.core.config import get_settings
 
-
 # Load database URL from settings (env/.env)
 import os
+import socket
+
+# CRITICAL: Apply IPv4-only patch for Render deployment
+# This forces all connections to use A-records instead of AAAA (IPv6)
+print("PATCH: Applying IPv4-only socket resolution for Render compatibility")
+original_getaddrinfo = socket.getaddrinfo
+def ipv4_only_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):
+    """Force IPv4 resolution for Render environment compatibility"""
+    return original_getaddrinfo(host, port, socket.AF_INET, type, proto, flags)
+
+# Apply patch globally - do NOT restore original
+socket.getaddrinfo = ipv4_only_getaddrinfo
+print("PATCH: IPv4-only resolution active for entire application lifecycle")
 
 # Try to get a working database URL
 DATABASE_URL = None
@@ -20,16 +32,10 @@ def test_database_connection(url):
     try:
         from sqlalchemy import create_engine, text
         import time
-        import socket
 
         start_time = time.time()
 
-        # Force IPv4 resolution for Render deployment
-        original_getaddrinfo = socket.getaddrinfo
-        def ipv4_only_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):
-            return original_getaddrinfo(host, port, socket.AF_INET, type, proto, flags)
-
-        socket.getaddrinfo = ipv4_only_getaddrinfo
+        # IPv4 patch is already applied globally at module level
 
         # Create engine with Render-optimized settings
         connect_args = {
@@ -64,14 +70,9 @@ def test_database_connection(url):
         print(f"SUCCESS: Connection successful in {connection_time:.2f}s (result: {test_value})")
 
         test_engine.dispose()
-
-        # Restore original getaddrinfo
-        socket.getaddrinfo = original_getaddrinfo
         return True
 
     except Exception as e:
-        # Restore original getaddrinfo on error
-        socket.getaddrinfo = original_getaddrinfo
 
         error_msg = str(e)
         if "network is unreachable" in error_msg.lower():
@@ -101,16 +102,16 @@ def get_working_database_url():
     print(f"ENV: DATABASE_URL from environment: {'SET' if env_url else 'NOT SET'}")
     print(f"ENV: Settings DATABASE_URL: {'SET' if settings.DATABASE_URL else 'NOT SET'}")
 
-    # All possible database URLs to try (optimized for Render deployment)
+    # All possible database URLs to try (optimized for Render deployment with IPv4 patch)
     urls_to_try = [
         # Primary: Environment variable (should be set by Render)
         env_url,
-        # Fallback: Direct Supabase connection with clean URL for Render
-        "postgresql://postgres:Mariaana953%407334@db.lijtncazuwnbydeqtoyz.supabase.co:5432/postgres?sslmode=require&connect_timeout=30",
-        "postgresql://postgres.lijtncazuwnbydeqtoyz:Mariaana953%407334@db.lijtncazuwnbydeqtoyz.supabase.co:5432/postgres?sslmode=require&connect_timeout=30",
-        # Alternative: Pooler connections (may have better routing for Render)
+        # HIGH PRIORITY: Pooler connections (better IPv4 routing for Render)
         "postgresql://postgres.lijtncazuwnbydeqtoyz:Mariaana953%407334@aws-0-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require&connect_timeout=30",
         "postgresql://postgres:Mariaana953%407334@aws-0-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require&connect_timeout=30",
+        # Fallback: Direct Supabase connection with IPv4 patch
+        "postgresql://postgres:Mariaana953%407334@db.lijtncazuwnbydeqtoyz.supabase.co:5432/postgres?sslmode=require&connect_timeout=30",
+        "postgresql://postgres.lijtncazuwnbydeqtoyz:Mariaana953%407334@db.lijtncazuwnbydeqtoyz.supabase.co:5432/postgres?sslmode=require&connect_timeout=30",
         # Basic connection without query parameters
         "postgresql://postgres:Mariaana953%407334@db.lijtncazuwnbydeqtoyz.supabase.co:5432/postgres",
         # Original from settings (final fallback)
