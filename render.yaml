@@ -11,7 +11,7 @@ services:
     envVars:
       # Database Configuration (Supabase)
       - key: DATABASE_URL
-        value: aws-0-sa-east-1.pooler.supabase.com
+        value: postgresql://postgres.lijtncazuwnbydeqtoyz:Mariaana953%407334@aws-0-sa-east-1.pooler.supabase.com:5432/postgres?sslmode=require&connect_timeout=30&options=project%3Dlijtncazuwnbydeqtoyz
       - key: SUPABASE_URL
         value: https://lijtncazuwnbydeqtoyz.supabase.co
       - key: SUPABASE_KEY
