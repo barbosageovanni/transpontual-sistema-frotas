@@ -74,8 +74,8 @@ def start_fastapi_backend():
         from app.main import app
         import uvicorn
 
-        # Run FastAPI on internal port
-        uvicorn.run(app, host="127.0.0.1", port=8005, log_level="info")
+        # Run FastAPI on internal port - use 0.0.0.0 for Render compatibility
+        uvicorn.run(app, host="0.0.0.0", port=8005, log_level="info")
 
     except Exception as e:
         print(f"ERROR: FastAPI Backend failed: {e}")

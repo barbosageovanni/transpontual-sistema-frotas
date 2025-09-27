@@ -32,7 +32,7 @@ services:
       - key: PORT
         value: 10000
       - key: API_BASE
-        value: http://localhost:8005
+        value: http://127.0.0.1:8005
       # Python Configuration
       - key: PYTHONPATH
         value: /opt/render/project/src
