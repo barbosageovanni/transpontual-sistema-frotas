@@ -76,16 +76,26 @@ def create_app():
 
     # Filtros personalizados para templates
     @app.template_filter('datetime')
-    def datetime_filter(value):
+    def datetime_filter(value, *args, **kwargs):
         if value is None:
             return ''
         if isinstance(value, str):
             try:
+                # Parse UTC datetime
                 value = datetime.fromisoformat(value.replace('Z', '+00:00'))
             except:
                 return value
         if hasattr(value, 'strftime'):
-            return value.strftime('%d/%m/%Y %H:%M')
+            # Convert from UTC to Brazil timezone (UTC-3)
+            from datetime import timedelta
+            if value.tzinfo is not None:
+                # If timezone aware, convert to Brazil time (UTC-3)
+                brazil_time = value - timedelta(hours=3)
+                return brazil_time.strftime('%d/%m/%Y %H:%M')
+            else:
+                # If timezone naive, assume UTC and convert
+                brazil_time = value - timedelta(hours=3)
+                return brazil_time.strftime('%d/%m/%Y %H:%M')
         return str(value)
     
     @app.template_filter('date')
@@ -502,6 +512,7 @@ def create_app():
 
             # Buscar veículos inativos para "placas bloqueadas"
             logger.info("Iniciando busca de veículos inativos...")
+            vehicles_response = None
             if kpis_data:
                 logger.info("Fazendo chamada API para veículos...")
                 try:
@@ -2679,7 +2690,10 @@ def create_app():
             if checklist.get('observacoes_gerais'):
                 info += f"<b>Observações:</b> {checklist.get('observacoes_gerais', '')}<br/>"
 
-            info += f"<br/><b>Gerado em:</b> {datetime.now().strftime('%d/%m/%Y %H:%M')}"
+            # Convert UTC to Brazil timezone for PDF generation
+            from datetime import timedelta
+            brazil_now = datetime.utcnow() - timedelta(hours=3)
+            info += f"<br/><b>Gerado em:</b> {brazil_now.strftime('%d/%m/%Y %H:%M')}"
 
             info_para = Paragraph(info, styles['Normal'])
             elements.append(info_para)
@@ -3354,7 +3368,11 @@ def create_app():
         reprovados = len([c for c in checklists if c.get('status') == 'reprovado'])
 
         # Fetch inactive vehicles for "placas bloqueadas"
-        vehicles_response = api_request('/api/v1/vehicles')
+        try:
+            vehicles_response = api_request('/api/v1/vehicles')
+        except Exception as e:
+            logger.error(f"Erro na chamada API de veículos: {e}")
+            vehicles_response = None
         placas_bloqueadas = []
 
         if vehicles_response:
@@ -3510,9 +3528,19 @@ def create_app():
 
     def get_multas_data():
         """Busca dados de multas do banco de dados"""
+        print("DEBUG: get_multas_data iniciando...")
         try:
+            print("DEBUG: Importando psycopg2...")
             import psycopg2
+            print("DEBUG: Buscando DATABASE_URL...")
             database_url = os.getenv('DATABASE_URL')
+            print(f"DEBUG: DATABASE_URL para multas: {database_url}")
+            print(f"DEBUG: Tipo da DATABASE_URL: {type(database_url)}")
+            print(f"DEBUG: Comprimento da DATABASE_URL: {len(database_url) if database_url else 'None'}")
+
+            if not database_url:
+                print("ERROR: DATABASE_URL não encontrada!")
+                return []
 
             conn = psycopg2.connect(database_url)
             cursor = conn.cursor()
@@ -5133,6 +5161,12 @@ def create_app():
     def users_list():
         """Lista todos os usuários com filtros opcionais"""
         try:
+            # Garantir autenticação
+            if not session.get('access_token'):
+                if not auto_login():
+                    flash("Erro de autenticação. Faça login novamente.", "error")
+                    return redirect('/login')
+
             # Capturar parâmetros de filtro da query string
             papel = request.args.get('papel', '')
             status = request.args.get('status', '')
@@ -5147,12 +5181,18 @@ def create_app():
             if busca:
                 params['busca'] = busca
 
+            print(f"Making request to: {app.config['API_BASE_URL']}/api/v1/users")
+            print(f"Token: {session.get('access_token', 'NONE')[:20]}...")
+
             response = requests.get(
                 f"{app.config['API_BASE_URL']}/api/v1/users",
                 headers={'Authorization': f"Bearer {session['access_token']}"},
                 params=params,
                 timeout=10
             )
+
+            print(f"Response status: {response.status_code}")
+            print(f"Response text: {response.text[:200]}...")
 
             if response.status_code == 200:
                 usuarios = response.json()
@@ -5173,29 +5213,172 @@ def create_app():
             return render_template('users/form.html', usuario={}, editing=False)
 
         try:
-            data = request.form.to_dict()
+            data = request.form.to_dict(flat=False)  # Manter arrays para checkboxes
 
-            # Limpar campos vazios e processar dados
+            # Processar dados básicos do usuário
             clean_data = {}
             for key, value in data.items():
-                if value and value.strip():  # Apenas campos não vazios
+                if isinstance(value, list):
+                    # Para checkboxes múltiplos ou campos que vieram como lista
+                    if len(value) == 1 and not key.startswith('permissoes_') and key != 'dias_semana':
+                        # Campo único que veio como lista, usar apenas o primeiro valor
+                        clean_data[key] = value[0].strip() if value[0] else ''
+                    else:
+                        # Múltiplos valores (checkboxes, etc.)
+                        cleaned_values = []
+                        for v in value:
+                            if v and v.strip():
+                                cleaned_values.append(v.strip())
+                        clean_data[key] = cleaned_values
+                elif value and isinstance(value, str) and value.strip():
                     clean_data[key] = value.strip()
+
+            # Processar permissões SSO
+            permissoes_sso = {
+                'frotas': clean_data.get('permissoes_frotas', []),
+                'baker': clean_data.get('permissoes_baker', []),
+                'financeiro': clean_data.get('permissoes_financeiro', [])
+            }
+
+            # Mapear perfil para roles dos sistemas
+            papel = clean_data.get('papel', 'operador')
+            if papel == 'admin':
+                clean_data['sistema_roles'] = ['frotas:admin', 'baker:admin', 'financeiro:admin']
+            elif papel == 'gestor':
+                clean_data['sistema_roles'] = ['frotas:gestor', 'baker:admin']
+            elif papel == 'financeiro':
+                clean_data['sistema_roles'] = ['baker:financeiro', 'financeiro:admin']
+            else:
+                clean_data['sistema_roles'] = ['frotas:operador']
+
+            # Adicionar permissões específicas
+            clean_data['permissoes_especificas'] = permissoes_sso
+
+            # Processar restrições de acesso
+            ips_permitidos = clean_data.get('ips_permitidos', '')
+            if isinstance(ips_permitidos, list):
+                ips_list = ips_permitidos
+            elif isinstance(ips_permitidos, str) and ips_permitidos.strip():
+                # Simplificar list comprehension para evitar conflitos de sintaxe
+                ip_parts = ips_permitidos.split(',')
+                ips_list = []
+                for ip in ip_parts:
+                    ip_clean = ip.strip()
+                    if ip_clean:
+                        ips_list.append(ip_clean)
+            else:
+                ips_list = []
+
+            clean_data['restricoes_acesso'] = {
+                'ips_permitidos': ips_list,
+                'horario_inicio': clean_data.get('horario_inicio', [''])[0] if isinstance(clean_data.get('horario_inicio'), list) else clean_data.get('horario_inicio', ''),
+                'horario_fim': clean_data.get('horario_fim', [''])[0] if isinstance(clean_data.get('horario_fim'), list) else clean_data.get('horario_fim', ''),
+                'dias_semana': clean_data.get('dias_semana', [])
+            }
+
+            # Processar permissões por sistema para o novo formato
+            def parse_permissions(perm_list):
+                """Converte lista de checkboxes em estrutura de permissões"""
+                if not perm_list or not isinstance(perm_list, list):
+                    return {}
+
+                # Mapear valores dos checkboxes para permissões específicas
+                permissions = {
+                    'acesso_leitura': False,
+                    'acesso_escrita': False,
+                    'acesso_exclusao': False,
+                    'admin_completo': False
+                }
+
+                for perm in perm_list:
+                    if perm == 'admin':
+                        permissions['admin_completo'] = True
+                        # Admin implica todas as permissões
+                        permissions['acesso_leitura'] = True
+                        permissions['acesso_escrita'] = True
+                        permissions['acesso_exclusao'] = True
+                    elif perm == 'gestor':
+                        permissions['acesso_leitura'] = True
+                        permissions['acesso_escrita'] = True
+                    elif perm == 'operador':
+                        permissions['acesso_leitura'] = True
+                    elif perm == 'financeiro':
+                        permissions['acesso_leitura'] = True
+                        permissions['acesso_escrita'] = True
+
+                return permissions
+
+            # Preparar dados compatíveis com a API atualizada
+            api_compatible_data = {
+                'nome': clean_data.get('nome'),
+                'email': clean_data.get('email'),
+                'papel': clean_data.get('papel'),
+                'senha': clean_data.get('senha'),
+                'ativo': clean_data.get('ativo', True)
+            }
+
+            # Adicionar permissões por sistema no formato esperado pelo backend
+            if clean_data.get('permissoes_frotas'):
+                api_compatible_data['permissoes_frotas'] = parse_permissions(clean_data['permissoes_frotas'])
+
+            if clean_data.get('permissoes_baker'):
+                api_compatible_data['permissoes_baker'] = parse_permissions(clean_data['permissoes_baker'])
+
+            if clean_data.get('permissoes_financeiro'):
+                api_compatible_data['permissoes_financeiro'] = parse_permissions(clean_data['permissoes_financeiro'])
+
+            # Remover apenas campos de restrições que já foram processados
+            for key in ['ips_permitidos', 'horario_inicio', 'horario_fim', 'dias_semana']:
+                clean_data.pop(key, None)
+
+            # Adicionar campos de restrição processados anteriormente
+            if 'restricoes_acesso' in clean_data and clean_data['restricoes_acesso']:
+                restricoes = clean_data['restricoes_acesso']
+
+                if restricoes.get('horario_inicio'):
+                    api_compatible_data['horario_inicio'] = restricoes['horario_inicio']
+                if restricoes.get('horario_fim'):
+                    api_compatible_data['horario_fim'] = restricoes['horario_fim']
+
+                # IPs já processados como lista, converter para string
+                if restricoes.get('ips_permitidos'):
+                    ips_list = restricoes['ips_permitidos']
+                    if isinstance(ips_list, list) and ips_list:
+                        api_compatible_data['ips_permitidos'] = ','.join(ips_list)
+                    elif isinstance(ips_list, str) and ips_list.strip():
+                        api_compatible_data['ips_permitidos'] = ips_list
+
+                # Dias da semana já processados
+                if restricoes.get('dias_semana'):
+                    dias = restricoes['dias_semana']
+                    if isinstance(dias, list) and dias:
+                        api_compatible_data['dias_semana'] = ','.join(dias)
+                    elif isinstance(dias, str) and dias.strip():
+                        api_compatible_data['dias_semana'] = dias
+
+            clean_data = api_compatible_data
 
             # Validar campos obrigatórios
             required_fields = ['nome', 'email', 'papel', 'senha']
             for field in required_fields:
-                if field not in clean_data:
+                if field not in clean_data or not clean_data[field]:
+                    print(f"Campo obrigatório faltando: {field}")
+                    print(f"Valor do campo: {clean_data.get(field, 'NOT_FOUND')}")
                     flash(f'Campo {field} é obrigatório', 'error')
-                    return render_template('users/form.html', usuario=data, editing=False)
+                    return render_template('users/form.html', usuario=request.form.to_dict(), editing=False)
 
             # Definir valor padrão para ativo se não especificado
             if 'ativo' not in clean_data:
                 clean_data['ativo'] = True
             else:
-                clean_data['ativo'] = clean_data['ativo'] in ['1', 'true', 'True']
+                clean_data['ativo'] = clean_data['ativo'] in ['1', 'true', 'True'] if isinstance(clean_data['ativo'], str) else clean_data['ativo']
 
             # Log dos dados que serão enviados
-            print(f"Sending user data to API: {clean_data}")
+            print(f"=== DEBUG USER CREATION ===")
+            print(f"Raw form data: {dict(request.form.to_dict(flat=False))}")
+            print(f"Processed clean_data: {clean_data}")
+            print(f"API URL: {app.config['API_BASE_URL']}/api/v1/users")
+            print(f"Authorization header exists: {'access_token' in session}")
 
             response = requests.post(
                 f"{app.config['API_BASE_URL']}/api/v1/users",
@@ -5216,7 +5399,18 @@ def create_app():
                 flash('Erro ao criar usuário', 'error')
                 return render_template('users/form.html', usuario=data, editing=False)
 
+        except SyntaxError as e:
+            import traceback
+            error_details = traceback.format_exc()
+            print(f"ERRO DE SINTAXE na criação de usuário: {error_details}")
+            print(f"SyntaxError específico: {e}")
+            flash(f'Erro de sintaxe no código: {str(e)}', 'error')
+            return render_template('users/form.html', usuario=request.form.to_dict(), editing=False)
         except Exception as e:
+            import traceback
+            error_details = traceback.format_exc()
+            print(f"Erro detalhado na criação de usuário: {error_details}")
+            print(f"Tipo de erro: {type(e)}")
             flash(f'Erro na comunicação com a API: {str(e)}', 'error')
             return render_template('users/form.html', usuario=request.form.to_dict(), editing=False)
 
@@ -5248,6 +5442,7 @@ def create_app():
         """Editar usuário"""
         if request.method == 'GET':
             try:
+                # Buscar dados básicos do usuário
                 response = requests.get(
                     f"{app.config['API_BASE_URL']}/api/v1/users/{user_id}",
                     headers={'Authorization': f"Bearer {session['access_token']}"},
@@ -5256,6 +5451,25 @@ def create_app():
 
                 if response.status_code == 200:
                     user = response.json()
+
+                    # Buscar permissões específicas do usuário
+                    try:
+                        permissions_response = requests.get(
+                            f"{app.config['API_BASE_URL']}/api/v1/users/{user_id}/permissions",
+                            headers={'Authorization': f"Bearer {session['access_token']}"},
+                            timeout=10
+                        )
+
+                        if permissions_response.status_code == 200:
+                            permissions_data = permissions_response.json()
+
+                            # Converter permissões para formato esperado pelo template
+                            user['permissions'] = permissions_data.get('permissoes_especificas', {})
+
+                    except Exception as e:
+                        print(f"Erro ao carregar permissões: {e}")
+                        user['permissions'] = {}
+
                     return render_template('users/form.html', usuario=user, editing=True)
                 else:
                     flash('Usuário não encontrado', 'error')
@@ -5266,11 +5480,158 @@ def create_app():
                 return redirect(url_for('users_list'))
 
         try:
-            data = request.form.to_dict()
+            data = request.form.to_dict(flat=False)  # Manter arrays para checkboxes
+
+            # Processar dados do formulário igual ao user_new
+            clean_data = {}
+            for key, value in data.items():
+                if isinstance(value, list):
+                    # Para checkboxes múltiplos ou campos que vieram como lista
+                    if len(value) == 1 and not key.startswith('permissoes_') and key != 'dias_semana':
+                        # Campo único que veio como lista, usar apenas o primeiro valor
+                        clean_data[key] = value[0].strip() if value[0] else ''
+                    else:
+                        # Múltiplos valores (checkboxes, etc.)
+                        cleaned_values = []
+                        for v in value:
+                            if v and v.strip():
+                                cleaned_values.append(v.strip())
+                        clean_data[key] = cleaned_values
+                elif value and isinstance(value, str) and value.strip():
+                    clean_data[key] = value.strip()
+
+            # Processar permissões SSO
+            permissoes_sso = {
+                'frotas': clean_data.get('permissoes_frotas', []),
+                'baker': clean_data.get('permissoes_baker', []),
+                'financeiro': clean_data.get('permissoes_financeiro', [])
+            }
+
+            # Mapear perfil para roles dos sistemas
+            papel = clean_data.get('papel', 'operador')
+            if papel == 'admin':
+                clean_data['sistema_roles'] = ['frotas:admin', 'baker:admin', 'financeiro:admin']
+            elif papel == 'gestor':
+                clean_data['sistema_roles'] = ['frotas:gestor', 'baker:admin']
+            elif papel == 'financeiro':
+                clean_data['sistema_roles'] = ['baker:financeiro', 'financeiro:admin']
+            else:
+                clean_data['sistema_roles'] = ['frotas:operador']
+
+            # Adicionar permissões específicas
+            clean_data['permissoes_especificas'] = permissoes_sso
+
+            # Processar restrições de acesso
+            ips_permitidos = clean_data.get('ips_permitidos', '')
+            if isinstance(ips_permitidos, list):
+                ips_list = ips_permitidos
+            elif isinstance(ips_permitidos, str) and ips_permitidos.strip():
+                # Simplificar list comprehension para evitar conflitos de sintaxe
+                ip_parts = ips_permitidos.split(',')
+                ips_list = []
+                for ip in ip_parts:
+                    ip_clean = ip.strip()
+                    if ip_clean:
+                        ips_list.append(ip_clean)
+            else:
+                ips_list = []
+
+            clean_data['restricoes_acesso'] = {
+                'ips_permitidos': ips_list,
+                'horario_inicio': clean_data.get('horario_inicio', [''])[0] if isinstance(clean_data.get('horario_inicio'), list) else clean_data.get('horario_inicio', ''),
+                'horario_fim': clean_data.get('horario_fim', [''])[0] if isinstance(clean_data.get('horario_fim'), list) else clean_data.get('horario_fim', ''),
+                'dias_semana': clean_data.get('dias_semana', [])
+            }
+
+            # Processar permissões por sistema para o novo formato
+            def parse_permissions(perm_list):
+                """Converte lista de checkboxes em estrutura de permissões"""
+                if not perm_list or not isinstance(perm_list, list):
+                    return {}
+
+                # Mapear valores dos checkboxes para permissões específicas
+                permissions = {
+                    'acesso_leitura': False,
+                    'acesso_escrita': False,
+                    'acesso_exclusao': False,
+                    'admin_completo': False
+                }
+
+                for perm in perm_list:
+                    if perm == 'admin':
+                        permissions['admin_completo'] = True
+                        # Admin implica todas as permissões
+                        permissions['acesso_leitura'] = True
+                        permissions['acesso_escrita'] = True
+                        permissions['acesso_exclusao'] = True
+                    elif perm == 'gestor':
+                        permissions['acesso_leitura'] = True
+                        permissions['acesso_escrita'] = True
+                    elif perm == 'operador':
+                        permissions['acesso_leitura'] = True
+                    elif perm == 'financeiro':
+                        permissions['acesso_leitura'] = True
+                        permissions['acesso_escrita'] = True
+
+                return permissions
+
+            # Preparar dados compatíveis com a API atualizada
+            api_compatible_data = {
+                'nome': clean_data.get('nome'),
+                'email': clean_data.get('email'),
+                'papel': clean_data.get('papel'),
+                'ativo': clean_data.get('ativo', True)
+            }
+
+            # Adicionar permissões por sistema no formato esperado pelo backend
+            if clean_data.get('permissoes_frotas'):
+                api_compatible_data['permissoes_frotas'] = parse_permissions(clean_data['permissoes_frotas'])
+
+            if clean_data.get('permissoes_baker'):
+                api_compatible_data['permissoes_baker'] = parse_permissions(clean_data['permissoes_baker'])
+
+            if clean_data.get('permissoes_financeiro'):
+                api_compatible_data['permissoes_financeiro'] = parse_permissions(clean_data['permissoes_financeiro'])
+
+            # Remover apenas campos de restrições que já foram processados
+            for key in ['ips_permitidos', 'horario_inicio', 'horario_fim', 'dias_semana']:
+                clean_data.pop(key, None)
+
+            # Adicionar senha apenas se fornecida (para edição é opcional)
+            if clean_data.get('senha'):
+                api_compatible_data['senha'] = clean_data['senha']
+
+            # Adicionar campos de restrição processados anteriormente
+            if 'restricoes_acesso' in clean_data and clean_data['restricoes_acesso']:
+                restricoes = clean_data['restricoes_acesso']
+
+                if restricoes.get('horario_inicio'):
+                    api_compatible_data['horario_inicio'] = restricoes['horario_inicio']
+                if restricoes.get('horario_fim'):
+                    api_compatible_data['horario_fim'] = restricoes['horario_fim']
+
+                # IPs já processados como lista, converter para string
+                if restricoes.get('ips_permitidos'):
+                    ips_list = restricoes['ips_permitidos']
+                    if isinstance(ips_list, list) and ips_list:
+                        api_compatible_data['ips_permitidos'] = ','.join(ips_list)
+                    elif isinstance(ips_list, str) and ips_list.strip():
+                        api_compatible_data['ips_permitidos'] = ips_list
+
+                # Dias da semana já processados
+                if restricoes.get('dias_semana'):
+                    dias = restricoes['dias_semana']
+                    if isinstance(dias, list) and dias:
+                        api_compatible_data['dias_semana'] = ','.join(dias)
+                    elif isinstance(dias, str) and dias.strip():
+                        api_compatible_data['dias_semana'] = dias
+
+            clean_data = api_compatible_data
+
             response = requests.put(
                 f"{app.config['API_BASE_URL']}/api/v1/users/{user_id}",
                 headers={'Authorization': f"Bearer {session['access_token']}"},
-                json=data,
+                json=clean_data,
                 timeout=10
             )
 
@@ -5281,7 +5642,18 @@ def create_app():
                 flash('Erro ao atualizar usuário', 'error')
                 return render_template('users/form.html', usuario=data, editing=True)
 
+        except SyntaxError as e:
+            import traceback
+            error_details = traceback.format_exc()
+            print(f"ERRO DE SINTAXE na edição de usuário: {error_details}")
+            print(f"SyntaxError específico: {e}")
+            flash(f'Erro de sintaxe no código: {str(e)}', 'error')
+            return render_template('users/form.html', usuario=request.form.to_dict(), editing=True)
         except Exception as e:
+            import traceback
+            error_details = traceback.format_exc()
+            print(f"Erro detalhado na edição de usuário: {error_details}")
+            print(f"Tipo de erro: {type(e)}")
             flash(f'Erro na comunicação com a API: {str(e)}', 'error')
             return render_template('users/form.html', usuario=request.form.to_dict(), editing=True)
 
@@ -5305,16 +5677,13 @@ def create_app():
 
             if request.method == 'POST':
                 # Processar envio de permissões
-                form_data = request.form.to_dict()
+                form_data = request.form
 
-                # Organizar permissões por módulo
+                # Flatten checkboxes: only checked fields are submitted
                 permissions_data = {}
-                for key, value in form_data.items():
+                for key in form_data.keys():
                     if '_' in key:
-                        modulo, acao = key.rsplit('_', 1)
-                        if modulo not in permissions_data:
-                            permissions_data[modulo] = {}
-                        permissions_data[modulo][acao] = True
+                        permissions_data[key] = True
 
                 # Enviar para a API
                 response = requests.post(
@@ -5457,6 +5826,12 @@ def create_app():
         try:
             import psycopg2
             database_url = os.getenv('DATABASE_URL')
+            print(f"DEBUG: DATABASE_URL para KPIs: {database_url}")
+
+            if not database_url:
+                print("ERROR: DATABASE_URL não encontrada para KPIs!")
+                return render_template('manager_reports.html', error="DATABASE_URL não configurada")
+
             conn = psycopg2.connect(database_url)
             cursor = conn.cursor()
 
@@ -5825,3 +6200,5 @@ app = create_app()
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8050, debug=True)
+
+

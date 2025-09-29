@@ -74,29 +74,57 @@ class Usuario(Base):
     def horario_inicio(self):
         return getattr(self, "_horario_inicio", None)
 
+    @horario_inicio.setter
+    def horario_inicio(self, value):
+        self._horario_inicio = value
+
     @property
     def horario_fim(self):
         return getattr(self, "_horario_fim", None)
+
+    @horario_fim.setter
+    def horario_fim(self, value):
+        self._horario_fim = value
 
     @property
     def dias_semana(self):
         return getattr(self, "_dias_semana", None)
 
+    @dias_semana.setter
+    def dias_semana(self, value):
+        self._dias_semana = value
+
     @property
     def ips_permitidos(self):
         return getattr(self, "_ips_permitidos", None)
+
+    @ips_permitidos.setter
+    def ips_permitidos(self, value):
+        self._ips_permitidos = value
 
     @property
     def localizacao_restrita(self):
         return getattr(self, "_localizacao_restrita", False)
 
+    @localizacao_restrita.setter
+    def localizacao_restrita(self, value):
+        self._localizacao_restrita = value
+
     @property
     def data_validade(self):
         return getattr(self, "_data_validade", None)
 
+    @data_validade.setter
+    def data_validade(self, value):
+        self._data_validade = value
+
     @property
     def max_sessoes(self):
         return getattr(self, "_max_sessoes", 1)
+
+    @max_sessoes.setter
+    def max_sessoes(self, value):
+        self._max_sessoes = value
 
     # Relacionamentos - temporariamente removido para resolver erro de foreign key
     # motorista = relationship("Motorista", back_populates="usuario", uselist=False)
@@ -183,7 +211,7 @@ class Checklist(Base):
     tipo = Column(String(20), nullable=False)
     odometro_ini = Column(BigInteger)
     odometro_fim = Column(BigInteger)
-    dt_inicio = Column(DateTime, default=func.now(), nullable=False)
+    dt_inicio = Column(DateTime, default=lambda: datetime.utcnow(), nullable=False)
     dt_fim = Column(DateTime)
     status = Column(String(20), default="pendente", nullable=False)
     
@@ -202,7 +230,7 @@ class ChecklistResposta(Base):
     item_id = Column(Integer, ForeignKey("checklist_itens.id"), nullable=False)
     valor = Column(Text, nullable=False)
     observacao = Column(Text)
-    dt = Column(DateTime, default=func.now(), nullable=False)
+    dt = Column(DateTime, default=lambda: datetime.utcnow(), nullable=False)
     
     # Relacionamentos
     checklist = relationship("Checklist", back_populates="respostas")

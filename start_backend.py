@@ -28,8 +28,8 @@ def start_backend():
         from app.main import app
         import uvicorn
 
-        # Get port from environment
-        port = int(os.getenv("PORT", 8000))
+        # Get port from environment - force 8005 for compatibility
+        port = int(os.getenv("PORT", 8005))
         host = "0.0.0.0"
 
         print("FastAPI app imported successfully")

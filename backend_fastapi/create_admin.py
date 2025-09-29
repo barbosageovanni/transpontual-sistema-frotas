@@ -3,7 +3,7 @@
 Script para criar usuário administrador
 """
 
-from app.database import SessionLocal
+from app.core.database import SessionLocal
 from app.models import Usuario
 from passlib.context import CryptContext
 from datetime import datetime
@@ -19,12 +19,15 @@ def create_admin_user():
         
         if not existing_admin:
             admin_user = Usuario(
-                nome='Administrador',
+                username='admin',
+                nome_completo='Administrador',
                 email='admin@transpontual.com',
-                senha=pwd_context.hash('admin123'),
-                papel='admin',
+                password_hash=pwd_context.hash('admin123'),
+                tipo_usuario='admin',
+                is_admin=True,
                 ativo=True,
-                criado_em=datetime.now()
+                is_active=True,
+                created_at=datetime.now()
             )
             db.add(admin_user)
             db.commit()

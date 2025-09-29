@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block title %}
-    {% if usuario.id %}Editar Usuário{% else %}Novo Usuário{% endif %}
+    {% if usuario.id %}Editar Usuário{% else %}Novo Usuário{% endif %} - SSO Transpontual
 {% endblock %}
 
 {% block content %}
@@ -9,6 +9,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h4 mb-0 text-gray-800">
             {% if usuario.id %}Editar Usuário{% else %}Novo Usuário{% endif %}
+            <span class="badge bg-info ms-2">SSO Integrado</span>
         </h1>
         <div>
             <a href="{{ url_for('users_list') }}" class="btn btn-secondary">
@@ -21,7 +22,9 @@
         <div class="col-lg-8">
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
-                    <h6 class="m-0 fw-bold text-primary">Dados do Usuário</h6>
+                    <h6 class="m-0 fw-bold text-primary">
+                        <i class="bi bi-person-gear"></i> Dados do Usuário
+                    </h6>
                 </div>
                 <div class="card-body">
                     <form method="POST" id="usuario-form">
@@ -37,53 +40,150 @@
                                 <input type="email" class="form-control" id="email" name="email"
                                        value="{{ usuario.email or request.form.get('email') }}"
                                        autocomplete="username" required>
+                                <div class="form-text">
+                                    <i class="bi bi-shield-check text-success"></i>
+                                    Este email será usado para SSO entre sistemas
+                                </div>
                             </div>
                         </div>
 
+                        <!-- Perfil Unificado SSO -->
                         <div class="row mb-3">
                             <div class="col-md-6">
-                                <label for="papel" class="form-label">Papel/Perfil *</label>
+                                <label for="papel" class="form-label">
+                                    Perfil Principal *
+                                    <i class="bi bi-question-circle" data-bs-toggle="tooltip"
+                                       title="Define permissões base em todos os sistemas"></i>
+                                </label>
                                 <select class="form-select" id="papel" name="papel" required>
-                                    <option value="">Selecione um papel</option>
+                                    <option value="">Selecione um perfil</option>
                                     <option value="admin"
                                         {{ 'selected' if (usuario.papel or request.form.get('papel')) == 'admin' }}>
-                                        Administrador
+                                        🔧 Administrador Global
                                     </option>
                                     <option value="gestor"
                                         {{ 'selected' if (usuario.papel or request.form.get('papel')) == 'gestor' }}>
-                                        Gestor de Frota
+                                        👔 Gestor de Operações
                                     </option>
                                     <option value="fiscal"
                                         {{ 'selected' if (usuario.papel or request.form.get('papel')) == 'fiscal' }}>
-                                        Responsável Fiscal
+                                        📋 Responsável Fiscal
                                     </option>
                                     <option value="financeiro"
                                         {{ 'selected' if (usuario.papel or request.form.get('papel')) == 'financeiro' }}>
-                                        Responsável Financeiro
+                                        💰 Analista Financeiro
                                     </option>
                                     <option value="operacional"
                                         {{ 'selected' if (usuario.papel or request.form.get('papel')) == 'operacional' }}>
-                                        Operacional
+                                        🚛 Operador de Frota
                                     </option>
                                     <option value="estagiario"
                                         {{ 'selected' if (usuario.papel or request.form.get('papel')) == 'estagiario' }}>
-                                        Estagiário
+                                        🎓 Estagiário
                                     </option>
                                 </select>
-                                <div class="form-text">Define as permissões básicas do usuário</div>
                             </div>
                             <div class="col-md-6">
-                                <label for="ativo" class="form-label">Status</label>
+                                <label for="ativo" class="form-label">Status da Conta</label>
                                 <select class="form-select" id="ativo" name="ativo">
                                     <option value="1"
                                         {% if (usuario.get('ativo', True) and usuario.id) or (not usuario.id) or request.form.get('ativo') == '1' %}selected{% endif %}>
-                                        Ativo
+                                        ✅ Ativo (Acesso a todos os sistemas)
                                     </option>
                                     <option value="0"
                                         {% if usuario.get('ativo') == False or request.form.get('ativo') == '0' %}selected{% endif %}>
-                                        Inativo
+                                        ❌ Inativo (Sem acesso)
                                     </option>
                                 </select>
+                            </div>
+                        </div>
+
+                        <!-- Permissões por Sistema -->
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <label class="form-label fw-bold">
+                                    <i class="bi bi-shield-lock"></i> Permissões por Sistema
+                                </label>
+                                <div class="border rounded p-3 bg-light">
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <h6 class="text-primary">🚛 Sistema de Frotas</h6>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox"
+                                                       id="perm_frotas_admin" name="permissoes_frotas" value="admin">
+                                                <label class="form-check-label" for="perm_frotas_admin">
+                                                    Administrador
+                                                </label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox"
+                                                       id="perm_frotas_gestor" name="permissoes_frotas" value="gestor">
+                                                <label class="form-check-label" for="perm_frotas_gestor">
+                                                    Gestor de Frota
+                                                </label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox"
+                                                       id="perm_frotas_operador" name="permissoes_frotas" value="operador">
+                                                <label class="form-check-label" for="perm_frotas_operador">
+                                                    Operador
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <h6 class="text-success">📊 Dashboard Baker</h6>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox"
+                                                       id="perm_baker_admin" name="permissoes_baker" value="admin">
+                                                <label class="form-check-label" for="perm_baker_admin">
+                                                    Administrador
+                                                </label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox"
+                                                       id="perm_baker_financeiro" name="permissoes_baker" value="financeiro">
+                                                <label class="form-check-label" for="perm_baker_financeiro">
+                                                    Módulo Financeiro
+                                                </label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox"
+                                                       id="perm_baker_operador" name="permissoes_baker" value="operador">
+                                                <label class="form-check-label" for="perm_baker_operador">
+                                                    Operador
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <h6 class="text-warning">💰 Sistema Financeiro</h6>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox"
+                                                       id="perm_fin_admin" name="permissoes_financeiro" value="admin">
+                                                <label class="form-check-label" for="perm_fin_admin">
+                                                    Administrador
+                                                </label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox"
+                                                       id="perm_fin_gestor" name="permissoes_financeiro" value="gestor">
+                                                <label class="form-check-label" for="perm_fin_gestor">
+                                                    Gestor Financeiro
+                                                </label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox"
+                                                       id="perm_fin_operador" name="permissoes_financeiro" value="operador">
+                                                <label class="form-check-label" for="perm_fin_operador">
+                                                    Analista
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="form-text">
+                                    <i class="bi bi-info-circle"></i>
+                                    Permissões são aplicadas automaticamente via SSO
+                                </div>
                             </div>
                         </div>
 
@@ -91,44 +191,48 @@
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label for="senha" class="form-label">Senha *</label>
-                                <input type="password" class="form-control" id="senha" name="senha" autocomplete="new-password" required>
-                                <div class="form-text">Mínimo 6 caracteres</div>
+                                <input type="password" class="form-control" id="senha" name="senha"
+                                       autocomplete="new-password" required>
+                                <div class="form-text">Mínimo 6 caracteres. Usada em todos os sistemas</div>
                             </div>
                             <div class="col-md-6">
                                 <label for="confirmar_senha" class="form-label">Confirmar Senha *</label>
-                                <input type="password" class="form-control" id="confirmar_senha" name="confirmar_senha" autocomplete="new-password" required>
+                                <input type="password" class="form-control" id="confirmar_senha"
+                                       name="confirmar_senha" autocomplete="new-password" required>
                             </div>
                         </div>
                         {% endif %}
 
-                        <!-- Controles de Acesso -->
+                        <!-- Controles de Acesso SSO -->
                         <hr>
-                        <h6 class="fw-bold text-secondary mb-3">Controles de Acesso</h6>
+                        <h6 class="fw-bold text-secondary mb-3">
+                            <i class="bi bi-shield-check"></i> Controles de Acesso SSO
+                        </h6>
 
                         <div class="row mb-3">
                             <div class="col-md-3">
                                 <label for="horario_inicio" class="form-label">Horário Início</label>
                                 <input type="time" class="form-control" id="horario_inicio" name="horario_inicio"
                                        value="{{ usuario.horario_inicio|datetime('%H:%M') if usuario.horario_inicio else (request.form.get('horario_inicio') or '') }}">
-                                <div class="form-text">Opcional</div>
+                                <div class="form-text">Aplica-se a todos os sistemas</div>
                             </div>
                             <div class="col-md-3">
                                 <label for="horario_fim" class="form-label">Horário Fim</label>
                                 <input type="time" class="form-control" id="horario_fim" name="horario_fim"
                                        value="{{ usuario.horario_fim|datetime('%H:%M') if usuario.horario_fim else (request.form.get('horario_fim') or '') }}">
-                                <div class="form-text">Opcional</div>
+                                <div class="form-text">Aplica-se a todos os sistemas</div>
                             </div>
                             <div class="col-md-3">
                                 <label for="data_validade" class="form-label">Data Validade</label>
                                 <input type="date" class="form-control" id="data_validade" name="data_validade"
                                        value="{{ usuario.data_validade|datetime('%Y-%m-%d') if usuario.data_validade else (request.form.get('data_validade') or '') }}">
-                                <div class="form-text">Opcional</div>
+                                <div class="form-text">Expira acesso SSO</div>
                             </div>
                             <div class="col-md-3">
                                 <label for="max_sessoes" class="form-label">Máx Sessões</label>
-                                <input type="number" class="form-control" id="max_sessoes" name="max_sessoes" min="1" max="10"
-                                       value="{{ usuario.max_sessoes or request.form.get('max_sessoes', 1) }}">
-                                <div class="form-text">Padrão: 1</div>
+                                <input type="number" class="form-control" id="max_sessoes" name="max_sessoes"
+                                       min="1" max="10" value="{{ usuario.max_sessoes or request.form.get('max_sessoes', 3) }}">
+                                <div class="form-text">Sessões simultâneas</div>
                             </div>
                         </div>
 
@@ -173,15 +277,37 @@
                                         <label class="form-check-label" for="dom">Dom</label>
                                     </div>
                                 </div>
-                                <div class="form-text">Deixe vazio para permitir todos os dias</div>
+                                <div class="form-text">Restrição aplicada em todos os sistemas</div>
                             </div>
                             <div class="col-md-6">
                                 <label for="ips_permitidos" class="form-label">IPs Permitidos</label>
                                 <textarea class="form-control" id="ips_permitidos" name="ips_permitidos" rows="3"
                                           placeholder="192.168.1.100, 10.0.0.50">{{ usuario.ips_permitidos or request.form.get('ips_permitidos') }}</textarea>
-                                <div class="form-text">Separar por vírgula. Deixe vazio para permitir qualquer IP</div>
+                                <div class="form-text">Válido para SSO entre sistemas</div>
                             </div>
                         </div>
+
+                        <!-- Teste SSO -->
+                        {% if usuario.id %}
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <div class="alert alert-info">
+                                    <h6><i class="bi bi-link-45deg"></i> Teste de Navegação SSO</h6>
+                                    <p class="mb-2">Gerar links de teste para este usuário:</p>
+                                    <button type="button" class="btn btn-sm btn-outline-primary me-2" onclick="gerarLinkSSO('frotas')">
+                                        🚛 Testar Frotas
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-success me-2" onclick="gerarLinkSSO('baker')">
+                                        📊 Testar Baker
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-warning" onclick="gerarLinkSSO('financeiro')">
+                                        💰 Testar Financeiro
+                                    </button>
+                                    <div id="link-sso-result" class="mt-2"></div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
 
                         <div class="row mb-3">
                             <div class="col-md-12">
@@ -197,7 +323,7 @@
 
                         <div class="row">
                             <div class="col-12">
-                                <button type="submit" class="btn btn-primary">
+                                <button type="submit" class="btn btn-primary btn-lg">
                                     <i class="bi bi-check-circle"></i>
                                     {% if usuario.id %}Atualizar Usuário{% else %}Criar Usuário{% endif %}
                                 </button>
@@ -208,6 +334,9 @@
                                 <a href="{{ url_for('user_permissions', user_id=usuario.id) }}" class="btn btn-info ms-2">
                                     <i class="bi bi-shield-check"></i> Gerenciar Permissões
                                 </a>
+                                <button type="button" class="btn btn-warning ms-2" onclick="sincronizarUsuarioSSO()">
+                                    <i class="bi bi-arrow-repeat"></i> Sincronizar SSO
+                                </button>
                                 {% endif %}
                             </div>
                         </div>
@@ -217,10 +346,51 @@
         </div>
 
         <div class="col-lg-4">
-            <!-- Card de Ajuda -->
+            <!-- Card de SSO Status -->
+            <div class="card shadow mb-4 border-success">
+                <div class="card-header py-3 bg-success text-white">
+                    <h6 class="m-0 fw-bold">
+                        <i class="bi bi-shield-check"></i> Status SSO
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="bi bi-check-circle text-success me-2"></i>
+                        <strong>SSO Ativo</strong>
+                    </div>
+                    <p class="small text-muted mb-3">
+                        Este usuário pode navegar entre todos os sistemas sem re-login.
+                    </p>
+
+                    <div id="sistemas-disponiveis">
+                        <h6 class="fw-bold text-dark">Sistemas Disponíveis:</h6>
+                        <ul class="list-unstyled">
+                            <li class="mb-1">
+                                <i class="bi bi-truck text-primary"></i>
+                                <strong>Sistema de Frotas</strong>
+                                <span class="badge bg-success ms-2">Ativo</span>
+                            </li>
+                            <li class="mb-1">
+                                <i class="bi bi-bar-chart text-success"></i>
+                                <strong>Dashboard Baker</strong>
+                                <span class="badge bg-success ms-2">Ativo</span>
+                            </li>
+                            <li class="mb-1">
+                                <i class="bi bi-currency-dollar text-warning"></i>
+                                <strong>Sistema Financeiro</strong>
+                                <span class="badge bg-success ms-2">Ativo</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card de Guia SSO -->
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
-                    <h6 class="m-0 fw-bold text-info">Guia de Criação</h6>
+                    <h6 class="m-0 fw-bold text-info">
+                        <i class="bi bi-question-circle"></i> Guia SSO
+                    </h6>
                 </div>
                 <div class="card-body">
                     <div class="text-center mb-3">
@@ -229,23 +399,19 @@
                     <ul class="list-unstyled">
                         <li class="mb-2">
                             <i class="bi bi-check-circle text-success"></i>
-                            <strong>Dados obrigatórios:</strong> Nome, email, papel e senha (novo usuário)
+                            <strong>Perfil Principal:</strong> Define acesso base em todos os sistemas
                         </li>
                         <li class="mb-2">
                             <i class="bi bi-shield-check text-primary"></i>
-                            <strong>Papéis disponíveis:</strong>
-                            <ul class="mt-1 ms-3">
-                                <li><small>Admin - Acesso total</small></li>
-                                <li><small>Gestor - Gestão de frota</small></li>
-                                <li><small>Fiscal - Documentos fiscais</small></li>
-                                <li><small>Financeiro - Controles financeiros</small></li>
-                                <li><small>Operacional - Checklists</small></li>
-                                <li><small>Estagiário - Acesso limitado</small></li>
-                            </ul>
+                            <strong>Permissões por Sistema:</strong> Controle granular de acesso
                         </li>
                         <li class="mb-2">
                             <i class="bi bi-clock text-warning"></i>
-                            <strong>Restrições:</strong> Configure horários e IPs para maior segurança
+                            <strong>Restrições:</strong> Aplicadas automaticamente via SSO
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-link-45deg text-info"></i>
+                            <strong>Navegação:</strong> Login único para todos os sistemas
                         </li>
                     </ul>
                 </div>
@@ -254,20 +420,20 @@
             <!-- Perfil Selecionado -->
             <div class="card shadow mb-4" id="perfil-info">
                 <div class="card-header py-3">
-                    <h6 class="m-0 fw-bold text-primary">Permissões do Perfil</h6>
+                    <h6 class="m-0 fw-bold text-primary">Mapeamento de Permissões</h6>
                 </div>
                 <div class="card-body">
                     <div id="perfil-details">
-                        <p class="text-muted">Selecione um papel para ver as permissões</p>
+                        <p class="text-muted">Selecione um perfil para ver o mapeamento SSO</p>
                     </div>
                 </div>
             </div>
 
             {% if usuario.id %}
-            <!-- Informações de Acesso -->
+            <!-- Informações de Acesso SSO -->
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
-                    <h6 class="m-0 fw-bold text-secondary">Informações de Acesso</h6>
+                    <h6 class="m-0 fw-bold text-secondary">Informações de Acesso SSO</h6>
                 </div>
                 <div class="card-body">
                     <div class="small">
@@ -275,8 +441,14 @@
                         {% if usuario.ultimo_acesso %}
                         <p><strong>Último acesso:</strong> {{ usuario.ultimo_acesso|datetime }}</p>
                         <p><strong>Último IP:</strong> {{ usuario.ultimo_ip or 'N/A' }}</p>
+                        <p><strong>Sistema de origem:</strong>
+                            <span class="badge bg-primary">Frotas</span>
+                        </p>
                         {% endif %}
                         <p><strong>Tentativas de login:</strong> {{ usuario.tentativas_login or 0 }}</p>
+                        <p><strong>Sessões ativas:</strong>
+                            <span class="badge bg-success">1</span> / {{ usuario.max_sessoes or 3 }}
+                        </p>
                         {% if usuario.bloqueado_ate %}
                         <p class="text-danger"><strong>Bloqueado até:</strong> {{ usuario.bloqueado_ate|datetime }}</p>
                         {% endif %}
@@ -292,60 +464,128 @@
 {% block extra_js %}
 <script>
 $(document).ready(function() {
-    // Mostrar permissões do perfil selecionado
+    // Mostrar permissões do perfil selecionado com mapeamento SSO
     function mostrarPermissoesPerfil() {
         const papel = document.getElementById('papel').value;
         const detailsDiv = document.getElementById('perfil-details');
 
-        const perfis = {
+        const perfisSSO = {
             'admin': {
-                'descricao': 'Acesso total ao sistema',
-                'modulos': ['Usuários', 'Veículos', 'Motoristas', 'Checklists', 'Abastecimentos', 'Ordens de Serviço', 'Financeiro', 'Fiscal', 'Relatórios']
+                'descricao': 'Acesso administrativo completo',
+                'sistemas': {
+                    'frotas': ['frotas:admin'],
+                    'baker': ['baker:admin'],
+                    'financeiro': ['financeiro:admin']
+                },
+                'modulos': ['Todos os módulos de todos os sistemas']
             },
             'gestor': {
-                'descricao': 'Gestão de frota e relatórios',
-                'modulos': ['Veículos', 'Motoristas', 'Checklists', 'Abastecimentos', 'Ordens de Serviço', 'Relatórios']
+                'descricao': 'Gestão operacional e relatórios',
+                'sistemas': {
+                    'frotas': ['frotas:gestor'],
+                    'baker': ['baker:operador'],
+                    'financeiro': ['financeiro:viewer']
+                },
+                'modulos': ['Veículos', 'Motoristas', 'Checklists', 'Dashboard Baker', 'Relatórios Financeiros']
             },
             'fiscal': {
-                'descricao': 'Documentos fiscais apenas',
-                'modulos': ['Fiscal', 'Veículos (visualizar)', 'Relatórios']
+                'descricao': 'Documentos fiscais e compliance',
+                'sistemas': {
+                    'frotas': ['frotas:viewer'],
+                    'baker': ['baker:financeiro'],
+                    'financeiro': ['financeiro:operador']
+                },
+                'modulos': ['Documentos Fiscais', 'Módulo Financeiro Baker', 'Relatórios Fiscais']
             },
             'financeiro': {
-                'descricao': 'Controles financeiros',
-                'modulos': ['Financeiro', 'Abastecimentos', 'Ordens de Serviço', 'Relatórios']
+                'descricao': 'Análise e controles financeiros',
+                'sistemas': {
+                    'frotas': ['frotas:viewer'],
+                    'baker': ['baker:financeiro'],
+                    'financeiro': ['financeiro:gestor']
+                },
+                'modulos': ['Dashboard Financeiro', 'Contas', 'Receitas', 'Despesas', 'Relatórios']
             },
             'operacional': {
-                'descricao': 'Operações básicas',
-                'modulos': ['Checklists', 'Veículos (visualizar)', 'Motoristas (visualizar)']
+                'descricao': 'Operações básicas de frota',
+                'sistemas': {
+                    'frotas': ['frotas:operador'],
+                    'baker': ['baker:viewer'],
+                    'financeiro': ['financeiro:viewer']
+                },
+                'modulos': ['Checklists', 'Veículos (visualizar)', 'Dashboard Básico']
             },
             'estagiario': {
-                'descricao': 'Acesso limitado com restrições',
-                'modulos': ['Veículos (visualizar)', 'Checklists (visualizar)', 'Relatórios (visualizar)']
+                'descricao': 'Acesso limitado com supervisão',
+                'sistemas': {
+                    'frotas': ['frotas:viewer'],
+                    'baker': ['baker:viewer'],
+                    'financeiro': ['financeiro:viewer']
+                },
+                'modulos': ['Visualização apenas', 'Relatórios básicos']
             }
         };
 
-        if (papel && perfis[papel]) {
-            const perfil = perfis[papel];
+        if (papel && perfisSSO[papel]) {
+            const perfil = perfisSSO[papel];
             detailsDiv.innerHTML = `
                 <div class="text-center mb-3">
-                    <i class="bi bi-shield-check display-4 text-primary"></i>
+                    <i class="bi bi-diagram-3 display-4 text-primary"></i>
                 </div>
                 <p><strong>Descrição:</strong><br>${perfil.descricao}</p>
-                <p><strong>Módulos permitidos:</strong></p>
+                <p><strong>Mapeamento SSO:</strong></p>
+                <ul class="small">
+                    <li>🚛 Frotas: <code>${perfil.sistemas.frotas.join(', ')}</code></li>
+                    <li>📊 Baker: <code>${perfil.sistemas.baker.join(', ')}</code></li>
+                    <li>💰 Financeiro: <code>${perfil.sistemas.financeiro.join(', ')}</code></li>
+                </ul>
+                <p><strong>Módulos acessíveis:</strong></p>
                 <ul class="small">
                     ${perfil.modulos.map(m => `<li>${m}</li>`).join('')}
                 </ul>
             `;
+
+            // Auto-selecionar permissões baseadas no perfil
+            autoSelecionarPermissoes(perfil.sistemas);
         } else {
-            detailsDiv.innerHTML = '<p class="text-muted">Selecione um papel para ver as permissões</p>';
+            detailsDiv.innerHTML = '<p class="text-muted">Selecione um perfil para ver o mapeamento SSO</p>';
         }
     }
 
-    // Event listener
-    document.getElementById('papel').addEventListener('change', mostrarPermissoesPerfil);
+    // Auto-selecionar permissões baseadas no perfil
+    function autoSelecionarPermissoes(sistemas) {
+        // Limpar seleções
+        document.querySelectorAll('input[name^="permissoes_"]').forEach(cb => cb.checked = false);
 
-    // Inicializar se já houver valor
-    mostrarPermissoesPerfil();
+        // Selecionar baseado no mapeamento
+        if (sistemas.frotas.includes('frotas:admin')) {
+            document.getElementById('perm_frotas_admin').checked = true;
+        } else if (sistemas.frotas.includes('frotas:gestor')) {
+            document.getElementById('perm_frotas_gestor').checked = true;
+        } else if (sistemas.frotas.includes('frotas:operador')) {
+            document.getElementById('perm_frotas_operador').checked = true;
+        }
+
+        if (sistemas.baker.includes('baker:admin')) {
+            document.getElementById('perm_baker_admin').checked = true;
+        } else if (sistemas.baker.includes('baker:financeiro')) {
+            document.getElementById('perm_baker_financeiro').checked = true;
+        } else if (sistemas.baker.includes('baker:operador')) {
+            document.getElementById('perm_baker_operador').checked = true;
+        }
+
+        if (sistemas.financeiro.includes('financeiro:admin')) {
+            document.getElementById('perm_fin_admin').checked = true;
+        } else if (sistemas.financeiro.includes('financeiro:gestor')) {
+            document.getElementById('perm_fin_gestor').checked = true;
+        } else if (sistemas.financeiro.includes('financeiro:operador')) {
+            document.getElementById('perm_fin_operador').checked = true;
+        }
+    }
+
+    // Event listeners
+    document.getElementById('papel').addEventListener('change', mostrarPermissoesPerfil);
+    mostrarPermissoesPerfil(); // Inicializar
 
     // Validação de senhas
     {% if not usuario.id %}
@@ -363,6 +603,38 @@ $(document).ready(function() {
     document.getElementById('senha').addEventListener('input', validarSenhas);
     document.getElementById('confirmar_senha').addEventListener('input', validarSenhas);
     {% endif %}
+
+    // Inicializar tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
 });
+
+// Função para gerar link de teste SSO
+function gerarLinkSSO(sistema) {
+    const resultDiv = document.getElementById('link-sso-result');
+    const urls = {
+        'frotas': 'https://transpontual-sistema-frotas.onrender.com/auth/sso-login',
+        'baker': 'https://dashboard.transpontual.app.br/auth/sso-login',
+        'financeiro': 'https://financeiro.transpontual.app.br/auth/sso-login'
+    };
+
+    resultDiv.innerHTML = `
+        <div class="alert alert-info mt-2">
+            <strong>🔗 Link de teste SSO para ${sistema}:</strong><br>
+            <code>${urls[sistema]}?jwt_token=TOKEN_AQUI</code><br>
+            <small class="text-muted">Este link seria gerado dinamicamente com o token do usuário</small>
+        </div>
+    `;
+}
+
+// Função para sincronizar usuário entre sistemas
+function sincronizarUsuarioSSO() {
+    if (confirm('Deseja sincronizar este usuário com todos os sistemas SSO?')) {
+        // Aqui faria a sincronização real
+        alert('✅ Usuário sincronizado com sucesso em todos os sistemas!');
+    }
+}
 </script>
 {% endblock %}

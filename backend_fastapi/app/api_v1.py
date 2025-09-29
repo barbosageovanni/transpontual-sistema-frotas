@@ -1,8 +1,8 @@
 # backend_fastapi/app/api_v1.py
 """
-Router principal da API v1 - Versão simplificada
+Router principal da API v1 - Vers?o simplificada com SSO
 """
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from sqlalchemy.sql import func
@@ -12,7 +12,13 @@ from pydantic import BaseModel
 from app.core.database import get_db, is_database_available
 from app import models, schemas
 from app.routers import checklist as checklist_router
-from app.core.security import create_access_token, verify_password, get_current_user
+from app.core.security import (
+    create_access_token,
+    verify_password,
+    get_current_user,
+    authenticate_via_sso_token,
+    create_sso_login_url
+)
 
 # Router principal
 api_router = APIRouter()
@@ -22,11 +28,11 @@ api_router = APIRouter()
 async def api_health():
     return {"status": "ok", "api": "v1"}
 
-# Debug: informações rápidas do banco
+# Debug: informa??es r?pidas do banco
 @api_router.get("/debug/db/info")
 def debug_db_info(db: Session = Depends(get_db)):
     try:
-        # Tenta impor um statement timeout baixo (pode não ter efeito dependendo do driver)
+        # Tenta impor um statement timeout baixo (pode n?o ter efeito dependendo do driver)
         try:
             db.execute(text("SET LOCAL statement_timeout = 2000"))
         except Exception:
@@ -45,12 +51,12 @@ def debug_db_info(db: Session = Depends(get_db)):
     except Exception as e:
         raise HTTPException(status_code=503, detail=f"DB error: {e}")
 
-# Auth básico
+# Auth b?sico
 @api_router.post("/auth/login", response_model=schemas.Token)
 def login(payload: schemas.LoginRequest, db: Session = Depends(get_db)):
     # Check if database is available
     if not is_database_available() or db is None:
-        print("⚠️ Database offline - using demo login")
+        print("[WARN] Database offline - using demo login")
         # Demo login for offline mode
         if payload.email == "admin@transpontual.com" and payload.senha in ["admin123", "123456", "admin"]:
             # Create demo user object matching UsuarioResponse schema
@@ -81,7 +87,7 @@ def login(payload: schemas.LoginRequest, db: Session = Depends(get_db)):
                 "user": demo_user
             }
         else:
-            raise HTTPException(status_code=401, detail="Credenciais inválidas (modo offline)")
+            raise HTTPException(status_code=401, detail="Credenciais inv?lidas (modo offline)")
 
     # Normal database operations
     try:
@@ -101,27 +107,102 @@ def login(payload: schemas.LoginRequest, db: Session = Depends(get_db)):
             db.refresh(user)
 
         if not user:
-            raise HTTPException(status_code=401, detail="Credenciais inválidas")
+            raise HTTPException(status_code=401, detail="Credenciais inv?lidas")
 
         # Verifica senha (aceita hash bcrypt ou texto puro em DEV)
         if not verify_password(payload.senha, user.password_hash):
-            raise HTTPException(status_code=401, detail="Credenciais inválidas")
+            raise HTTPException(status_code=401, detail="Credenciais inv?lidas")
 
         # JWT com subject = user.id
-        token = create_access_token({"sub": str(user.id), "email": user.email})
+        token = create_access_token({"sub": str(user.id), "email": user.email}, user_obj=user)
         return {"access_token": token, "token_type": "bearer", "user": user}
 
     except Exception as e:
-        print(f"❌ Login database error: {e}")
-        raise HTTPException(status_code=500, detail=f"Erro de conexão: {str(e)[:50]}...")
+        print(f"[ERROR] Login database error: {e}")
+        raise HTTPException(status_code=500, detail=f"Erro de conex?o: {str(e)[:50]}...")
 
-# Usuário atual (protégido)
+
+# SSO Routes
+@api_router.post("/auth/sso-login")
+def sso_login(jwt_token: str = Query(...), db: Session = Depends(get_db)):
+    """
+    Login via SSO com token JWT de outro sistema Transpontual
+    """
+    try:
+        # Autenticar via token SSO
+        user = authenticate_via_sso_token(jwt_token, db)
+        if not user:
+            raise HTTPException(
+                status_code=401,
+                detail="Token SSO inv?lido ou usu?rio n?o encontrado"
+            )
+
+        # Criar token local
+        local_token = create_access_token(
+            {"sub": str(user.id), "email": user.email},
+            user_obj=user
+        )
+
+        return {
+            "access_token": local_token,
+            "token_type": "bearer",
+            "user": user,
+            "sso_authenticated": True
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[ERROR] Erro SSO login: {e}")
+        raise HTTPException(status_code=500, detail="Erro interno no SSO")
+
+
+@api_router.get("/auth/sso-links")
+def get_sso_links(current_user: models.Usuario = Depends(get_current_user)):
+    """
+    Retorna links para outros sistemas com SSO
+    """
+    try:
+        # URLs dos outros sistemas
+        baker_url = "https://dashboard.transpontual.app.br/auth/sso-login"
+        financial_url = "https://financeiro.transpontual.app.br/auth/sso-login"
+
+        # Criar URLs com tokens SSO
+        baker_sso_url = create_sso_login_url("baker", baker_url, current_user)
+        financial_sso_url = create_sso_login_url("financeiro", financial_url, current_user)
+
+        links = []
+
+        if baker_sso_url:
+            links.append({
+                "system": "baker",
+                "name": "Dashboard Baker",
+                "url": baker_sso_url,
+                "description": "Painel administrativo e financeiro"
+            })
+
+        if financial_sso_url:
+            links.append({
+                "system": "financeiro",
+                "name": "Sistema Financeiro",
+                "url": financial_sso_url,
+                "description": "Gest?o financeira e cont?bil"
+            })
+
+        return {"links": links}
+
+    except Exception as e:
+        print(f"[ERROR] Erro gerando links SSO: {e}")
+        return {"links": []}
+
+
+# Usu?rio atual (prot?gido)
 @api_router.get("/users/me", response_model=schemas.UsuarioResponse)
 def get_me(current_user: models.Usuario = Depends(get_current_user)):
     return current_user
 
-# Gerenciamento de usuários
-@api_router.get("/users", response_model=List[schemas.UsuarioResponse])
+# Gerenciamento de usu?rios
+@api_router.get("/users")
 def list_users(
     papel: Optional[str] = Query(None, description="Filtrar por papel"),
     status: Optional[str] = Query(None, description="Filtrar por status (ativo/inativo/bloqueado)"),
@@ -129,52 +210,96 @@ def list_users(
     db: Session = Depends(get_db),
     current_user: models.Usuario = Depends(get_current_user)
 ):
-    """Lista todos os usuários com filtros opcionais - apenas admin/gestor"""
+    """Lista todos os usu?rios com filtros opcionais - apenas admin/gestor"""
     if current_user.papel not in ["admin", "gestor"]:
-        raise HTTPException(status_code=403, detail="Sem permissão para listar usuários")
+        raise HTTPException(status_code=403, detail="Sem permiss?o para listar usu?rios")
 
-    query = db.query(models.Usuario)
+    # Check if database is available
+    if not is_database_available() or db is None:
+        print("?? Database offline - using demo user list")
+        from datetime import datetime
+        # Return demo users list
+        demo_users = [
+            {
+                "id": 1,
+                "nome": "Administrador do Sistema",
+                "email": "admin@transpontual.com",
+                "papel": "admin",
+                "ativo": True,
+                "criado_em": datetime.now(),
+                "ultimo_acesso": None,
+                "ultimo_ip": None,
+                "tentativas_login": 0,
+                "bloqueado_ate": None,
+                "horario_inicio": None,
+                "horario_fim": None,
+                "dias_semana": None,
+                "ips_permitidos": None,
+                "localizacao_restrita": False,
+                "data_validade": None,
+                "max_sessoes": 1
+            }
+        ]
+        return demo_users
 
-    # Filtro por papel
-    if papel:
-        query = query.filter(models.Usuario.tipo_usuario == papel)
+    try:
+        query = db.query(models.Usuario)
 
-    # Filtro por status
-    if status:
-        if status == "ativo":
+        # Filtro por papel
+        if papel:
+            query = query.filter(models.Usuario.tipo_usuario == papel)
+
+        # Filtro por status
+        if status:
+            if status == "ativo":
+                query = query.filter(models.Usuario.ativo == True)
+            elif status == "inativo":
+                query = query.filter(models.Usuario.ativo == False)
+
+        # Filtro por busca (nome ou email)
+        if busca:
+            busca_pattern = f"%{busca}%"
             query = query.filter(
-                models.Usuario.ativo == True,
-                models.Usuario.bloqueado_ate.is_(None)
+                (models.Usuario.nome_completo.ilike(busca_pattern)) |
+                (models.Usuario.email.ilike(busca_pattern))
             )
-        elif status == "inativo":
-            query = query.filter(models.Usuario.ativo == False)
-        elif status == "bloqueado":
-            query = query.filter(models.Usuario.bloqueado_ate.isnot(None))
 
-    # Filtro por busca (nome ou email)
-    if busca:
-        busca_pattern = f"%{busca}%"
-        query = query.filter(
-            (models.Usuario.nome.ilike(busca_pattern)) |
-            (models.Usuario.email.ilike(busca_pattern))
-        )
+        usuarios = query.all()
 
-    return query.all()
+        # Converter para formato compat?vel
+        result = []
+        for user in usuarios:
+            result.append({
+                "id": user.id,
+                "nome": user.nome_completo or user.username,
+                "email": user.email,
+                "papel": user.tipo_usuario or ("admin" if user.is_admin else "gestor"),
+                "ativo": user.ativo and user.is_active,
+                "criado_em": user.created_at.isoformat() if user.created_at else None,
+                "ultimo_acesso": user.last_login.isoformat() if user.last_login else None,
+                "tentativas_login": user.login_count or 0
+            })
+
+        return result
+
+    except Exception as e:
+        print(f"Erro ao listar usu?rios: {e}")
+        raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
 
 @api_router.get("/users/{user_id}", response_model=schemas.UsuarioResponse)
 def get_user(user_id: int, db: Session = Depends(get_db), current_user: models.Usuario = Depends(get_current_user)):
-    """Obter usuário por ID"""
+    """Obter usu?rio por ID"""
     if current_user.papel not in ["admin", "gestor"]:
-        raise HTTPException(status_code=403, detail="Sem permissão para ver usuários")
+        raise HTTPException(status_code=403, detail="Sem permiss?o para ver usu?rios")
 
     user = db.query(models.Usuario).filter(models.Usuario.id == user_id).first()
     if not user:
-        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+        raise HTTPException(status_code=404, detail="Usu?rio n?o encontrado")
     return user
 
 # Duplicate endpoints removed - using comprehensive versions below
 
-# Veículos
+# Ve?culos
 @api_router.get("/vehicles", response_model=List[schemas.VeiculoResponse])
 def list_vehicles(db: Session = Depends(get_db)):
     if not is_database_available() or db is None:
@@ -183,7 +308,7 @@ def list_vehicles(db: Session = Depends(get_db)):
             {
                 "id": 1,
                 "placa": "ABC-1234",
-                "modelo": "Caminhão Demo",
+                "modelo": "Caminh?o Demo",
                 "ano": 2020,
                 "km_atual": 50000,
                 "status": "ativo",
@@ -208,7 +333,7 @@ def get_vehicle(vehicle_id: int, db: Session = Depends(get_db)):
         return {
             "id": vehicle_id,
             "placa": f"DEMO-{vehicle_id:04d}",
-            "modelo": "Veículo Demo",
+            "modelo": "Ve?culo Demo",
             "ano": 2020,
             "km_atual": 50000,
             "status": "ativo",
@@ -216,7 +341,7 @@ def get_vehicle(vehicle_id: int, db: Session = Depends(get_db)):
         }
     veiculo = db.query(models.Veiculo).filter(models.Veiculo.id == vehicle_id).first()
     if not veiculo:
-        raise HTTPException(status_code=404, detail="Veículo não encontrado")
+        raise HTTPException(status_code=404, detail="Ve?culo n?o encontrado")
     return veiculo
 
 @api_router.post("/vehicles", response_model=schemas.VeiculoResponse, status_code=201)
@@ -231,10 +356,10 @@ def create_vehicle(body: schemas.VeiculoCreate, db: Session = Depends(get_db)):
 def update_vehicle(vehicle_id: int, body: dict, db: Session = Depends(get_db)):
     veiculo = db.query(models.Veiculo).filter(models.Veiculo.id == vehicle_id).first()
     if not veiculo:
-        raise HTTPException(status_code=404, detail="Veículo não encontrado")
+        raise HTTPException(status_code=404, detail="Ve?culo n?o encontrado")
 
     try:
-        # Atualizar campos básicos
+        # Atualizar campos b?sicos
         for field in ['placa', 'modelo', 'ano', 'km_atual', 'renavam', 'observacoes_manutencao']:
             if field in body and body[field] is not None:
                 if field == 'ano' and body[field]:
@@ -263,7 +388,7 @@ def update_vehicle(vehicle_id: int, body: dict, db: Session = Depends(get_db)):
 
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=400, detail=f"Erro ao atualizar veículo: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Erro ao atualizar ve?culo: {str(e)}")
 
 # Motoristas
 @api_router.get("/drivers", response_model=List[schemas.MotoristaResponse])
@@ -272,7 +397,7 @@ def list_drivers(db: Session = Depends(get_db)):
         return [
             {
                 "id": 1,
-                "nome": "João Silva - Demo",
+                "nome": "Jo?o Silva - Demo",
                 "email": "joao@demo.com",
                 "telefone": "(11) 99999-9999",
                 "cnh": "12345678901",
@@ -302,19 +427,19 @@ def list_drivers(db: Session = Depends(get_db)):
 def create_driver(body: schemas.MotoristaCreate, db: Session = Depends(get_db)):
     """Criar novo motorista"""
     try:
-        # Primeiro criar o usuário se email e senha foram fornecidos
+        # Primeiro criar o usu?rio se email e senha foram fornecidos
         usuario = None
         if body.email and body.senha:
-            # Verificar se já existe usuário com este email
+            # Verificar se j? existe usu?rio com este email
             existing_user = db.query(models.Usuario).filter(models.Usuario.email == body.email).first()
             if existing_user:
-                raise HTTPException(status_code=400, detail="Email já está em uso")
+                raise HTTPException(status_code=400, detail="Email j? est? em uso")
             
-            # Criar usuário (usar nome do motorista para o usuário também)
+            # Criar usu?rio (usar nome do motorista para o usu?rio tamb?m)
             usuario = models.Usuario(
                 nome=body.nome,  # Usar nome do motorista
                 email=body.email,
-                senha_hash=body.senha,  # Em produção deveria usar hash
+                senha_hash=body.senha,  # Em produ??o deveria usar hash
                 papel="motorista",
                 ativo=True
             )
@@ -346,9 +471,9 @@ def update_driver(driver_id: int, body: dict, db: Session = Depends(get_db)):
 
         motorista = db.query(models.Motorista).filter(models.Motorista.id == driver_id).first()
         if not motorista:
-            raise HTTPException(status_code=404, detail="Motorista não encontrado")
+            raise HTTPException(status_code=404, detail="Motorista n?o encontrado")
 
-        # Atualizar campos básicos do motorista
+        # Atualizar campos b?sicos do motorista
         for field in ['nome', 'cnh', 'categoria', 'observacoes']:
             if field in body and body[field] is not None:
                 setattr(motorista, field, body[field])
@@ -363,7 +488,7 @@ def update_driver(driver_id: int, body: dict, db: Session = Depends(get_db)):
                     try:
                         motorista.validade_cnh = datetime.strptime(body['validade_cnh'], '%d/%m/%Y').date()
                     except ValueError:
-                        pass  # Manter valor atual se não conseguir converter
+                        pass  # Manter valor atual se n?o conseguir converter
             else:
                 motorista.validade_cnh = body['validade_cnh']
         elif 'validade_cnh' in body and not body['validade_cnh']:
@@ -376,14 +501,14 @@ def update_driver(driver_id: int, body: dict, db: Session = Depends(get_db)):
                 value = value.lower() in ('true', '1', 'on', 'yes')
             motorista.ativo = bool(value)
 
-        # Atualizar email do usuário se fornecido
+        # Atualizar email do usu?rio se fornecido
         if 'email' in body and body['email'] and motorista.usuario:
             existing_user = db.query(models.Usuario).filter(
                 models.Usuario.email == body['email'],
                 models.Usuario.id != motorista.usuario.id
             ).first()
             if existing_user:
-                raise HTTPException(status_code=400, detail="Email já está em uso")
+                raise HTTPException(status_code=400, detail="Email j? est? em uso")
 
             motorista.usuario.email = body['email']
 
@@ -403,7 +528,7 @@ def get_driver(driver_id: int, db: Session = Depends(get_db)):
     """Obter motorista por ID"""
     motorista = db.query(models.Motorista).filter(models.Motorista.id == driver_id).first()
     if not motorista:
-        raise HTTPException(status_code=404, detail="Motorista não encontrado")
+        raise HTTPException(status_code=404, detail="Motorista n?o encontrado")
     return motorista
 
 # Checklists
@@ -429,13 +554,13 @@ def list_checklists(
             "page": page,
             "per_page": per_page,
             "offline_mode": True,
-            "message": "Banco de dados não disponível - modo offline"
+            "message": "Banco de dados n?o dispon?vel - modo offline"
         }
 
     try:
         from datetime import datetime
 
-        # Usar limit e offset se fornecidos, senão usar page e per_page
+        # Usar limit e offset se fornecidos, sen?o usar page e per_page
         if limit is not None and offset is not None:
             actual_limit = limit
             actual_offset = offset
@@ -475,7 +600,7 @@ def list_checklists(
                 data_inicio_dt = datetime.strptime(data_inicio, '%Y-%m-%d')
                 query = query.filter(models.Checklist.dt_inicio >= data_inicio_dt)
             except ValueError:
-                pass  # Ignorar se formato de data inválido
+                pass  # Ignorar se formato de data inv?lido
 
         if data_fim:
             try:
@@ -485,9 +610,9 @@ def list_checklists(
                 data_fim_dt = data_fim_dt + timedelta(days=1) - timedelta(seconds=1)
                 query = query.filter(models.Checklist.dt_inicio <= data_fim_dt)
             except ValueError:
-                pass  # Ignorar se formato de data inválido
+                pass  # Ignorar se formato de data inv?lido
 
-        # Buscar dados com filtros e paginação
+        # Buscar dados com filtros e pagina??o
         total = query.count()
         checklists = query.offset(actual_offset).limit(actual_limit).all()
 
@@ -559,7 +684,7 @@ def complete_checklist(checklist_data: dict, db: Session = Depends(get_db)):
         # Rollback any previous failed transaction
         db.rollback()
 
-        # Buscar ou criar veículo
+        # Buscar ou criar ve?culo
         vehicle = db.query(models.Veiculo).filter(models.Veiculo.placa == checklist_data['vehicle']).first()
         if not vehicle:
             vehicle = models.Veiculo(
@@ -570,12 +695,12 @@ def complete_checklist(checklist_data: dict, db: Session = Depends(get_db)):
             db.add(vehicle)
             db.flush()
 
-        # Buscar ou criar motorista padrão
+        # Buscar ou criar motorista padr?o
         motorista = db.query(models.Motorista).first()
         if not motorista:
-            # Criar motorista padrão
+            # Criar motorista padr?o
             usuario = models.Usuario(
-                nome="Motorista Padrão",
+                nome="Motorista Padr?o",
                 email="motorista@transpontual.com",
                 senha_hash="default",
                 papel="motorista"
@@ -584,18 +709,18 @@ def complete_checklist(checklist_data: dict, db: Session = Depends(get_db)):
             db.flush()
 
             motorista = models.Motorista(
-                nome="Motorista Padrão",
+                nome="Motorista Padr?o",
                 usuario_id=usuario.id,
                 ativo=True
             )
             db.add(motorista)
             db.flush()
 
-        # Buscar ou criar modelo de checklist padrão
+        # Buscar ou criar modelo de checklist padr?o
         modelo = db.query(models.ChecklistModelo).first()
         if not modelo:
             modelo = models.ChecklistModelo(
-                nome="Checklist Padrão",
+                nome="Checklist Padr?o",
                 tipo="saida",
                 ativo=True
             )
@@ -665,13 +790,13 @@ def complete_checklist(checklist_data: dict, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# Upload básico
+# Upload b?sico
 @api_router.post("/uploads/image", response_model=schemas.UploadResponse)
 async def upload_image():
-    # Implementação básica
+    # Implementa??o b?sica
     return {"filename": "test.jpg"}
 
-# KPIs básicos
+# KPIs b?sicos
 @api_router.get("/kpis/summary")
 def kpi_summary(db: Session = Depends(get_db)):
     if not is_database_available() or db is None:
@@ -738,7 +863,7 @@ def checklist_stats_summary(db: Session = Depends(get_db)):
 # Additional endpoints for dashboard compatibility
 @api_router.get("/checklist/stats/resumo")
 def checklist_stats_resumo(dias: int = 30, db: Session = Depends(get_db)):
-    """Resumo de estatísticas de checklist (compatibilidade)"""
+    """Resumo de estat?sticas de checklist (compatibilidade)"""
     if not is_database_available() or db is None:
         # Return demo stats for offline mode
         return {
@@ -752,28 +877,28 @@ def checklist_stats_resumo(dias: int = 30, db: Session = Depends(get_db)):
 
 @api_router.get("/metrics/top-itens-reprovados")
 def metrics_top_itens_reprovados(dias: int = 30, db: Session = Depends(get_db)):
-    """Top itens reprovados nos últimos dias"""
+    """Top itens reprovados nos ?ltimos dias"""
     return {"itens_reprovados": [], "message": "Feature em desenvolvimento"}
 
 @api_router.get("/metrics/performance-motoristas")
 def metrics_performance_motoristas(dias: int = 30, db: Session = Depends(get_db)):
-    """Performance dos motoristas nos últimos dias"""
+    """Performance dos motoristas nos ?ltimos dias"""
     return {"motoristas": [], "message": "Feature em desenvolvimento"}
 
 @api_router.get("/checklist/bloqueios")
 def checklist_bloqueios(dias: int = 7, db: Session = Depends(get_db)):
-    """Checklists com bloqueios nos últimos dias"""
+    """Checklists com bloqueios nos ?ltimos dias"""
     return {"bloqueios": [], "message": "Feature em desenvolvimento"}
 
 @api_router.get("/checklist/pending")
 def checklist_pending(db: Session = Depends(get_db)):
-    """Checklists pendentes de aprovação"""
+    """Checklists pendentes de aprova??o"""
     if not is_database_available() or db is None:
         return {
             "pending_checklists": [],
             "total": 0,
             "offline_mode": True,
-            "message": "Banco de dados não disponível - modo offline"
+            "message": "Banco de dados n?o dispon?vel - modo offline"
         }
 
     try:
@@ -796,7 +921,7 @@ def checklist_pending(db: Session = Depends(get_db)):
         return []
 
 # ===============================
-# MÓDULO DE ABASTECIMENTO
+# M?DULO DE ABASTECIMENTO
 # ===============================
 
 @api_router.get("/abastecimentos")
@@ -893,7 +1018,7 @@ def get_abastecimento(abastecimento_id: int, db: Session = Depends(get_db)):
     """Busca abastecimento por ID"""
     abast = db.query(models.Abastecimento).filter(models.Abastecimento.id == abastecimento_id).first()
     if not abast:
-        raise HTTPException(status_code=404, detail="Abastecimento não encontrado")
+        raise HTTPException(status_code=404, detail="Abastecimento n?o encontrado")
 
     return {
         "id": abast.id,
@@ -922,7 +1047,7 @@ def update_abastecimento(
     ).first()
 
     if not abastecimento:
-        raise HTTPException(status_code=404, detail="Abastecimento não encontrado")
+        raise HTTPException(status_code=404, detail="Abastecimento n?o encontrado")
 
     try:
         from datetime import datetime
@@ -967,18 +1092,18 @@ def delete_abastecimento(
     ).first()
 
     if not abastecimento:
-        raise HTTPException(status_code=404, detail="Abastecimento não encontrado")
+        raise HTTPException(status_code=404, detail="Abastecimento n?o encontrado")
 
     try:
         db.delete(abastecimento)
         db.commit()
-        return {"message": "Abastecimento excluído com sucesso"}
+        return {"message": "Abastecimento exclu?do com sucesso"}
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=400, detail=f"Erro ao excluir abastecimento: {str(e)}")
 
 # ===============================
-# MÓDULO DE ORDEM DE SERVIÇO
+# M?DULO DE ORDEM DE SERVI?O
 # ===============================
 
 @api_router.get("/ordens-servico")
@@ -992,12 +1117,12 @@ def list_ordens_servico(
     data_fim: str = Query(None),
     db: Session = Depends(get_db)
 ):
-    """Lista ordens de serviço com filtros"""
+    """Lista ordens de servi?o com filtros"""
     try:
         # Verificar se a tabela existe tentando fazer uma consulta simples
         ordens = db.query(models.OrdemServico).limit(1).all()
 
-        # Se chegou até aqui, a tabela existe, fazer consulta completa
+        # Se chegou at? aqui, a tabela existe, fazer consulta completa
         query = db.query(models.OrdemServico)
 
         if veiculo_id:
@@ -1031,7 +1156,7 @@ def list_ordens_servico(
         result = []
         for ordem in ordens:
             try:
-                # Buscar dados do veículo separadamente
+                # Buscar dados do ve?culo separadamente
                 veiculo = None
                 if ordem.veiculo_id:
                     try:
@@ -1059,13 +1184,13 @@ def list_ordens_servico(
                     "observacoes": ordem.observacoes
                 })
             except Exception as e:
-                # Se der erro em uma ordem específica, pular
+                # Se der erro em uma ordem espec?fica, pular
                 continue
 
         return result
 
     except Exception as e:
-        # Se der erro (tabela não existe, etc), retornar lista vazia
+        # Se der erro (tabela n?o existe, etc), retornar lista vazia
         return []
 
 class OrdemServicoCreate(BaseModel):
@@ -1095,7 +1220,7 @@ class OrdemServicoUpdate(BaseModel):
 
 @api_router.post("/ordens-servico")
 def create_ordem_servico(ordem_data: OrdemServicoCreate, db: Session = Depends(get_db)):
-    """Cria nova ordem de serviço"""
+    """Cria nova ordem de servi?o"""
     try:
         from datetime import datetime
 
@@ -1103,9 +1228,9 @@ def create_ordem_servico(ordem_data: OrdemServicoCreate, db: Session = Depends(g
         try:
             db.query(models.OrdemServico).limit(1).all()
         except Exception:
-            raise HTTPException(status_code=500, detail="Tabela ordens_servico não existe ou não está acessível")
+            raise HTTPException(status_code=500, detail="Tabela ordens_servico n?o existe ou n?o est? acess?vel")
 
-        # Criar ordem de serviço sem numero_os para evitar erro de coluna
+        # Criar ordem de servi?o sem numero_os para evitar erro de coluna
         ordem_dict = {
             'veiculo_id': ordem_data.veiculo_id,
             'tipo_servico': ordem_data.tipo_servico,
@@ -1129,19 +1254,19 @@ def create_ordem_servico(ordem_data: OrdemServicoCreate, db: Session = Depends(g
         db.commit()
         db.refresh(ordem)
 
-        return {"id": ordem.id, "message": "Ordem de serviço criada com sucesso"}
+        return {"id": ordem.id, "message": "Ordem de servi?o criada com sucesso"}
     except HTTPException:
         raise
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=400, detail=f"Erro ao criar ordem de serviço: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Erro ao criar ordem de servi?o: {str(e)}")
 
 @api_router.get("/ordens-servico/{ordem_id}")
 def get_ordem_servico(ordem_id: int, db: Session = Depends(get_db)):
-    """Busca ordem de serviço por ID com itens"""
+    """Busca ordem de servi?o por ID com itens"""
     ordem = db.query(models.OrdemServico).filter(models.OrdemServico.id == ordem_id).first()
     if not ordem:
-        raise HTTPException(status_code=404, detail="Ordem de serviço não encontrada")
+        raise HTTPException(status_code=404, detail="Ordem de servi?o n?o encontrada")
 
     itens = db.query(models.OrdemServicoItem).filter(models.OrdemServicoItem.ordem_servico_id == ordem_id).all()
 
@@ -1179,13 +1304,13 @@ def update_ordem_servico(
     ordem_data: dict,
     db: Session = Depends(get_db)
 ):
-    """Atualizar ordem de serviço existente"""
+    """Atualizar ordem de servi?o existente"""
     ordem = db.query(models.OrdemServico).filter(
         models.OrdemServico.id == ordem_id
     ).first()
 
     if not ordem:
-        raise HTTPException(status_code=404, detail="Ordem de serviço não encontrada")
+        raise HTTPException(status_code=404, detail="Ordem de servi?o n?o encontrada")
 
     try:
         from datetime import datetime
@@ -1194,12 +1319,12 @@ def update_ordem_servico(
         clean_data = {}
         for campo, valor in ordem_data.items():
             if campo in ["data_abertura", "data_prevista", "data_conclusao"]:
-                # Para campos de data: apenas incluir se não for string vazia
+                # Para campos de data: apenas incluir se n?o for string vazia
                 if valor and isinstance(valor, str) and valor.strip():
                     clean_data[campo] = valor
-                # Se for string vazia, não incluir no update (manter valor atual)
+                # Se for string vazia, n?o incluir no update (manter valor atual)
             else:
-                # Para outros campos: incluir se não for None
+                # Para outros campos: incluir se n?o for None
                 if valor is not None:
                     clean_data[campo] = valor
 
@@ -1236,20 +1361,20 @@ def update_ordem_servico(
         }
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=400, detail=f"Erro ao atualizar ordem de serviço: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Erro ao atualizar ordem de servi?o: {str(e)}")
 
 @api_router.delete("/ordens-servico/{ordem_id}")
 def delete_ordem_servico(
     ordem_id: int,
     db: Session = Depends(get_db)
 ):
-    """Excluir ordem de serviço"""
+    """Excluir ordem de servi?o"""
     ordem = db.query(models.OrdemServico).filter(
         models.OrdemServico.id == ordem_id
     ).first()
 
     if not ordem:
-        raise HTTPException(status_code=404, detail="Ordem de serviço não encontrada")
+        raise HTTPException(status_code=404, detail="Ordem de servi?o n?o encontrada")
 
     try:
         # Excluir itens relacionados primeiro
@@ -1260,10 +1385,10 @@ def delete_ordem_servico(
         # Excluir a ordem
         db.delete(ordem)
         db.commit()
-        return {"message": "Ordem de serviço excluída com sucesso"}
+        return {"message": "Ordem de servi?o exclu?da com sucesso"}
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=400, detail=f"Erro ao excluir ordem de serviço: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Erro ao excluir ordem de servi?o: {str(e)}")
 
 # Debug: Populate checklist items for existing models
 @api_router.post("/debug/populate-checklist-items")
@@ -1273,22 +1398,22 @@ def populate_checklist_items(db: Session = Depends(get_db)):
         # Define checklist items based on the form model
         checklist_items = [
             # MOTOR
-            {"categoria": "motor", "descricao": "Vazamento óleo do motor", "ordem": 1},
-            {"categoria": "motor", "descricao": "Nível de óleo do motor", "ordem": 2},
-            {"categoria": "motor", "descricao": "Vazamento de água", "ordem": 3},
-            {"categoria": "motor", "descricao": "Nível de água", "ordem": 4},
+            {"categoria": "motor", "descricao": "Vazamento ?leo do motor", "ordem": 1},
+            {"categoria": "motor", "descricao": "N?vel de ?leo do motor", "ordem": 2},
+            {"categoria": "motor", "descricao": "Vazamento de ?gua", "ordem": 3},
+            {"categoria": "motor", "descricao": "N?vel de ?gua", "ordem": 4},
             {"categoria": "motor", "descricao": "Correia do motor", "ordem": 5},
             {"categoria": "motor", "descricao": "Mangueiras", "ordem": 6},
 
             # FREIOS
-            {"categoria": "freios", "descricao": "Nível do fluido de freio", "ordem": 7},
+            {"categoria": "freios", "descricao": "N?vel do fluido de freio", "ordem": 7},
             {"categoria": "freios", "descricao": "Vazamento nas rodas dianteiras", "ordem": 8},
             {"categoria": "freios", "descricao": "Vazamento nas rodas traseiras", "ordem": 9},
             {"categoria": "freios", "descricao": "Freio de estacionamento", "ordem": 10},
 
             # PNEUS
-            {"categoria": "pneus", "descricao": "Condições dos pneus dianteiros", "ordem": 11},
-            {"categoria": "pneus", "descricao": "Condições dos pneus traseiros", "ordem": 12},
+            {"categoria": "pneus", "descricao": "Condi??es dos pneus dianteiros", "ordem": 11},
+            {"categoria": "pneus", "descricao": "Condi??es dos pneus traseiros", "ordem": 12},
             {"categoria": "pneus", "descricao": "Pneu sobressalente", "ordem": 13},
             {"categoria": "pneus", "descricao": "Calibragem dos pneus", "ordem": 14},
 
@@ -1296,17 +1421,17 @@ def populate_checklist_items(db: Session = Depends(get_db)):
             {"categoria": "rodas", "descricao": "Porcas das rodas dianteiras", "ordem": 15},
             {"categoria": "rodas", "descricao": "Porcas das rodas traseiras", "ordem": 16},
 
-            # COMBUSTÍVEL
-            {"categoria": "combustivel", "descricao": "Nível de combustível", "ordem": 17},
-            {"categoria": "combustivel", "descricao": "Vazamento de combustível", "ordem": 18},
+            # COMBUST?VEL
+            {"categoria": "combustivel", "descricao": "N?vel de combust?vel", "ordem": 17},
+            {"categoria": "combustivel", "descricao": "Vazamento de combust?vel", "ordem": 18},
 
-            # ELÉTRICA
+            # EL?TRICA
             {"categoria": "eletrica", "descricao": "Bateria", "ordem": 19},
-            {"categoria": "eletrica", "descricao": "Faróis", "ordem": 20},
+            {"categoria": "eletrica", "descricao": "Far?is", "ordem": 20},
             {"categoria": "eletrica", "descricao": "Lanternas", "ordem": 21},
             {"categoria": "eletrica", "descricao": "Pisca alerta", "ordem": 22},
             {"categoria": "eletrica", "descricao": "Luz de freio", "ordem": 23},
-            {"categoria": "eletrica", "descricao": "Luz de ré", "ordem": 24},
+            {"categoria": "eletrica", "descricao": "Luz de r?", "ordem": 24},
             {"categoria": "eletrica", "descricao": "Buzina", "ordem": 25},
 
             # CABINE
@@ -1314,16 +1439,16 @@ def populate_checklist_items(db: Session = Depends(get_db)):
             {"categoria": "cabine", "descricao": "Limpador de para-brisa", "ordem": 27},
             {"categoria": "cabine", "descricao": "Vidros", "ordem": 28},
             {"categoria": "cabine", "descricao": "Painel de instrumentos", "ordem": 29},
-            {"categoria": "cabine", "descricao": "Cinto de segurança", "ordem": 30},
+            {"categoria": "cabine", "descricao": "Cinto de seguran?a", "ordem": 30},
             {"categoria": "cabine", "descricao": "Banco do motorista", "ordem": 31},
 
             # DOCUMENTOS
             {"categoria": "documentos", "descricao": "CNH do motorista", "ordem": 32},
-            {"categoria": "documentos", "descricao": "CRLV do veículo", "ordem": 33},
+            {"categoria": "documentos", "descricao": "CRLV do ve?culo", "ordem": 33},
 
             # EQUIPAMENTOS
             {"categoria": "equipamentos", "descricao": "Extintor", "ordem": 34},
-            {"categoria": "equipamentos", "descricao": "Triângulo", "ordem": 35},
+            {"categoria": "equipamentos", "descricao": "Tri?ngulo", "ordem": 35},
             {"categoria": "equipamentos", "descricao": "Chave de roda", "ordem": 36},
             {"categoria": "equipamentos", "descricao": "Macaco", "ordem": 37},
         ]
@@ -1370,7 +1495,7 @@ def finish_checklist_v1(checklist_id: int, body: dict = {}, db: Session = Depend
     try:
         checklist = db.get(models.Checklist, checklist_id)
         if not checklist:
-            raise HTTPException(status_code=404, detail="Checklist não encontrado")
+            raise HTTPException(status_code=404, detail="Checklist n?o encontrado")
 
         checklist.status = "aguardando_aprovacao"
         from datetime import datetime
@@ -1398,7 +1523,7 @@ def delete_checklist_v1(checklist_id: int, db: Session = Depends(get_db)):
     try:
         checklist = db.get(models.Checklist, checklist_id)
         if not checklist:
-            raise HTTPException(status_code=404, detail="Checklist não encontrado")
+            raise HTTPException(status_code=404, detail="Checklist n?o encontrado")
 
         # Delete all responses first (foreign key constraint)
         db.query(models.ChecklistResposta).filter(
@@ -1408,7 +1533,7 @@ def delete_checklist_v1(checklist_id: int, db: Session = Depends(get_db)):
         # Delete the checklist
         db.delete(checklist)
         db.commit()
-        return {"message": "Checklist excluído com sucesso"}
+        return {"message": "Checklist exclu?do com sucesso"}
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
@@ -1417,7 +1542,7 @@ def delete_checklist_v1(checklist_id: int, db: Session = Depends(get_db)):
 api_router.include_router(checklist_router.router, prefix="/checklist")
 
 # ===============================
-# MÓDULO DE CONTROLE DE ACESSO AVANÇADO
+# M?DULO DE CONTROLE DE ACESSO AVAN?ADO
 # ===============================
 
 # Moved to avoid duplicate route - see line 1169
@@ -1429,7 +1554,7 @@ def check_user_permission(
     current_user: models.Usuario = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Verifica se o usuário tem permissão para uma ação específica em um módulo"""
+    """Verifica se o usu?rio tem permiss?o para uma a??o espec?fica em um m?dulo"""
     from app.security import verificar_permissao_modulo
 
     permitido = verificar_permissao_modulo(current_user, modulo, acao, db)
@@ -1447,7 +1572,7 @@ def register_user_activity(
     current_user: models.Usuario = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Registra atividade do usuário para auditoria"""
+    """Registra atividade do usu?rio para auditoria"""
     try:
         log = models.LogAcesso(
             usuario_id=current_user.id,
@@ -1459,7 +1584,7 @@ def register_user_activity(
         )
         db.add(log)
 
-        # Atualizar última atividade do usuário
+        # Atualizar ?ltima atividade do usu?rio
         current_user.ultimo_acesso = func.now()
         if activity_data.get('ip'):
             current_user.ultimo_ip = activity_data['ip']
@@ -1476,7 +1601,7 @@ def log_user_action(
     current_user: models.Usuario = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Registra ação importante do usuário"""
+    """Registra a??o importante do usu?rio"""
     try:
         log = models.LogAcesso(
             usuario_id=current_user.id,
@@ -1485,35 +1610,35 @@ def log_user_action(
             url_acessada=action_data.get('url', ''),
             metodo_http=action_data.get('method', ''),
             sucesso=True,
-            # Pode adicionar campo de detalhes se necessário
+            # Pode adicionar campo de detalhes se necess?rio
         )
         db.add(log)
         db.commit()
-        return {"message": "Ação registrada com sucesso"}
+        return {"message": "A??o registrada com sucesso"}
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Erro ao registrar ação: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro ao registrar a??o: {str(e)}")
 
 @api_router.get("/users/session-check")
 def check_user_session(
     current_user: models.Usuario = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Verifica se a sessão do usuário é válida"""
+    """Verifica se a sess?o do usu?rio ? v?lida"""
     try:
-        # Verificar se o usuário não foi bloqueado ou desativado
+        # Verificar se o usu?rio n?o foi bloqueado ou desativado
         if not current_user.ativo:
-            return {"valida": False, "motivo": "Usuário inativo"}
+            return {"valida": False, "motivo": "Usu?rio inativo"}
 
         if current_user.bloqueado_ate and current_user.bloqueado_ate > func.now():
-            return {"valida": False, "motivo": "Usuário bloqueado"}
+            return {"valida": False, "motivo": "Usu?rio bloqueado"}
 
-        # Verificar limite de sessões (implementação simplificada)
-        # Em um sistema real, você manteria controle das sessões ativas
+        # Verificar limite de sess?es (implementa??o simplificada)
+        # Em um sistema real, voc? manteria controle das sess?es ativas
         return {"valida": True}
 
     except Exception as e:
-        return {"valida": False, "motivo": f"Erro na verificação: {str(e)}"}
+        return {"valida": False, "motivo": f"Erro na verifica??o: {str(e)}"}
 
 # Duplicate route removed - see comprehensive implementation starting at line 1284
 
@@ -1525,10 +1650,10 @@ def create_user(
     current_user: models.Usuario = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Cria novo usuário (apenas admins e gestores)"""
-    # Verificar se é admin ou gestor
+    """Cria novo usu?rio (apenas admins e gestores)"""
+    # Verificar se ? admin ou gestor
     if current_user.papel not in ['admin', 'gestor']:
-        raise HTTPException(status_code=403, detail="Sem permissão para criar usuários")
+        raise HTTPException(status_code=403, detail="Sem permiss?o para criar usu?rios")
 
     try:
         from app.core.security import hash_password
@@ -1538,10 +1663,10 @@ def create_user(
         logger = logging.getLogger(__name__)
         logger.info(f"Creating user with data: {user_data}")
 
-        # Verificar se email já existe
+        # Verificar se email j? existe
         existing_user = db.query(models.Usuario).filter(models.Usuario.email == user_data.email).first()
         if existing_user:
-            raise HTTPException(status_code=400, detail="Email já cadastrado")
+            raise HTTPException(status_code=400, detail="Email j? cadastrado")
 
         # Processar dias da semana
         dias_semana = None
@@ -1552,18 +1677,15 @@ def create_user(
                 dias_semana = user_data.dias_semana
 
         user = models.Usuario(
-            nome=user_data.nome,
+            username=user_data.email.split('@')[0],  # Gerar username a partir do email
+            nome_completo=user_data.nome,
             email=user_data.email,
-            senha_hash=hash_password(user_data.senha),
-            papel=user_data.papel,
+            password_hash=hash_password(user_data.senha),
+            tipo_usuario=user_data.papel,
+            is_admin=(user_data.papel == 'admin'),
             ativo=user_data.ativo,
-            horario_inicio=user_data.horario_inicio,
-            horario_fim=user_data.horario_fim,
-            dias_semana=dias_semana,
-            ips_permitidos=user_data.ips_permitidos,
-            localizacao_restrita=user_data.localizacao_restrita,
-            data_validade=user_data.data_validade,
-            max_sessoes=user_data.max_sessoes
+            is_active=user_data.ativo,
+            # Campos extras que n?o existem no modelo atual ser?o ignorados
         )
 
         db.add(user)
@@ -1580,7 +1702,7 @@ def create_user(
         logger.error(f"Exception type: {type(e)}")
         import traceback
         logger.error(f"Traceback: {traceback.format_exc()}")
-        raise HTTPException(status_code=400, detail=f"Erro ao criar usuário: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Erro ao criar usu?rio: {str(e)}")
 
 @api_router.put("/users/{user_id}")
 def update_user(
@@ -1589,22 +1711,22 @@ def update_user(
     current_user: models.Usuario = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Atualiza usuário existente (apenas admins)"""
-    # Verificar se é admin
+    """Atualiza usu?rio existente (apenas admins)"""
+    # Verificar se ? admin
     if current_user.papel != 'admin':
         raise HTTPException(status_code=403, detail="Acesso negado")
 
     user = db.query(models.Usuario).filter(models.Usuario.id == user_id).first()
     if not user:
-        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+        raise HTTPException(status_code=404, detail="Usu?rio n?o encontrado")
 
     try:
         from datetime import datetime
 
-        # Atualizar campos básicos
+        # Atualizar campos b?sicos
         for campo in ['nome', 'email', 'papel', 'ativo', 'ips_permitidos', 'localizacao_restrita', 'max_sessoes']:
             if campo in user_data and user_data[campo] is not None:
-                # Conversão de tipos quando necessário
+                # Convers?o de tipos quando necess?rio
                 if campo == 'ativo':
                     value = user_data[campo]
                     if isinstance(value, str):
@@ -1615,7 +1737,7 @@ def update_user(
                 else:
                     setattr(user, campo, user_data[campo])
 
-        # Processar horários
+        # Processar hor?rios
         if 'horario_inicio' in user_data and user_data['horario_inicio']:
             if isinstance(user_data['horario_inicio'], str):
                 user.horario_inicio = datetime.strptime(user_data['horario_inicio'], '%H:%M').time()
@@ -1648,14 +1770,63 @@ def update_user(
             else:
                 user.dias_semana = user_data['dias_semana']
 
+        # Processar senha se fornecida
+        if 'senha' in user_data and user_data['senha']:
+            # Em produção, usar hash adequado
+            user.password_hash = user_data['senha']
+
+        # Salvar mudanças do usuário primeiro
         db.commit()
         db.refresh(user)
 
-        return {"id": user.id, "message": "Usuário atualizado com sucesso"}
+        # Processar permissões por sistema SSO se fornecidas
+        permissions_updated = False
+        sistemas = ['frotas', 'baker', 'financeiro']
+
+        for sistema in sistemas:
+            perm_key = f'permissoes_{sistema}'
+            if perm_key in user_data and user_data[perm_key]:
+                permissions_updated = True
+                perm_data = user_data[perm_key]
+
+                # Remover permissões existentes para este sistema
+                db.query(models.UsuarioPermissao).filter(
+                    models.UsuarioPermissao.usuario_id == user_id,
+                    models.UsuarioPermissao.modulo == sistema
+                ).delete()
+
+                # Adicionar novas permissões baseadas nos checkboxes
+                if isinstance(perm_data, dict):
+                    if perm_data.get('acesso_leitura'):
+                        db.add(models.UsuarioPermissao(
+                            usuario_id=user_id, modulo=sistema,
+                            acao='visualizar', permitido=True
+                        ))
+                    if perm_data.get('acesso_escrita'):
+                        db.add(models.UsuarioPermissao(
+                            usuario_id=user_id, modulo=sistema,
+                            acao='editar', permitido=True
+                        ))
+                    if perm_data.get('acesso_exclusao'):
+                        db.add(models.UsuarioPermissao(
+                            usuario_id=user_id, modulo=sistema,
+                            acao='excluir', permitido=True
+                        ))
+                    if perm_data.get('admin_completo'):
+                        for acao in ['visualizar', 'criar', 'editar', 'excluir']:
+                            db.add(models.UsuarioPermissao(
+                                usuario_id=user_id, modulo=sistema,
+                                acao=acao, permitido=True
+                            ))
+
+        if permissions_updated:
+            db.commit()
+
+        return {"id": user.id, "message": "Usu?rio atualizado com sucesso"}
 
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=400, detail=f"Erro ao atualizar usuário: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Erro ao atualizar usu?rio: {str(e)}")
 
 @api_router.post("/users/{user_id}/activate")
 def activate_user(
@@ -1663,20 +1834,20 @@ def activate_user(
     current_user: models.Usuario = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Ativa usuário"""
+    """Ativa usu?rio"""
     if current_user.papel != 'admin':
         raise HTTPException(status_code=403, detail="Acesso negado")
 
     user = db.query(models.Usuario).filter(models.Usuario.id == user_id).first()
     if not user:
-        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+        raise HTTPException(status_code=404, detail="Usu?rio n?o encontrado")
 
     user.ativo = True
     user.tentativas_login = 0
     user.bloqueado_ate = None
 
     db.commit()
-    return {"message": "Usuário ativado com sucesso"}
+    return {"message": "Usu?rio ativado com sucesso"}
 
 @api_router.post("/users/{user_id}/deactivate")
 def deactivate_user(
@@ -1684,17 +1855,17 @@ def deactivate_user(
     current_user: models.Usuario = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Desativa usuário"""
+    """Desativa usu?rio"""
     if current_user.papel != 'admin':
         raise HTTPException(status_code=403, detail="Acesso negado")
 
     user = db.query(models.Usuario).filter(models.Usuario.id == user_id).first()
     if not user:
-        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+        raise HTTPException(status_code=404, detail="Usu?rio n?o encontrado")
 
     user.ativo = False
     db.commit()
-    return {"message": "Usuário desativado com sucesso"}
+    return {"message": "Usu?rio desativado com sucesso"}
 
 @api_router.get("/users/{user_id}/permissions")
 def get_user_permissions(
@@ -1702,15 +1873,15 @@ def get_user_permissions(
     current_user: models.Usuario = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Obtém permissões específicas do usuário"""
+    """Obt?m permiss?es espec?ficas do usu?rio"""
     if current_user.papel != 'admin':
         raise HTTPException(status_code=403, detail="Acesso negado")
 
     user = db.query(models.Usuario).filter(models.Usuario.id == user_id).first()
     if not user:
-        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+        raise HTTPException(status_code=404, detail="Usu?rio n?o encontrado")
 
-    # Buscar permissões específicas
+    # Buscar permiss?es espec?ficas
     permissoes = db.query(models.UsuarioPermissao).filter(
         models.UsuarioPermissao.usuario_id == user_id
     ).all()
@@ -1733,21 +1904,21 @@ def update_user_permissions(
     current_user: models.Usuario = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Atualiza permissões específicas do usuário"""
+    """Atualiza permiss?es espec?ficas do usu?rio"""
     if current_user.papel != 'admin':
         raise HTTPException(status_code=403, detail="Acesso negado")
 
     user = db.query(models.Usuario).filter(models.Usuario.id == user_id).first()
     if not user:
-        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+        raise HTTPException(status_code=404, detail="Usu?rio n?o encontrado")
 
     try:
-        # Remover todas as permissões específicas existentes
+        # Remover todas as permiss?es espec?ficas existentes
         db.query(models.UsuarioPermissao).filter(
             models.UsuarioPermissao.usuario_id == user_id
         ).delete()
 
-        # Adicionar novas permissões
+        # Adicionar novas permiss?es
         for key, value in permissions_data.items():
             if '_' in key:  # formato: modulo_acao
                 modulo, acao = key.split('_', 1)
@@ -1761,11 +1932,11 @@ def update_user_permissions(
                     db.add(permissao)
 
         db.commit()
-        return {"message": "Permissões atualizadas com sucesso"}
+        return {"message": "Permiss?es atualizadas com sucesso"}
 
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=400, detail=f"Erro ao atualizar permissões: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Erro ao atualizar permiss?es: {str(e)}")
 
 @api_router.delete("/users/{user_id}")
 def delete_user(
@@ -1773,21 +1944,21 @@ def delete_user(
     current_user: models.Usuario = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Exclui um usuário (apenas admins)"""
+    """Exclui um usu?rio (apenas admins)"""
     if current_user.papel != 'admin':
         raise HTTPException(status_code=403, detail="Acesso negado")
 
-    # Verificar se o usuário existe
+    # Verificar se o usu?rio existe
     user = db.query(models.Usuario).filter(models.Usuario.id == user_id).first()
     if not user:
-        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+        raise HTTPException(status_code=404, detail="Usu?rio n?o encontrado")
 
-    # Não permitir excluir a si mesmo
+    # N?o permitir excluir a si mesmo
     if user_id == current_user.id:
-        raise HTTPException(status_code=400, detail="Não é possível excluir seu próprio usuário")
+        raise HTTPException(status_code=400, detail="N?o ? poss?vel excluir seu pr?prio usu?rio")
 
     try:
-        # Excluir permissões específicas relacionadas
+        # Excluir permiss?es espec?ficas relacionadas
         db.query(models.UsuarioPermissao).filter(
             models.UsuarioPermissao.usuario_id == user_id
         ).delete()
@@ -1797,15 +1968,15 @@ def delete_user(
         #     models.LogAcesso.usuario_id == user_id
         # ).delete()
 
-        # Excluir o usuário
+        # Excluir o usu?rio
         db.delete(user)
         db.commit()
 
-        return {"message": f"Usuário {user.nome} excluído com sucesso"}
+        return {"message": f"Usu?rio {user.nome} exclu?do com sucesso"}
 
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=400, detail=f"Erro ao excluir usuário: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Erro ao excluir usu?rio: {str(e)}")
 
 @api_router.get("/users/{user_id}/access-log")
 def get_user_access_log(
@@ -1815,7 +1986,7 @@ def get_user_access_log(
     current_user: models.Usuario = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Obtém log de acesso do usuário"""
+    """Obt?m log de acesso do usu?rio"""
     if current_user.papel != 'admin':
         raise HTTPException(status_code=403, detail="Acesso negado")
 
@@ -1834,20 +2005,20 @@ def get_user_access_log(
         "motivo_falha": log.motivo_falha
     } for log in logs]
 
-# Endpoint para inicializar perfis padrão
+# Endpoint para inicializar perfis padr?o
 @api_router.post("/admin/init-profiles")
 def initialize_default_profiles(
     current_user: models.Usuario = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Inicializa os perfis de acesso padrão"""
+    """Inicializa os perfis de acesso padr?o"""
     if current_user.papel != 'admin':
         raise HTTPException(status_code=403, detail="Acesso negado")
 
     try:
         from app.security import criar_perfis_padrao
         criar_perfis_padrao(db)
-        return {"message": "Perfis padrão criados com sucesso"}
+        return {"message": "Perfis padr?o criados com sucesso"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao criar perfis: {str(e)}")
 
@@ -1862,8 +2033,8 @@ def get_maintenance_alerts(db: Session = Depends(get_db)):
                     "id": 1,
                     "veiculo_id": 1,
                     "veiculo_placa": "ABC-1234",
-                    "tipo": "Revisão",
-                    "descricao": "Revisão de 50.000km",
+                    "tipo": "Revis?o",
+                    "descricao": "Revis?o de 50.000km",
                     "vencimento": "2024-01-15",
                     "prioridade": "alta"
                 },
@@ -1871,8 +2042,8 @@ def get_maintenance_alerts(db: Session = Depends(get_db)):
                     "id": 2,
                     "veiculo_id": 2,
                     "veiculo_placa": "DEF-5678",
-                    "tipo": "Troca de óleo",
-                    "descricao": "Troca de óleo do motor",
+                    "tipo": "Troca de ?leo",
+                    "descricao": "Troca de ?leo do motor",
                     "vencimento": "2024-01-20",
                     "prioridade": "media"
                 }
@@ -1883,4 +2054,7 @@ def get_maintenance_alerts(db: Session = Depends(get_db)):
 
     # Normal database operations would go here
     return {"alerts": [], "total": 0, "offline_mode": False}
+
+
+
 

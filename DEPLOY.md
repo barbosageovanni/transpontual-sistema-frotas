@@ -198,8 +198,8 @@ docker-compose exec db psql -U postgres -d frotadb -c "SELECT 1;"
 netstat -tulpn | grep :8050
 
 # Alterar porta no .env
-DASHBOARD_PORT=8051
-API_PORT=8006
+DASHBOARD_PORT=8050
+API_PORT=8005
 ```
 
 #### Problemas de permissão

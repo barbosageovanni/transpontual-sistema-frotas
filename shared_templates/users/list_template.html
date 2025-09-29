@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block title %}Gestão de Usuários - SSO Integrado{% endblock %}
+
+{% block extra_css %}
+<style>
+.admin-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.sso-badge {
+    background: linear-gradient(45deg, #28a745, #20c997);
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    margin-left: 0.5rem;
+}
+
+.btn-admin {
+    background: linear-gradient(45deg, #FF6B35, #F7931E);
+    border: none;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    font-weight: 500;
+    text-decoration: none;
+    display: inline-block;
+    transition: all 0.3s ease;
+}
+
+.search-filters {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr auto;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.system-tags {
+    display: flex;
+    gap: 0.25rem;
+    flex-wrap: wrap;
+}
+
+.system-tag {
+    padding: 0.125rem 0.375rem;
+    border-radius: 3px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: white;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.system-frotas { background: #FF6B35; }
+.system-baker { background: #4CAF50; }
+.system-financeiro { background: #2196F3; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <!-- Header unificado com SSO -->
+        <div class="admin-header fade-in">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1><i class="fas fa-users-cog"></i> Gestão de Usuários</h1>
+                    <p>Sistema Integrado - SSO Ativo</p>
+                </div>
+                <div>
+                    <button class="btn-admin" onclick="openAddUserModal()">
+                        <i class="fas fa-user-plus"></i> Novo Usuário
+                    </button>
+                    <div class="btn-group ms-2" role="group">
+                        <button type="button" class="btn btn-outline-info dropdown-toggle" data-bs-toggle="dropdown">
+                            <i class="fas fa-exchange-alt"></i> Sistemas
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="https://transpontual-sistema-frotas.onrender.com" target="_blank">
+                                <i class="fas fa-truck"></i> Sistema de Frotas
+                            </a></li>
+                            <li><a class="dropdown-item" href="https://dashboard-baker-flask.onrender.com" target="_blank">
+                                <i class="fas fa-chart-line"></i> Dashboard Baker
+                            </a></li>
+                            <li><a class="dropdown-item" href="https://transpontual-financial-system.onrender.com" target="_blank">
+                                <i class="fas fa-calculator"></i> Sistema Financeiro
+                            </a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Seção Principal -->
+<div class="users-section fade-in">
+    <div class="section-header">
+        <h3>
+            <i class="fas fa-users"></i> Gestão de Usuários
+            <span class="sso-badge">SSO Ativo</span>
+        </h3>
+    </div>
+
+    <!-- Filtros Padronizados -->
+    <div class="search-filters">
+        <div class="form-group">
+            <label for="searchInput">Buscar usuários</label>
+            <input type="text" id="searchInput" class="form-control" placeholder="Nome, email...">
+        </div>
+        <div class="form-group">
+            <label for="roleFilter">Perfil</label>
+            <select id="roleFilter" class="form-select">
+                <option value="">Todos os perfis</option>
+                <option value="admin">🔧 Admin Global</option>
+                <option value="gestor">👔 Gestor</option>
+                <option value="fiscal">📋 Fiscal</option>
+                <option value="financeiro">💰 Financeiro</option>
+                <option value="operacional">🚛 Operacional</option>
+                <option value="estagiario">🎓 Estagiário</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="statusFilter">Status</label>
+            <select id="statusFilter" class="form-select">
+                <option value="">Todos</option>
+                <option value="ativo">✅ Ativo</option>
+                <option value="inativo">❌ Inativo</option>
+                <option value="bloqueado">🔒 Bloqueado</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="systemFilter">Sistema</label>
+            <select id="systemFilter" class="form-select">
+                <option value="">Todos sistemas</option>
+                <option value="frotas">🚛 Frotas</option>
+                <option value="baker">📊 Baker</option>
+                <option value="financeiro">💰 Financeiro</option>
+            </select>
+        </div>
+        <div class="form-group d-flex align-items-end">
+            <button class="btn btn-secondary me-2" onclick="clearFilters()">
+                <i class="fas fa-times"></i> Limpar
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}

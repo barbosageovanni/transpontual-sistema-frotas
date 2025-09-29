@@ -60,6 +60,14 @@ class UsuarioBase(BaseSchema):
 class UsuarioCreate(UsuarioBase):
     senha: str
 
+class PermissaoSistema(BaseSchema):
+    """Schema para permissões específicas por sistema"""
+    sistema: str = Field(..., description="Nome do sistema (frotas, baker, financeiro)")
+    acesso_leitura: bool = False
+    acesso_escrita: bool = False
+    acesso_exclusao: bool = False
+    admin_completo: bool = False
+
 class UsuarioUpdate(BaseSchema):
     nome: Optional[str] = None
     email: Optional[EmailStr] = None
@@ -74,6 +82,10 @@ class UsuarioUpdate(BaseSchema):
     localizacao_restrita: Optional[bool] = None
     data_validade: Optional[date] = None
     max_sessoes: Optional[int] = None
+    # Permissões por sistema SSO
+    permissoes_frotas: Optional[PermissaoSistema] = None
+    permissoes_baker: Optional[PermissaoSistema] = None
+    permissoes_financeiro: Optional[PermissaoSistema] = None
 
 class UsuarioResponse(UsuarioBase):
     id: int

@@ -1,0 +1,368 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {% if usuario.id %}Editar Usuário{% else %}Novo Usuário{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h4 mb-0 text-gray-800">
+            {% if usuario.id %}Editar Usuário{% else %}Novo Usuário{% endif %}
+        </h1>
+        <div>
+            <a href="{{ url_for('users_list') }}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar à Lista
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 fw-bold text-primary">Dados do Usuário</h6>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="usuario-form">
+                        <!-- Dados Básicos -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="nome" class="form-label">Nome Completo *</label>
+                                <input type="text" class="form-control" id="nome" name="nome"
+                                       value="{{ usuario.nome or request.form.get('nome') }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="email" class="form-label">Email *</label>
+                                <input type="email" class="form-control" id="email" name="email"
+                                       value="{{ usuario.email or request.form.get('email') }}"
+                                       autocomplete="username" required>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="papel" class="form-label">Papel/Perfil *</label>
+                                <select class="form-select" id="papel" name="papel" required>
+                                    <option value="">Selecione um papel</option>
+                                    <option value="admin"
+                                        {{ 'selected' if (usuario.papel or request.form.get('papel')) == 'admin' }}>
+                                        Administrador
+                                    </option>
+                                    <option value="gestor"
+                                        {{ 'selected' if (usuario.papel or request.form.get('papel')) == 'gestor' }}>
+                                        Gestor de Frota
+                                    </option>
+                                    <option value="fiscal"
+                                        {{ 'selected' if (usuario.papel or request.form.get('papel')) == 'fiscal' }}>
+                                        Responsável Fiscal
+                                    </option>
+                                    <option value="financeiro"
+                                        {{ 'selected' if (usuario.papel or request.form.get('papel')) == 'financeiro' }}>
+                                        Responsável Financeiro
+                                    </option>
+                                    <option value="operacional"
+                                        {{ 'selected' if (usuario.papel or request.form.get('papel')) == 'operacional' }}>
+                                        Operacional
+                                    </option>
+                                    <option value="estagiario"
+                                        {{ 'selected' if (usuario.papel or request.form.get('papel')) == 'estagiario' }}>
+                                        Estagiário
+                                    </option>
+                                </select>
+                                <div class="form-text">Define as permissões básicas do usuário</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="ativo" class="form-label">Status</label>
+                                <select class="form-select" id="ativo" name="ativo">
+                                    <option value="1"
+                                        {% if (usuario.get('ativo', True) and usuario.id) or (not usuario.id) or request.form.get('ativo') == '1' %}selected{% endif %}>
+                                        Ativo
+                                    </option>
+                                    <option value="0"
+                                        {% if usuario.get('ativo') == False or request.form.get('ativo') == '0' %}selected{% endif %}>
+                                        Inativo
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+
+                        {% if not usuario.id %}
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="senha" class="form-label">Senha *</label>
+                                <input type="password" class="form-control" id="senha" name="senha" autocomplete="new-password" required>
+                                <div class="form-text">Mínimo 6 caracteres</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="confirmar_senha" class="form-label">Confirmar Senha *</label>
+                                <input type="password" class="form-control" id="confirmar_senha" name="confirmar_senha" autocomplete="new-password" required>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Controles de Acesso -->
+                        <hr>
+                        <h6 class="fw-bold text-secondary mb-3">Controles de Acesso</h6>
+
+                        <div class="row mb-3">
+                            <div class="col-md-3">
+                                <label for="horario_inicio" class="form-label">Horário Início</label>
+                                <input type="time" class="form-control" id="horario_inicio" name="horario_inicio"
+                                       value="{{ usuario.horario_inicio|datetime('%H:%M') if usuario.horario_inicio else (request.form.get('horario_inicio') or '') }}">
+                                <div class="form-text">Opcional</div>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="horario_fim" class="form-label">Horário Fim</label>
+                                <input type="time" class="form-control" id="horario_fim" name="horario_fim"
+                                       value="{{ usuario.horario_fim|datetime('%H:%M') if usuario.horario_fim else (request.form.get('horario_fim') or '') }}">
+                                <div class="form-text">Opcional</div>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="data_validade" class="form-label">Data Validade</label>
+                                <input type="date" class="form-control" id="data_validade" name="data_validade"
+                                       value="{{ usuario.data_validade|datetime('%Y-%m-%d') if usuario.data_validade else (request.form.get('data_validade') or '') }}">
+                                <div class="form-text">Opcional</div>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="max_sessoes" class="form-label">Máx Sessões</label>
+                                <input type="number" class="form-control" id="max_sessoes" name="max_sessoes" min="1" max="10"
+                                       value="{{ usuario.max_sessoes or request.form.get('max_sessoes', 1) }}">
+                                <div class="form-text">Padrão: 1</div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="dias_semana" class="form-label">Dias da Semana Permitidos</label>
+                                <div class="form-check-group">
+                                    {% set dias_selecionados = (usuario.dias_semana or request.form.get('dias_semana', '')).split(',') %}
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="checkbox" id="seg" name="dias_semana" value="1"
+                                               {{ 'checked' if '1' in dias_selecionados }}>
+                                        <label class="form-check-label" for="seg">Seg</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="checkbox" id="ter" name="dias_semana" value="2"
+                                               {{ 'checked' if '2' in dias_selecionados }}>
+                                        <label class="form-check-label" for="ter">Ter</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="checkbox" id="qua" name="dias_semana" value="3"
+                                               {{ 'checked' if '3' in dias_selecionados }}>
+                                        <label class="form-check-label" for="qua">Qua</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="checkbox" id="qui" name="dias_semana" value="4"
+                                               {{ 'checked' if '4' in dias_selecionados }}>
+                                        <label class="form-check-label" for="qui">Qui</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="checkbox" id="sex" name="dias_semana" value="5"
+                                               {{ 'checked' if '5' in dias_selecionados }}>
+                                        <label class="form-check-label" for="sex">Sex</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="checkbox" id="sab" name="dias_semana" value="6"
+                                               {{ 'checked' if '6' in dias_selecionados }}>
+                                        <label class="form-check-label" for="sab">Sáb</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="checkbox" id="dom" name="dias_semana" value="7"
+                                               {{ 'checked' if '7' in dias_selecionados }}>
+                                        <label class="form-check-label" for="dom">Dom</label>
+                                    </div>
+                                </div>
+                                <div class="form-text">Deixe vazio para permitir todos os dias</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="ips_permitidos" class="form-label">IPs Permitidos</label>
+                                <textarea class="form-control" id="ips_permitidos" name="ips_permitidos" rows="3"
+                                          placeholder="192.168.1.100, 10.0.0.50">{{ usuario.ips_permitidos or request.form.get('ips_permitidos') }}</textarea>
+                                <div class="form-text">Separar por vírgula. Deixe vazio para permitir qualquer IP</div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="localizacao_restrita" name="localizacao_restrita" value="1"
+                                           {% if usuario.get('localizacao_restrita') or request.form.get('localizacao_restrita') %}checked{% endif %}>
+                                    <label class="form-check-label" for="localizacao_restrita">
+                                        Restringir por localização (requer validação adicional)
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-check-circle"></i>
+                                    {% if usuario.id %}Atualizar Usuário{% else %}Criar Usuário{% endif %}
+                                </button>
+                                <a href="{{ url_for('users_list') }}" class="btn btn-secondary ms-2">
+                                    <i class="bi bi-x-circle"></i> Cancelar
+                                </a>
+                                {% if usuario.id %}
+                                <a href="{{ url_for('user_permissions', user_id=usuario.id) }}" class="btn btn-info ms-2">
+                                    <i class="bi bi-shield-check"></i> Gerenciar Permissões
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Card de Ajuda -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 fw-bold text-info">Guia de Criação</h6>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <i class="bi bi-person-gear display-4 text-info"></i>
+                    </div>
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <i class="bi bi-check-circle text-success"></i>
+                            <strong>Dados obrigatórios:</strong> Nome, email, papel e senha (novo usuário)
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-shield-check text-primary"></i>
+                            <strong>Papéis disponíveis:</strong>
+                            <ul class="mt-1 ms-3">
+                                <li><small>Admin - Acesso total</small></li>
+                                <li><small>Gestor - Gestão de frota</small></li>
+                                <li><small>Fiscal - Documentos fiscais</small></li>
+                                <li><small>Financeiro - Controles financeiros</small></li>
+                                <li><small>Operacional - Checklists</small></li>
+                                <li><small>Estagiário - Acesso limitado</small></li>
+                            </ul>
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-clock text-warning"></i>
+                            <strong>Restrições:</strong> Configure horários e IPs para maior segurança
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Perfil Selecionado -->
+            <div class="card shadow mb-4" id="perfil-info">
+                <div class="card-header py-3">
+                    <h6 class="m-0 fw-bold text-primary">Permissões do Perfil</h6>
+                </div>
+                <div class="card-body">
+                    <div id="perfil-details">
+                        <p class="text-muted">Selecione um papel para ver as permissões</p>
+                    </div>
+                </div>
+            </div>
+
+            {% if usuario.id %}
+            <!-- Informações de Acesso -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 fw-bold text-secondary">Informações de Acesso</h6>
+                </div>
+                <div class="card-body">
+                    <div class="small">
+                        <p><strong>Criado em:</strong> {{ usuario.criado_em|datetime }}</p>
+                        {% if usuario.ultimo_acesso %}
+                        <p><strong>Último acesso:</strong> {{ usuario.ultimo_acesso|datetime }}</p>
+                        <p><strong>Último IP:</strong> {{ usuario.ultimo_ip or 'N/A' }}</p>
+                        {% endif %}
+                        <p><strong>Tentativas de login:</strong> {{ usuario.tentativas_login or 0 }}</p>
+                        {% if usuario.bloqueado_ate %}
+                        <p class="text-danger"><strong>Bloqueado até:</strong> {{ usuario.bloqueado_ate|datetime }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Mostrar permissões do perfil selecionado
+    function mostrarPermissoesPerfil() {
+        const papel = document.getElementById('papel').value;
+        const detailsDiv = document.getElementById('perfil-details');
+
+        const perfis = {
+            'admin': {
+                'descricao': 'Acesso total ao sistema',
+                'modulos': ['Usuários', 'Veículos', 'Motoristas', 'Checklists', 'Abastecimentos', 'Ordens de Serviço', 'Financeiro', 'Fiscal', 'Relatórios']
+            },
+            'gestor': {
+                'descricao': 'Gestão de frota e relatórios',
+                'modulos': ['Veículos', 'Motoristas', 'Checklists', 'Abastecimentos', 'Ordens de Serviço', 'Relatórios']
+            },
+            'fiscal': {
+                'descricao': 'Documentos fiscais apenas',
+                'modulos': ['Fiscal', 'Veículos (visualizar)', 'Relatórios']
+            },
+            'financeiro': {
+                'descricao': 'Controles financeiros',
+                'modulos': ['Financeiro', 'Abastecimentos', 'Ordens de Serviço', 'Relatórios']
+            },
+            'operacional': {
+                'descricao': 'Operações básicas',
+                'modulos': ['Checklists', 'Veículos (visualizar)', 'Motoristas (visualizar)']
+            },
+            'estagiario': {
+                'descricao': 'Acesso limitado com restrições',
+                'modulos': ['Veículos (visualizar)', 'Checklists (visualizar)', 'Relatórios (visualizar)']
+            }
+        };
+
+        if (papel && perfis[papel]) {
+            const perfil = perfis[papel];
+            detailsDiv.innerHTML = `
+                <div class="text-center mb-3">
+                    <i class="bi bi-shield-check display-4 text-primary"></i>
+                </div>
+                <p><strong>Descrição:</strong><br>${perfil.descricao}</p>
+                <p><strong>Módulos permitidos:</strong></p>
+                <ul class="small">
+                    ${perfil.modulos.map(m => `<li>${m}</li>`).join('')}
+                </ul>
+            `;
+        } else {
+            detailsDiv.innerHTML = '<p class="text-muted">Selecione um papel para ver as permissões</p>';
+        }
+    }
+
+    // Event listener
+    document.getElementById('papel').addEventListener('change', mostrarPermissoesPerfil);
+
+    // Inicializar se já houver valor
+    mostrarPermissoesPerfil();
+
+    // Validação de senhas
+    {% if not usuario.id %}
+    function validarSenhas() {
+        const senha = document.getElementById('senha').value;
+        const confirmar = document.getElementById('confirmar_senha').value;
+
+        if (senha !== confirmar) {
+            document.getElementById('confirmar_senha').setCustomValidity('As senhas não coincidem');
+        } else {
+            document.getElementById('confirmar_senha').setCustomValidity('');
+        }
+    }
+
+    document.getElementById('senha').addEventListener('input', validarSenhas);
+    document.getElementById('confirmar_senha').addEventListener('input', validarSenhas);
+    {% endif %}
+});
+</script>
+{% endblock %}

@@ -173,9 +173,16 @@
                     {% if usuario.dias_semana %}
                     <p><i class="bi bi-calendar-week text-info"></i>
                        <strong>Dias:</strong>
-                       {% set dias_nomes = ['', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'] %}
+                       {% set dias_nomes = ['', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab', 'Dom'] %}
                        {% set dias = usuario.dias_semana.split(',') %}
-                       {{ ', '.join([dias_nomes[d|int] for d in dias if d.strip().isdigit() and d|int <= 7]) }}
+                       {% set dias_legiveis = namespace(valores=[]) %}
+                       {% for d in dias %}
+                           {% set dia = d.strip() %}
+                           {% if dia and dia.isdigit() and dia|int <= 7 %}
+                               {% set dias_legiveis.valores = dias_legiveis.valores + [dias_nomes[dia|int]] %}
+                           {% endif %}
+                       {% endfor %}
+                       {{ dias_legiveis.valores|join(', ') }}
                     </p>
                     {% endif %}
 
@@ -211,31 +218,12 @@
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
-                        {% if usuario.bloqueado_ate and usuario.bloqueado_ate > now() %}
-                        <a href="{{ url_for('user_unblock', user_id=usuario.id) }}" class="btn btn-success btn-sm">
-                            <i class="bi bi-unlock"></i> Desbloquear Usuário
+                        <a href="{{ url_for('user_edit', user_id=usuario.id) }}" class="btn btn-warning btn-sm">
+                            <i class="bi bi-pencil-square"></i> Editar Usuário
                         </a>
-                        {% endif %}
-
-                        <a href="{{ url_for('user_reset_password', user_id=usuario.id) }}" class="btn btn-warning btn-sm">
-                            <i class="bi bi-key"></i> Resetar Senha
+                        <a href="{{ url_for('users_list') }}" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-arrow-left"></i> Voltar à Lista
                         </a>
-
-                        <a href="{{ url_for('user_access_log', user_id=usuario.id) }}" class="btn btn-info btn-sm">
-                            <i class="bi bi-clock-history"></i> Log de Acesso
-                        </a>
-
-                        {% if usuario.ativo %}
-                        <a href="{{ url_for('user_deactivate', user_id=usuario.id) }}" class="btn btn-secondary btn-sm">
-                            <i class="bi bi-pause"></i> Desativar
-                        </a>
-                        {% else %}
-                        <a href="{{ url_for('user_activate', user_id=usuario.id) }}" class="btn btn-success btn-sm">
-                            <i class="bi bi-play"></i> Ativar
-                        </a>
-                        {% endif %}
-
-                        <hr>
                         <form method="POST" action="{{ url_for('user_delete', user_id=usuario.id) }}"
                               onsubmit="return confirm('ATENÇÃO: Esta ação não pode ser desfeita! Tem certeza que deseja excluir o usuário {{ usuario.nome }}?')">
                             <button type="submit" class="btn btn-danger btn-sm w-100">
@@ -243,8 +231,10 @@
                             </button>
                         </form>
                     </div>
+                    <p class="text-muted mt-3 mb-0 small">Ações avançadas (resetar senha, desbloquear, logs de acesso) estarão disponíveis em breve.</p>
                 </div>
             </div>
+
         </div>
     </div>
 </div>
