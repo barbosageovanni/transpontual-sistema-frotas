@@ -993,6 +993,57 @@ def create_app():
                              ordens_servico=ordens_servico)
 
 
+    @app.route('/checklists/approve')
+    @login_required
+    def checklist_approve_page():
+        """Página para aprovar checklists pendentes"""
+        return render_template('checklists/approve.html')
+
+    @app.route('/checklist/<int:checklist_id>/approve', methods=['POST'])
+    @login_required
+    def approve_checklist(checklist_id):
+        """Aprovar um checklist"""
+        try:
+            # Fazer requisição para API para aprovar
+            response = api_request(
+                f'/api/v1/checklist/{checklist_id}/approve',
+                method='POST',
+                data={}
+            )
+
+            if response:
+                return jsonify({'message': 'Checklist aprovado com sucesso'}), 200
+            else:
+                return jsonify({'error': 'Erro ao aprovar checklist'}), 500
+
+        except Exception as e:
+            print(f"Erro ao aprovar checklist {checklist_id}: {e}")
+            return jsonify({'error': str(e)}), 500
+
+    @app.route('/checklist/<int:checklist_id>/reject', methods=['POST'])
+    @login_required
+    def reject_checklist(checklist_id):
+        """Reprovar um checklist"""
+        try:
+            data = request.get_json()
+            motivo = data.get('motivo', 'Sem motivo informado')
+
+            # Fazer requisição para API para reprovar
+            response = api_request(
+                f'/api/v1/checklist/{checklist_id}/reject',
+                method='POST',
+                data={'motivo': motivo}
+            )
+
+            if response:
+                return jsonify({'message': 'Checklist reprovado com sucesso'}), 200
+            else:
+                return jsonify({'error': 'Erro ao reprovar checklist'}), 500
+
+        except Exception as e:
+            print(f"Erro ao reprovar checklist {checklist_id}: {e}")
+            return jsonify({'error': str(e)}), 500
+
     @app.route('/checklist')
     def checklist_direct():
         """Rota direta para o checklist completo"""
@@ -1823,7 +1874,7 @@ def create_app():
         try:
             # Tentar buscar alertas da API primeiro
             alertas_response = api_request('/api/v1/maintenance/alerts-data')
-            if alertas_response:
+            if alertas_response and isinstance(alertas_response, list):
                 return alertas_response
 
             # Se API não disponível, calcular alertas baseados nos planos reais
@@ -2340,10 +2391,21 @@ def create_app():
 
             # Gerar alertas de manutenção
             alertas = generate_maintenance_alerts()
-            previstos = [a for a in alertas if a["status"] == "previsto"]
+
+            # Validar que alertas seja uma lista
+            if not isinstance(alertas, list):
+                print(f"Erro: alertas não é uma lista, tipo: {type(alertas)}, valor: {alertas}")
+                alertas = []
+
+            previstos = [a for a in alertas if isinstance(a, dict) and a.get("status") == "previsto"]
 
             # Buscar todos os planos para os filtros
             planos = generate_maintenance_plans()
+
+            # Validar que planos seja uma lista
+            if not isinstance(planos, list):
+                print(f"Erro: planos não é uma lista, tipo: {type(planos)}, valor: {planos}")
+                planos = []
 
             # Debug: mostrar dados antes dos filtros
             print(f"Alertas antes dos filtros: {len(previstos)}")
@@ -3346,12 +3408,36 @@ def create_app():
         # Garantir autenticação
         if not session.get('access_token'):
             auto_login()
-        days = request.args.get('days', 30, type=int)
-        veiculo_id = request.args.get('veiculo_id', type=int)
 
-        params = {'dias': days}
+        # Obter filtros da URL
+        days = request.args.get('days', type=int)  # Removido valor padrão
+        veiculo_id = request.args.get('veiculo_id', type=int)
+        status = request.args.get('status')
+        tipo = request.args.get('tipo')
+        motorista_id = request.args.get('motorista_id', type=int)
+        data_inicio = request.args.get('data_inicio')
+        data_fim = request.args.get('data_fim')
+
+        print(f"📊 API KPIs chamada com filtros: days={days}, veiculo_id={veiculo_id}, status={status}, tipo={tipo}, motorista_id={motorista_id}, data_inicio={data_inicio}, data_fim={data_fim}")
+
+        # Montar parâmetros para a API
+        params = {
+            'per_page': 1000  # Buscar muitos registros para estatísticas
+        }
+        if days:
+            params['dias'] = days
+        if data_inicio:
+            params['data_inicio'] = data_inicio
+        if data_fim:
+            params['data_fim'] = data_fim
         if veiculo_id:
             params['veiculo_id'] = veiculo_id
+        if status:
+            params['status'] = status
+        if tipo:
+            params['tipo'] = tipo
+        if motorista_id:
+            params['motorista_id'] = motorista_id
 
         # Fetch checklists using the existing endpoint
         api_response = api_request('/api/v1/checklist', params=params)
@@ -3359,13 +3445,18 @@ def create_app():
         if not api_response:
             checklists = []
         else:
-            checklists = api_response.get('checklists', [])
+            # A API retorna 'items' na resposta paginada
+            checklists = api_response.get('items', api_response.get('checklists', []))
+
+        print(f"📈 Total de checklists retornados pela API: {len(checklists)}")
 
         # Calculate checklist statistics
         total_checklists = len(checklists)
         aprovados = len([c for c in checklists if c.get('status') == 'aprovado'])
         em_andamento = len([c for c in checklists if c.get('status') == 'em_andamento'])
         reprovados = len([c for c in checklists if c.get('status') == 'reprovado'])
+
+        print(f"📊 Estatísticas calculadas: total={total_checklists}, aprovados={aprovados}, em_andamento={em_andamento}, reprovados={reprovados}")
 
         # Fetch inactive vehicles for "placas bloqueadas"
         try:
@@ -3415,7 +3506,7 @@ def create_app():
 
         # Parâmetros de filtro e paginação
         page = request.args.get('page', 1, type=int)
-        per_page = request.args.get('per_page', 12, type=int)
+        per_page = request.args.get('per_page', 100, type=int)  # Aumentado de 12 para 100
 
         # Filtros
         veiculo_id = request.args.get('veiculo_id', type=int)
@@ -3451,7 +3542,12 @@ def create_app():
         print(f"Fazendo requisição para API: /api/v1/checklist com params: {params}")
         api_response = api_request('/api/v1/checklist', params=params) or {}
         raw_checklists = api_response.get('checklists', [])
-        print(f"Recebido {len(raw_checklists)} checklists da API")
+
+        # Obter total real da paginação
+        pagination_info = api_response.get('pagination', {})
+        total_registros = pagination_info.get('total', len(raw_checklists))
+
+        print(f"Recebido {len(raw_checklists)} checklists da API (total: {total_registros})")
 
         # Mapear dados para formato esperado pelo frontend
         checklists = []
@@ -3474,10 +3570,10 @@ def create_app():
             'checklists': checklists,
             'page': page,
             'per_page': per_page,
-            'total': len(checklists)
+            'total': total_registros
         }
 
-        print(f"Retornando: {len(checklists)} checklists mapeados")
+        print(f"Retornando: {len(checklists)} checklists mapeados (total real: {total_registros})")
         return jsonify(result)
 
     @app.route('/checklists/api/test')
@@ -4097,6 +4193,7 @@ def create_app():
             data = {
                 'veiculo_id': int(request.form['veiculo_id']),
                 'motorista_id': int(request.form['motorista_id']),
+                'fornecedor_id': int(request.form['fornecedor_id']) if request.form.get('fornecedor_id') else None,
                 'data_abastecimento': request.form['data_abastecimento'],
                 'odometro': int(request.form['odometro']),
                 'litros': float(request.form['litros']),
@@ -4117,12 +4214,159 @@ def create_app():
 
         veiculos = api_request('/api/v1/vehicles') or []
         motoristas = api_request('/api/v1/drivers') or []
+        fornecedores = api_request('/api/v1/fornecedores') or []
 
         return render_template('abastecimentos/new.html',
                              veiculos=veiculos,
                              motoristas=motoristas,
+                             fornecedores=fornecedores,
                              current_datetime=datetime.now())
 
+
+    # ==============================
+    # MÓDULO DE FORNECEDORES
+    # ==============================
+
+    @app.route('/fornecedores')
+    @login_required
+    def fornecedores_list():
+        """Listar fornecedores"""
+        fornecedores = api_request('/api/v1/fornecedores') or []
+        return render_template('fornecedores/list.html', fornecedores=fornecedores)
+
+    @app.route('/fornecedores/new', methods=['GET', 'POST'])
+    @login_required
+    def fornecedor_new():
+        """Cadastrar novo fornecedor"""
+        if request.method == 'POST':
+            # Handle JSON (AJAX) requests
+            if request.is_json:
+                json_data = request.get_json()
+
+                if not json_data or not json_data.get('nome'):
+                    return jsonify({'message': 'Nome é obrigatório'}), 400
+
+                fornecedor_data = {
+                    'nome': json_data['nome'],
+                    'tipo': json_data.get('tipo', 'posto'),
+                    'cnpj': json_data.get('cnpj', ''),
+                    'inscricao_estadual': json_data.get('inscricao_estadual', ''),
+                    'telefone': json_data.get('telefone', ''),
+                    'email': json_data.get('email', ''),
+                    'cep': json_data.get('cep', ''),
+                    'endereco': json_data.get('endereco', ''),
+                    'numero': json_data.get('numero', ''),
+                    'complemento': json_data.get('complemento', ''),
+                    'bairro': json_data.get('bairro', ''),
+                    'cidade': json_data.get('cidade', ''),
+                    'estado': json_data.get('estado', ''),
+                    'banco': json_data.get('banco', ''),
+                    'agencia': json_data.get('agencia', ''),
+                    'conta': json_data.get('conta', ''),
+                    'contato_nome': json_data.get('contato_nome', ''),
+                    'contato_telefone': json_data.get('contato_telefone', ''),
+                    'observacoes': json_data.get('observacoes', ''),
+                    'ativo': json_data.get('ativo', True)
+                }
+
+                # Remove empty values
+                fornecedor_data = {k: v for k, v in fornecedor_data.items() if v not in ['', None]}
+
+                response = api_request('/api/v1/fornecedores', 'POST', fornecedor_data)
+                if response:
+                    return jsonify({'message': 'Fornecedor cadastrado com sucesso!', 'fornecedor': response})
+                else:
+                    return jsonify({'message': 'Erro ao cadastrar fornecedor na API'}), 500
+
+            # Handle form submissions
+            else:
+                fornecedor_data = {
+                    'nome': request.form['nome'],
+                    'tipo': request.form.get('tipo', 'posto'),
+                    'cnpj': request.form.get('cnpj', ''),
+                    'inscricao_estadual': request.form.get('inscricao_estadual', ''),
+                    'telefone': request.form.get('telefone', ''),
+                    'email': request.form.get('email', ''),
+                    'cep': request.form.get('cep', ''),
+                    'endereco': request.form.get('endereco', ''),
+                    'numero': request.form.get('numero', ''),
+                    'complemento': request.form.get('complemento', ''),
+                    'bairro': request.form.get('bairro', ''),
+                    'cidade': request.form.get('cidade', ''),
+                    'estado': request.form.get('estado', ''),
+                    'banco': request.form.get('banco', ''),
+                    'agencia': request.form.get('agencia', ''),
+                    'conta': request.form.get('conta', ''),
+                    'contato_nome': request.form.get('contato_nome', ''),
+                    'contato_telefone': request.form.get('contato_telefone', ''),
+                    'observacoes': request.form.get('observacoes', ''),
+                    'ativo': request.form.get('ativo', 'true') == 'true'
+                }
+
+                # Remove empty values
+                fornecedor_data = {k: v for k, v in fornecedor_data.items() if v not in ['', None]}
+
+                response = api_request('/api/v1/fornecedores', 'POST', fornecedor_data)
+                if response:
+                    flash('Fornecedor cadastrado com sucesso!', 'success')
+                    return redirect(url_for('fornecedores_list'))
+                else:
+                    flash('Erro ao cadastrar fornecedor', 'danger')
+
+        return render_template('fornecedores/form.html', fornecedor=None)
+
+    @app.route('/fornecedores/<int:fornecedor_id>', methods=['PUT'])
+    @login_required
+    def fornecedor_update(fornecedor_id):
+        """Atualizar fornecedor via AJAX"""
+        if not request.is_json:
+            return jsonify({'message': 'Content-Type deve ser application/json'}), 400
+
+        json_data = request.get_json()
+
+        fornecedor_data = {
+            'nome': json_data.get('nome'),
+            'tipo': json_data.get('tipo'),
+            'cnpj': json_data.get('cnpj'),
+            'inscricao_estadual': json_data.get('inscricao_estadual'),
+            'telefone': json_data.get('telefone'),
+            'email': json_data.get('email'),
+            'cep': json_data.get('cep'),
+            'endereco': json_data.get('endereco'),
+            'numero': json_data.get('numero'),
+            'complemento': json_data.get('complemento'),
+            'bairro': json_data.get('bairro'),
+            'cidade': json_data.get('cidade'),
+            'estado': json_data.get('estado'),
+            'banco': json_data.get('banco'),
+            'agencia': json_data.get('agencia'),
+            'conta': json_data.get('conta'),
+            'contato_nome': json_data.get('contato_nome'),
+            'contato_telefone': json_data.get('contato_telefone'),
+            'observacoes': json_data.get('observacoes'),
+            'ativo': json_data.get('ativo', True)
+        }
+
+        # Remove empty values
+        fornecedor_data = {k: v for k, v in fornecedor_data.items() if v not in ['', None]}
+
+        response = api_request(f'/api/v1/fornecedores/{fornecedor_id}', 'PUT', fornecedor_data)
+
+        if response:
+            return jsonify({'message': 'Fornecedor atualizado com sucesso!', 'fornecedor': response})
+        else:
+            return jsonify({'message': 'Erro ao atualizar fornecedor na API'}), 500
+
+    @app.route('/fornecedores/<int:fornecedor_id>/edit')
+    @login_required
+    def fornecedor_edit(fornecedor_id):
+        """Formulário para editar fornecedor"""
+        fornecedor = api_request(f'/api/v1/fornecedores/{fornecedor_id}')
+        if not fornecedor:
+            flash('Fornecedor não encontrado', 'warning')
+            return redirect(url_for('fornecedores_list'))
+
+        return render_template('fornecedores/form.html', fornecedor=fornecedor)
 
     # ==============================
     # MÓDULO DE ORDEM DE SERVIÇO
@@ -4152,9 +4396,11 @@ def create_app():
                 flash('Erro ao criar ordem de serviço', 'danger')
 
         veiculos = api_request('/api/v1/vehicles') or []
+        fornecedores = api_request('/api/v1/fornecedores') or []
 
         return render_template('ordens_servico/new.html',
                              veiculos=veiculos,
+                             fornecedores=fornecedores,
                              current_datetime=datetime.now())
 
     @app.route('/ordens-servico/<int:ordem_id>')
@@ -4942,9 +5188,10 @@ def create_app():
             except Exception as e:
                 flash(f'Erro ao criar ordem de serviço: {str(e)}', 'error')
 
-        # Buscar veículos para o formulário
-        veiculos = api_request('/api/v1/vehicles')
-        return render_template('service_orders/new.html', veiculos=veiculos)
+        # Buscar veículos e fornecedores para o formulário
+        veiculos = api_request('/api/v1/vehicles') or []
+        fornecedores = api_request('/api/v1/fornecedores') or []
+        return render_template('service_orders/new.html', veiculos=veiculos, fornecedores=fornecedores)
 
     @app.route('/service-orders/<int:ordem_id>')
     def service_order_detail(ordem_id):

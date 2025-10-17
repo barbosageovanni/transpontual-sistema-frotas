@@ -84,9 +84,29 @@
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="oficina" class="form-label">Oficina</label>
-                                <input type="text" class="form-control" id="oficina" name="oficina"
-                                       placeholder="Nome da oficina">
+                                <label for="oficina" class="form-label">
+                                    Oficina / Fornecedor
+                                    <a href="{{ url_for('fornecedores_list') }}" target="_blank" class="btn btn-sm btn-link p-0 ms-2" title="Gerenciar Fornecedores">
+                                        <i class="bi bi-plus-circle"></i>
+                                    </a>
+                                </label>
+                                <select class="form-select" id="oficina" name="oficina">
+                                    <option value="">Selecione um fornecedor</option>
+                                    {% if fornecedores %}
+                                        {% for fornecedor in fornecedores %}
+                                        <option value="{{ fornecedor.nome }}"
+                                                data-telefone="{{ fornecedor.telefone or '' }}"
+                                                data-email="{{ fornecedor.email or '' }}"
+                                                data-cnpj="{{ fornecedor.cnpj_cpf or '' }}">
+                                            {{ fornecedor.nome }}
+                                            {% if fornecedor.cnpj_cpf %}({{ fornecedor.cnpj_cpf }}){% endif %}
+                                        </option>
+                                        {% endfor %}
+                                    {% endif %}
+                                    <option value="outros">Outro (digitar manualmente)</option>
+                                </select>
+                                <input type="text" class="form-control mt-2" id="oficina_manual" name="oficina_manual"
+                                       placeholder="Digite o nome da oficina" style="display: none;">
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="valor_total" class="form-label">Valor Total (R$)</label>
@@ -98,19 +118,19 @@
                         <div class="mb-3">
                             <label for="descricao_problema" class="form-label">Descrição do Problema</label>
                             <textarea class="form-control" id="descricao_problema" name="descricao_problema"
-                                      rows="3" placeholder="Descreva o problema relatado..."></textarea>
+                                      rows="3" placeholder="Descreva o problema relatado...">{{ request.form.get('descricao_problema') or '' }}</textarea>
                         </div>
 
                         <div class="mb-3">
                             <label for="descricao_servico" class="form-label">Descrição do Serviço</label>
                             <textarea class="form-control" id="descricao_servico" name="descricao_servico"
-                                      rows="3" placeholder="Descreva o serviço a ser realizado..."></textarea>
+                                      rows="3" placeholder="Descreva o serviço a ser realizado...">{{ request.form.get('descricao_servico') or '' }}</textarea>
                         </div>
 
                         <div class="mb-3">
                             <label for="observacoes" class="form-label">Observações</label>
                             <textarea class="form-control" id="observacoes" name="observacoes"
-                                      rows="2" placeholder="Observações adicionais..."></textarea>
+                                      rows="2" placeholder="Observações adicionais...">{{ request.form.get('observacoes') or '' }}</textarea>
                         </div>
 
                         <div class="d-grid gap-2 d-md-flex justify-content-md-end">
@@ -146,6 +166,13 @@ document.getElementById('ordemForm').addEventListener('submit', function(e) {
         alert('Por favor, selecione o tipo de serviço.');
         return;
     }
+
+    // Se "Outro" foi selecionado, usar o valor do campo manual
+    const oficinaSelect = document.getElementById('oficina');
+    const oficinaManual = document.getElementById('oficina_manual');
+    if (oficinaSelect.value === 'outros' && oficinaManual.value.trim()) {
+        oficinaSelect.value = oficinaManual.value.trim();
+    }
 });
 
 // Auto-completar data prevista com próxima semana
@@ -156,6 +183,21 @@ document.addEventListener('DOMContentLoaded', function() {
         nextWeek.setDate(nextWeek.getDate() + 7);
         dataField.value = nextWeek.toISOString().split('T')[0];
     }
+
+    // Mostrar/ocultar campo manual de oficina
+    const oficinaSelect = document.getElementById('oficina');
+    const oficinaManual = document.getElementById('oficina_manual');
+
+    oficinaSelect.addEventListener('change', function() {
+        if (this.value === 'outros') {
+            oficinaManual.style.display = 'block';
+            oficinaManual.required = true;
+        } else {
+            oficinaManual.style.display = 'none';
+            oficinaManual.required = false;
+            oficinaManual.value = '';
+        }
+    });
 });
 </script>
 {% endblock %}

@@ -234,13 +234,21 @@
                        href="{{ url_for('drivers_list') }}">
                         <i class="bi bi-person-badge me-3"></i>Motoristas
                     </a>
-                    <a class="nav-link {% if request.endpoint and 'checklist' in request.endpoint %}active{% endif %}"
+                    <a class="nav-link {% if request.endpoint == 'checklists_list' %}active{% endif %}"
                        href="{{ url_for('checklists_list') }}">
                         <i class="bi bi-clipboard-check me-3"></i>Checklists
+                    </a>
+                    <a class="nav-link {% if request.endpoint == 'checklist_approve_page' %}active{% endif %}"
+                       href="{{ url_for('checklist_approve_page') }}">
+                        <i class="bi bi-clipboard2-check me-3"></i>Aprovar Checklists
                     </a>
                     <a class="nav-link {% if request.endpoint and 'abastecimento' in request.endpoint %}active{% endif %}"
                        href="{{ url_for('abastecimentos_list') }}">
                         <i class="bi bi-fuel-pump me-3"></i>Abastecimentos
+                    </a>
+                    <a class="nav-link {% if request.endpoint and 'fornecedor' in request.endpoint %}active{% endif %}"
+                       href="{{ url_for('fornecedores_list') }}">
+                        <i class="bi bi-shop me-3"></i>Fornecedores
                     </a>
                 </div>
 

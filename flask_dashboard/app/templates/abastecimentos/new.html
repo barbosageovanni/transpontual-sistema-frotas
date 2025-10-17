@@ -55,13 +55,13 @@
                             <div class="col-md-6">
                                 <label for="data_abastecimento" class="form-label">Data e Hora *</label>
                                 <input type="datetime-local" class="form-control" id="data_abastecimento"
-                                       name="data_abastecimento" value="{{ request.form.get('data_abastecimento') }}" required>
+                                       name="data_abastecimento" value="{{ request.form.get('data_abastecimento') or '' }}" required>
                                 <div class="form-text">Data e hora do abastecimento</div>
                             </div>
                             <div class="col-md-6">
                                 <label for="odometro" class="form-label">Odômetro (km) *</label>
                                 <input type="number" class="form-control" id="odometro" name="odometro"
-                                       value="{{ request.form.get('odometro') }}" min="0" required>
+                                       value="{{ request.form.get('odometro') or '' }}" min="0" required>
                                 <div class="form-text">Quilometragem atual do veículo</div>
                                 <div id="km-warning" class="text-warning" style="display: none;">
                                     <small><i class="bi bi-exclamation-triangle"></i> Verifique a quilometragem informada</small>
@@ -73,30 +73,52 @@
                             <div class="col-md-4">
                                 <label for="litros" class="form-label">Litros *</label>
                                 <input type="number" class="form-control" id="litros" name="litros"
-                                       value="{{ request.form.get('litros') }}" step="0.01" min="0" required>
+                                       value="{{ request.form.get('litros') or '' }}" step="0.01" min="0" required>
                                 <div class="form-text">Quantidade de combustível</div>
                             </div>
                             <div class="col-md-4">
                                 <label for="valor_litro" class="form-label">Valor por Litro (R$) *</label>
                                 <input type="number" class="form-control" id="valor_litro" name="valor_litro"
-                                       value="{{ request.form.get('valor_litro') }}" step="0.001" min="0" required>
+                                       value="{{ request.form.get('valor_litro') or '' }}" step="0.001" min="0" required>
                                 <div class="form-text">Preço por litro</div>
                             </div>
                             <div class="col-md-4">
                                 <label for="valor_total" class="form-label">Valor Total (R$) *</label>
                                 <input type="number" class="form-control" id="valor_total" name="valor_total"
-                                       value="{{ request.form.get('valor_total') }}" step="0.01" min="0" required readonly>
+                                       value="{{ request.form.get('valor_total') or '' }}" step="0.01" min="0" required readonly>
                                 <div class="form-text">Calculado automaticamente</div>
                             </div>
                         </div>
 
                         <div class="row mb-3">
                             <div class="col-md-6">
-                                <label for="posto" class="form-label">Posto</label>
-                                <input type="text" class="form-control" id="posto" name="posto"
-                                       value="{{ request.form.get('posto') }}" placeholder="Nome do posto">
-                                <div class="form-text">Nome ou rede do posto de combustível</div>
+                                <label for="fornecedor_id" class="form-label">
+                                    Fornecedor/Posto
+                                    <a href="{{ url_for('fornecedor_new') }}" class="btn btn-sm btn-link p-0 ms-2" title="Novo Fornecedor" target="_blank">
+                                        <i class="bi bi-plus-circle"></i>
+                                    </a>
+                                </label>
+                                <select class="form-select" id="fornecedor_id" name="fornecedor_id">
+                                    <option value="">Selecione um fornecedor</option>
+                                    {% for fornecedor in fornecedores %}
+                                    <option value="{{ fornecedor.id }}"
+                                            data-nome="{{ fornecedor.nome }}"
+                                            {{ 'selected' if request.form.get('fornecedor_id') == fornecedor.id|string }}>
+                                        {{ fornecedor.nome }} {% if fornecedor.cidade %}({{ fornecedor.cidade }}){% endif %}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text">Selecione o posto/fornecedor cadastrado</div>
                             </div>
+                            <div class="col-md-6">
+                                <label for="posto" class="form-label">Nome do Posto (Manual)</label>
+                                <input type="text" class="form-control" id="posto" name="posto"
+                                       value="{{ request.form.get('posto') or '' }}" placeholder="Ou digite o nome do posto">
+                                <div class="form-text">Campo preenchido automaticamente ao selecionar fornecedor</div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
                             <div class="col-md-6">
                                 <label for="tipo_combustivel" class="form-label">Tipo de Combustível</label>
                                 <select class="form-select" id="tipo_combustivel" name="tipo_combustivel">
@@ -107,13 +129,16 @@
                                     <option value="Arla 32" {{ 'selected' if request.form.get('tipo_combustivel') == 'Arla 32' }}>Arla 32</option>
                                 </select>
                             </div>
+                            <div class="col-md-6">
+                                <!-- Espaço vazio para alinhamento -->
+                            </div>
                         </div>
 
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label for="numero_cupom" class="form-label">Número do Cupom</label>
                                 <input type="text" class="form-control" id="numero_cupom" name="numero_cupom"
-                                       value="{{ request.form.get('numero_cupom') }}" placeholder="Número do cupom fiscal">
+                                       value="{{ request.form.get('numero_cupom') or '' }}" placeholder="Número do cupom fiscal">
                                 <div class="form-text">Número do cupom fiscal (opcional)</div>
                             </div>
                         </div>
@@ -121,7 +146,7 @@
                         <div class="mb-3">
                             <label for="observacoes" class="form-label">Observações</label>
                             <textarea class="form-control" id="observacoes" name="observacoes" rows="3"
-                                      placeholder="Observações adicionais sobre o abastecimento">{{ request.form.get('observacoes') }}</textarea>
+                                      placeholder="Observações adicionais sobre o abastecimento">{{ request.form.get('observacoes') or '' }}</textarea>
                         </div>
 
                         <div class="row">
@@ -140,6 +165,39 @@
         </div>
 
         <div class="col-lg-4">
+            <!-- Card de Upload de Cupom -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 bg-success text-white">
+                    <h6 class="m-0 fw-bold">
+                        <i class="bi bi-camera"></i> Extrair do Cupom Fiscal
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <i class="bi bi-receipt display-4 text-success"></i>
+                    </div>
+                    <p class="text-muted">Tire uma foto do cupom fiscal e os dados serão preenchidos automaticamente!</p>
+
+                    <div class="mb-3">
+                        <input type="file" class="form-control" id="cupom_file" accept="image/*" capture="environment">
+                        <div class="form-text">Formatos: JPG, PNG</div>
+                    </div>
+
+                    <button type="button" class="btn btn-success w-100" id="btn-processar-cupom" disabled>
+                        <i class="bi bi-magic"></i> Extrair Dados do Cupom
+                    </button>
+
+                    <div id="cupom-loading" class="text-center mt-3" style="display: none;">
+                        <div class="spinner-border spinner-border-sm text-success" role="status">
+                            <span class="visually-hidden">Processando...</span>
+                        </div>
+                        <p class="text-muted mt-2 mb-0"><small>Processando cupom...</small></p>
+                    </div>
+
+                    <div id="cupom-result" class="alert mt-3" style="display: none;"></div>
+                </div>
+            </div>
+
             <!-- Card de Ajuda -->
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
@@ -193,6 +251,139 @@ $(document).ready(function() {
     const now = new Date();
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
     document.getElementById('data_abastecimento').value = now.toISOString().slice(0, 16);
+
+    // ====================
+    // UPLOAD DE CUPOM FISCAL
+    // ====================
+
+    // Habilitar botão quando arquivo for selecionado
+    document.getElementById('cupom_file').addEventListener('change', function() {
+        const btn = document.getElementById('btn-processar-cupom');
+        btn.disabled = !this.files.length;
+    });
+
+    // Processar upload de cupom
+    document.getElementById('btn-processar-cupom').addEventListener('click', async function() {
+        const fileInput = document.getElementById('cupom_file');
+        const file = fileInput.files[0];
+
+        if (!file) {
+            alert('Selecione uma imagem do cupom');
+            return;
+        }
+
+        // Mostrar loading
+        document.getElementById('cupom-loading').style.display = 'block';
+        document.getElementById('cupom-result').style.display = 'none';
+        this.disabled = true;
+
+        try {
+            // Criar FormData para enviar arquivo
+            const formData = new FormData();
+            formData.append('file', file);
+
+            // Enviar para API
+            const response = await fetch('{{ config.API_BASE }}/api/v1/abastecimentos/upload-cupom', {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+
+            // Log detalhado para debug
+            console.log('=== OCR RESPONSE ===');
+            console.log('Response status:', response.status);
+            console.log('Result object:', result);
+            console.log('Result.success:', result.success);
+            console.log('Result.data:', result.data);
+            console.log('Data keys:', result.data ? Object.keys(result.data) : 'NO DATA');
+
+            if (response.ok && result.success) {
+                // Preencher formulário com dados extraídos
+                const data = result.data;
+
+                console.log('=== FILLING FORM ===');
+                console.log('Posto:', data.posto);
+                console.log('Litros:', data.litros);
+                console.log('Valor/Litro:', data.valor_litro);
+                console.log('Valor Total:', data.valor_total);
+                console.log('Tipo Combustível:', data.tipo_combustivel);
+                console.log('Número Cupom:', data.numero_cupom);
+                console.log('Data Abastecimento:', data.data_abastecimento);
+
+                if (data.posto) {
+                    document.getElementById('posto').value = data.posto;
+                }
+
+                if (data.litros) {
+                    document.getElementById('litros').value = data.litros;
+                }
+
+                if (data.valor_litro) {
+                    document.getElementById('valor_litro').value = data.valor_litro;
+                }
+
+                if (data.valor_total) {
+                    document.getElementById('valor_total').value = data.valor_total;
+                }
+
+                if (data.tipo_combustivel) {
+                    const select = document.getElementById('tipo_combustivel');
+                    const option = Array.from(select.options).find(opt =>
+                        opt.value.toLowerCase() === data.tipo_combustivel.toLowerCase()
+                    );
+                    if (option) {
+                        select.value = option.value;
+                    }
+                }
+
+                if (data.numero_cupom) {
+                    document.getElementById('numero_cupom').value = data.numero_cupom;
+                }
+
+                // Só preencher data se foi extraída validamente
+                if (data.data_abastecimento && data.data_abastecimento !== null && data.data_abastecimento !== 'None') {
+                    try {
+                        const dataHora = new Date(data.data_abastecimento);
+                        // Verificar se é uma data válida
+                        if (!isNaN(dataHora.getTime())) {
+                            dataHora.setMinutes(dataHora.getMinutes() - dataHora.getTimezoneOffset());
+                            document.getElementById('data_abastecimento').value = dataHora.toISOString().slice(0, 16);
+                        }
+                    } catch (e) {
+                        console.warn('Erro ao parsear data:', e);
+                    }
+                }
+
+                // Recalcular total
+                calcularTotal();
+
+                // Mostrar mensagem de sucesso ou aviso
+                const resultDiv = document.getElementById('cupom-result');
+                if (result.warning) {
+                    resultDiv.className = 'alert alert-warning mt-3';
+                    resultDiv.innerHTML = '<i class="bi bi-exclamation-triangle"></i> ' + result.warning;
+                } else {
+                    resultDiv.className = 'alert alert-success mt-3';
+                    resultDiv.innerHTML = '<i class="bi bi-check-circle"></i> ' + result.message + ' Verifique os campos e faça ajustes se necessário.';
+                }
+                resultDiv.style.display = 'block';
+
+            } else {
+                throw new Error(result.detail || 'Erro ao processar cupom');
+            }
+
+        } catch (error) {
+            console.error('Erro:', error);
+            const resultDiv = document.getElementById('cupom-result');
+            resultDiv.className = 'alert alert-warning mt-3';
+            resultDiv.innerHTML = '<i class="bi bi-exclamation-triangle"></i> ' + error.message + '. Preencha os dados manualmente.';
+            resultDiv.style.display = 'block';
+        } finally {
+            document.getElementById('cupom-loading').style.display = 'none';
+            this.disabled = false;
+        }
+    });
 
     // Calcular valor total automaticamente
     function calcularTotal() {
@@ -248,6 +439,16 @@ $(document).ready(function() {
             infoCard.style.display = 'none';
         }
     }
+
+    // Auto-preencher posto ao selecionar fornecedor
+    document.getElementById('fornecedor_id').addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        const nomeFornecedor = selectedOption.dataset.nome;
+
+        if (nomeFornecedor) {
+            document.getElementById('posto').value = nomeFornecedor;
+        }
+    });
 
     // Event listeners
     document.getElementById('litros').addEventListener('input', calcularTotal);

@@ -1,0 +1,407 @@
+{% extends "base.html" %}
+
+{% block title %}Aprovar Checklists - Transpontual{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-card {
+        background: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
+        border: none;
+        overflow: hidden;
+    }
+
+    .card-header-custom {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1.5rem;
+        border: none;
+    }
+
+    .card-header-custom h4 {
+        margin: 0;
+        font-weight: 600;
+    }
+
+    .table thead th {
+        background-color: #f8f9fa;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        letter-spacing: 0.5px;
+        border-bottom: 2px solid #dee2e6;
+    }
+
+    .badge {
+        padding: 0.5rem 1rem;
+        font-weight: 500;
+    }
+
+    .btn-success {
+        background: linear-gradient(135deg, #00b894, #00a085);
+        border: none;
+    }
+
+    .btn-success:hover {
+        background: linear-gradient(135deg, #00a085, #009977);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 184, 148, 0.3);
+    }
+
+    .btn-info {
+        background: linear-gradient(135deg, #6c5ce7, #5f3dc4);
+        border: none;
+    }
+
+    .btn-info:hover {
+        background: linear-gradient(135deg, #5f3dc4, #4e2db3);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(108, 92, 231, 0.3);
+    }
+
+    .btn-danger {
+        background: linear-gradient(135deg, #d63031, #e17055);
+        border: none;
+    }
+
+    .btn-danger:hover {
+        background: linear-gradient(135deg, #c52829, #d35f44);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(214, 48, 49, 0.3);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: #6c757d;
+    }
+
+    .empty-state i {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        opacity: 0.3;
+    }
+
+    @media (max-width: 768px) {
+        .table {
+            font-size: 0.875rem;
+        }
+
+        .btn-sm {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+        }
+
+        .card-header-custom {
+            padding: 1rem;
+        }
+
+        .card-header-custom h4 {
+            font-size: 1.1rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-1">
+            <i class="bi bi-clipboard-check text-primary me-2"></i>
+            Aprovar Checklists
+        </h1>
+        <p class="text-muted mb-0">Aprove os checklists finalizados para liberar as viagens</p>
+    </div>
+
+    <div>
+        <a href="{{ url_for('checklists_list') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>Voltar
+        </a>
+    </div>
+</div>
+
+<!-- Seção de Aprovação - Checklists Pendentes -->
+<div class="form-card mb-4">
+    <div class="card-header-custom">
+        <h4 class="mb-1">
+            <i class="bi bi-clipboard-check me-2"></i>
+            Checklists Aguardando Aprovação
+        </h4>
+        <p class="mb-0 opacity-75">Aprove os checklists finalizados para liberar as viagens</p>
+    </div>
+
+    <div class="card-body">
+        <!-- Loading State -->
+        <div id="loading-state" class="text-center py-5" style="display: none;">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Carregando...</span>
+            </div>
+            <p class="text-muted mt-2">Carregando checklists...</p>
+        </div>
+
+        <!-- Empty State -->
+        <div id="empty-state" class="empty-state" style="display: none;">
+            <i class="bi bi-clipboard-check"></i>
+            <h5>Nenhum checklist aguardando aprovação</h5>
+            <p class="text-muted">Todos os checklists foram processados</p>
+        </div>
+
+        <!-- Table -->
+        <div id="table-container" class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Veículo</th>
+                        <th>Motorista</th>
+                        <th>Data/Hora</th>
+                        <th>Tipo</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="checklists-tbody">
+                    <!-- Dados serão carregados via JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Carregar checklists pendentes ao carregar a página
+document.addEventListener('DOMContentLoaded', function() {
+    loadPendingChecklists();
+});
+
+// Função para carregar checklists aguardando aprovação
+async function loadPendingChecklists() {
+    const loadingState = document.getElementById('loading-state');
+    const emptyState = document.getElementById('empty-state');
+    const tableContainer = document.getElementById('table-container');
+    const tbody = document.getElementById('checklists-tbody');
+
+    // Mostrar loading
+    loadingState.style.display = 'block';
+    emptyState.style.display = 'none';
+    tableContainer.style.display = 'none';
+
+    try {
+        // Buscar checklists com status aguardando_aprovacao
+        const response = await fetch('/checklists/api?status=aguardando_aprovacao&per_page=100');
+
+        if (!response.ok) {
+            throw new Error('Erro ao carregar checklists');
+        }
+
+        const data = await response.json();
+        const checklists = data.checklists || [];
+
+        console.log('📋 Checklists pendentes:', checklists);
+
+        // Limpar tbody
+        tbody.innerHTML = '';
+
+        if (checklists.length === 0) {
+            // Mostrar empty state
+            loadingState.style.display = 'none';
+            emptyState.style.display = 'block';
+            tableContainer.style.display = 'none';
+        } else {
+            // Renderizar checklists
+            checklists.forEach(checklist => {
+                const row = createChecklistRow(checklist);
+                tbody.appendChild(row);
+            });
+
+            // Mostrar tabela
+            loadingState.style.display = 'none';
+            emptyState.style.display = 'none';
+            tableContainer.style.display = 'block';
+        }
+    } catch (error) {
+        console.error('Erro ao carregar checklists:', error);
+        loadingState.style.display = 'none';
+        emptyState.style.display = 'block';
+        tableContainer.style.display = 'none';
+
+        // Mostrar mensagem de erro
+        emptyState.innerHTML = `
+            <i class="bi bi-exclamation-triangle text-danger"></i>
+            <h5 class="text-danger">Erro ao carregar checklists</h5>
+            <p class="text-muted">${error.message}</p>
+            <button class="btn btn-primary" onclick="loadPendingChecklists()">
+                <i class="bi bi-arrow-clockwise me-1"></i>Tentar Novamente
+            </button>
+        `;
+    }
+}
+
+// Criar linha da tabela para um checklist
+function createChecklistRow(checklist) {
+    const tr = document.createElement('tr');
+    tr.id = `checklist-row-${checklist.id}`;
+
+    // Formatar data
+    const dataFormatada = checklist.dt_inicio ? formatDate(checklist.dt_inicio) : '-';
+
+    // Tipo badge
+    const tipoBadge = getTipoBadge(checklist.tipo);
+
+    tr.innerHTML = `
+        <td><strong>#${checklist.id}</strong></td>
+        <td>
+            <div><strong>${checklist.veiculo_placa || 'N/A'}</strong></div>
+            <small class="text-muted">${checklist.veiculo_modelo || 'N/A'}</small>
+        </td>
+        <td>${checklist.motorista_nome || 'N/A'}</td>
+        <td>${dataFormatada}</td>
+        <td>${tipoBadge}</td>
+        <td>
+            <div class="btn-group btn-group-sm" role="group">
+                <button type="button" class="btn btn-success" onclick="approveChecklist(${checklist.id})" title="Aprovar">
+                    <i class="bi bi-check-circle me-1"></i>Aprovar
+                </button>
+                <button type="button" class="btn btn-danger" onclick="rejectChecklist(${checklist.id})" title="Reprovar">
+                    <i class="bi bi-x-circle me-1"></i>Reprovar
+                </button>
+                <button type="button" class="btn btn-info" onclick="viewChecklist(${checklist.id})" title="Ver Detalhes">
+                    <i class="bi bi-eye me-1"></i>Ver
+                </button>
+            </div>
+        </td>
+    `;
+
+    return tr;
+}
+
+// Formatar data
+function formatDate(dateString) {
+    if (!dateString) return '-';
+    try {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('pt-BR') + ' ' + date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    } catch (e) {
+        return dateString;
+    }
+}
+
+// Get tipo badge
+function getTipoBadge(tipo) {
+    const tipoMap = {
+        'pre': { label: 'Pré-viagem', color: 'info' },
+        'pos': { label: 'Pós-viagem', color: 'success' },
+        'manutencao': { label: 'Manutenção', color: 'warning' }
+    };
+
+    const tipoInfo = tipoMap[tipo] || { label: tipo, color: 'secondary' };
+    return `<span class="badge bg-${tipoInfo.color}">${tipoInfo.label}</span>`;
+}
+
+// Aprovar checklist
+async function approveChecklist(id) {
+    if (!confirm('Deseja aprovar este checklist? O veículo será liberado para viagem.')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/checklist/${id}/approve`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.ok) {
+            // Remover linha da tabela
+            const row = document.getElementById(`checklist-row-${id}`);
+            if (row) {
+                row.remove();
+            }
+
+            // Verificar se ainda há checklists
+            const tbody = document.getElementById('checklists-tbody');
+            if (tbody.children.length === 0) {
+                document.getElementById('empty-state').style.display = 'block';
+                document.getElementById('table-container').style.display = 'none';
+            }
+
+            // Mostrar mensagem de sucesso
+            showToast('Checklist aprovado com sucesso!', 'success');
+        } else {
+            const error = await response.text();
+            showToast(`Erro ao aprovar checklist: ${error}`, 'error');
+        }
+    } catch (error) {
+        console.error('Erro ao aprovar checklist:', error);
+        showToast('Erro ao aprovar checklist. Tente novamente.', 'error');
+    }
+}
+
+// Reprovar checklist
+async function rejectChecklist(id) {
+    const motivo = prompt('Informe o motivo da reprovação:');
+
+    if (!motivo || motivo.trim() === '') {
+        showToast('É necessário informar um motivo para reprovar', 'warning');
+        return;
+    }
+
+    try {
+        const response = await fetch(`/checklist/${id}/reject`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ motivo: motivo })
+        });
+
+        if (response.ok) {
+            // Remover linha da tabela
+            const row = document.getElementById(`checklist-row-${id}`);
+            if (row) {
+                row.remove();
+            }
+
+            // Verificar se ainda há checklists
+            const tbody = document.getElementById('checklists-tbody');
+            if (tbody.children.length === 0) {
+                document.getElementById('empty-state').style.display = 'block';
+                document.getElementById('table-container').style.display = 'none';
+            }
+
+            // Mostrar mensagem de sucesso
+            showToast('Checklist reprovado com sucesso!', 'success');
+        } else {
+            const error = await response.text();
+            showToast(`Erro ao reprovar checklist: ${error}`, 'error');
+        }
+    } catch (error) {
+        console.error('Erro ao reprovar checklist:', error);
+        showToast('Erro ao reprovar checklist. Tente novamente.', 'error');
+    }
+}
+
+// Ver detalhes do checklist
+function viewChecklist(id) {
+    window.location.href = `/checklists/${id}`;
+}
+
+// Mostrar toast (notificação)
+function showToast(message, type = 'info') {
+    // Implementação simples com alert
+    // TODO: Implementar toast mais elegante com Bootstrap Toast
+    if (type === 'error') {
+        alert('❌ ' + message);
+    } else if (type === 'success') {
+        alert('✅ ' + message);
+    } else if (type === 'warning') {
+        alert('⚠️ ' + message);
+    } else {
+        alert('ℹ️ ' + message);
+    }
+}
+</script>
+{% endblock %}

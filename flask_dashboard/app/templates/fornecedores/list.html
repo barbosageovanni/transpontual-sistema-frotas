@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block title %}Fornecedores{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="mb-0">
+                    <i class="bi bi-shop text-primary me-2"></i>
+                    Fornecedores
+                </h2>
+                <a href="{{ url_for('fornecedor_new') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Novo Fornecedor
+                </a>
+            </div>
+
+            <!-- Lista de Fornecedores -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">{{ fornecedores|length }} fornecedores encontrados</h5>
+                </div>
+
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Tipo</th>
+                                    <th>CNPJ</th>
+                                    <th>Cidade</th>
+                                    <th>Telefone</th>
+                                    <th>Status</th>
+                                    <th class="text-center">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for fornecedor in fornecedores %}
+                                <tr>
+                                    <td>{{ fornecedor.nome }}</td>
+                                    <td><span class="badge bg-info">{{ fornecedor.tipo|capitalize }}</span></td>
+                                    <td>{{ fornecedor.cnpj or '-' }}</td>
+                                    <td>{{ fornecedor.cidade or '-' }}</td>
+                                    <td>{{ fornecedor.telefone or '-' }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if fornecedor.ativo else 'danger' }}">
+                                            {{ 'Ativo' if fornecedor.ativo else 'Inativo' }}
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="btn-group btn-group-sm">
+                                            <button class="btn btn-outline-info" onclick="viewFornecedor({{ fornecedor.id }})" title="Ver detalhes">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="btn btn-outline-primary" onclick="editFornecedor({{ fornecedor.id }})" title="Editar">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="btn btn-outline-danger" onclick="confirmDeleteFornecedor({{ fornecedor.id }}, '{{ fornecedor.nome }}')" title="Excluir">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="7" class="text-center py-4">
+                                        <i class="bi bi-shop-window display-4 text-muted d-block mb-2"></i>
+                                        <h5 class="text-muted">Nenhum fornecedor cadastrado</h5>
+                                        <p class="text-muted">Clique no botão "Novo Fornecedor" para começar.</p>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmação de Exclusão -->
+<div class="modal fade" id="deleteFornecedorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmar Exclusão</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Tem certeza que deseja excluir o fornecedor <strong id="fornecedorName"></strong>?</p>
+                <p class="text-muted"><small>Esta ação não pode ser desfeita.</small></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteFornecedor">Excluir</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Função para editar fornecedor
+function editFornecedor(fornecedorId) {
+    window.location.href = `/fornecedores/${fornecedorId}/edit`;
+}
+
+// Função para visualizar fornecedor
+function viewFornecedor(fornecedorId) {
+    window.location.href = `/fornecedores/${fornecedorId}`;
+}
+
+// Variável para armazenar o ID do fornecedor a ser deletado
+let fornecedorToDelete = null;
+
+// Função para confirmar exclusão
+function confirmDeleteFornecedor(fornecedorId, fornecedorName) {
+    fornecedorToDelete = fornecedorId;
+    document.getElementById('fornecedorName').textContent = fornecedorName;
+
+    const modal = new bootstrap.Modal(document.getElementById('deleteFornecedorModal'));
+    modal.show();
+}
+
+// Confirmar exclusão
+document.getElementById('confirmDeleteFornecedor').addEventListener('click', function() {
+    if (fornecedorToDelete) {
+        // Chamada AJAX para excluir o fornecedor via API
+        fetch(`{{ config.API_BASE }}/api/v1/fornecedores/${fornecedorToDelete}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.message) {
+                // Sucesso - recarregar a página
+                location.reload();
+            } else {
+                // Erro - mostrar mensagem
+                alert(data.error || 'Erro ao excluir fornecedor. Tente novamente.');
+            }
+        })
+        .catch(error => {
+            console.error('Erro:', error);
+            alert('Erro ao excluir fornecedor. Tente novamente.');
+        });
+    }
+
+    const modal = bootstrap.Modal.getInstance(document.getElementById('deleteFornecedorModal'));
+    modal.hide();
+});
+</script>
+{% endblock %}

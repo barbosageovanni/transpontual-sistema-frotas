@@ -115,6 +115,7 @@ def list_checklists(
         mod = modelos.get(c.modelo_id, {})
         return {
             "id": c.id,
+            "codigo": c.codigo,
             "veiculo_id": c.veiculo_id,
             "veiculo_placa": v.get("placa"),
             "veiculo_modelo": v.get("modelo"),
@@ -138,6 +139,66 @@ def list_checklists(
         "total": total,
         "pages": (total + per_page - 1) // per_page,
     }
+
+
+@router.get("/pending")
+def get_pending_checklists(
+    db: Session = Depends(get_db),
+    current_user: models.Usuario = Depends(get_current_user),
+):
+    """Retorna checklists aguardando aprovação"""
+    checklists = (
+        db.query(models.Checklist)
+        .filter(models.Checklist.status == "aguardando_aprovacao")
+        .order_by(models.Checklist.dt_inicio.desc())
+        .all()
+    )
+
+    # Carregar dados relacionados
+    veiculo_ids = {c.veiculo_id for c in checklists}
+    motorista_ids = {c.motorista_id for c in checklists}
+    modelo_ids = {c.modelo_id for c in checklists}
+
+    veiculos = {}
+    if veiculo_ids:
+        for v in db.query(models.Veiculo).filter(models.Veiculo.id.in_(veiculo_ids)).all():
+            veiculos[v.id] = {"placa": v.placa, "modelo": v.modelo}
+
+    motoristas = {}
+    if motorista_ids:
+        for m in db.query(models.Motorista).filter(models.Motorista.id.in_(motorista_ids)).all():
+            motoristas[m.id] = {"nome": m.nome}
+
+    modelos = {}
+    if modelo_ids:
+        for mod in db.query(models.ChecklistModelo).filter(models.ChecklistModelo.id.in_(modelo_ids)).all():
+            modelos[mod.id] = {"nome": mod.nome, "tipo": mod.tipo}
+
+    result = []
+    for c in checklists:
+        v = veiculos.get(c.veiculo_id, {})
+        m = motoristas.get(c.motorista_id, {})
+        mod = modelos.get(c.modelo_id, {})
+
+        result.append({
+            "id": c.id,
+            "codigo": c.codigo,
+            "veiculo_id": c.veiculo_id,
+            "veiculo_placa": v.get("placa"),
+            "veiculo_modelo": v.get("modelo"),
+            "motorista_id": c.motorista_id,
+            "motorista_nome": m.get("nome"),
+            "modelo_id": c.modelo_id,
+            "modelo_nome": mod.get("nome"),
+            "tipo": c.tipo,
+            "status": c.status,
+            "dt_inicio": c.dt_inicio.isoformat() if c.dt_inicio else None,
+            "dt_fim": c.dt_fim.isoformat() if c.dt_fim else None,
+            "odometro_ini": c.odometro_ini,
+            "odometro_fim": c.odometro_fim,
+        })
+
+    return result
 
 
 @router.get("/modelos", response_model=list[schemas.ChecklistModeloResponse])
@@ -409,6 +470,7 @@ def get_checklist(
 
     return {
         "id": checklist.id,
+        "codigo": checklist.codigo,
         "veiculo_id": checklist.veiculo_id,
         "veiculo_placa": veiculo.placa if veiculo else None,
         "veiculo_modelo": veiculo.modelo if veiculo else None,
@@ -695,13 +757,84 @@ def get_approval_report(
 
 
 @router.post("/{checklist_id}/approve")
-def approve_checklist(
+def approve_checklist_endpoint(
+    checklist_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.Usuario = Depends(get_current_user),
+):
+    """Aprovar um checklist"""
+    checklist = db.get(models.Checklist, checklist_id)
+    if not checklist:
+        raise HTTPException(404, "Checklist não encontrado")
+
+    if checklist.status != "aguardando_aprovacao":
+        raise HTTPException(400, "Checklist não está aguardando aprovação")
+
+    checklist.status = "aprovado"
+    from datetime import datetime
+    if not checklist.dt_fim:
+        checklist.dt_fim = datetime.utcnow()
+
+    db.commit()
+    db.refresh(checklist)
+
+    return {
+        "message": "Checklist aprovado com sucesso",
+        "checklist": {
+            "id": checklist.id,
+            "status": checklist.status,
+            "dt_fim": checklist.dt_fim.isoformat()
+        }
+    }
+
+
+@router.post("/{checklist_id}/reject")
+def reject_checklist_endpoint(
+    checklist_id: int,
+    body: dict,
+    db: Session = Depends(get_db),
+    current_user: models.Usuario = Depends(get_current_user),
+):
+    """Reprovar um checklist"""
+    checklist = db.get(models.Checklist, checklist_id)
+    if not checklist:
+        raise HTTPException(404, "Checklist não encontrado")
+
+    if checklist.status != "aguardando_aprovacao":
+        raise HTTPException(400, "Checklist não está aguardando aprovação")
+
+    motivo = body.get("motivo", "Sem motivo informado")
+
+    checklist.status = "reprovado"
+    from datetime import datetime
+    if not checklist.dt_fim:
+        checklist.dt_fim = datetime.utcnow()
+
+    # TODO: Salvar motivo em um campo apropriado ou criar um registro de auditoria
+    # Por enquanto, vamos apenas mudar o status
+
+    db.commit()
+    db.refresh(checklist)
+
+    return {
+        "message": "Checklist reprovado com sucesso",
+        "checklist": {
+            "id": checklist.id,
+            "status": checklist.status,
+            "dt_fim": checklist.dt_fim.isoformat(),
+            "motivo_reprovacao": motivo
+        }
+    }
+
+
+@router.post("/{checklist_id}/approve-legacy")
+def approve_checklist_legacy(
     checklist_id: int,
     body: dict,
     db: Session = Depends(get_db),
     current_user: models.Usuario = Depends(require_role("gestor", "admin")),
 ):
-    """Approve or reject a checklist"""
+    """Approve or reject a checklist (legacy endpoint for compatibility)"""
     checklist = db.get(models.Checklist, checklist_id)
     if not checklist:
         raise HTTPException(404, "Checklist não encontrado")
