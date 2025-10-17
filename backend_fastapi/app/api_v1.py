@@ -12,6 +12,7 @@ from pydantic import BaseModel
 from app.core.database import get_db, is_database_available
 from app import models, schemas
 from app.routers import checklist as checklist_router
+from app.routers import fornecedores
 from app.core.security import (
     create_access_token,
     verify_password,
@@ -924,6 +925,73 @@ def checklist_pending(db: Session = Depends(get_db)):
 # M?DULO DE ABASTECIMENTO
 # ===============================
 
+@api_router.post("/abastecimentos/upload-cupom")
+async def upload_cupom_fiscal(request: Request):
+    """
+    Processa upload de cupom fiscal e extrai dados usando OCR
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+
+    try:
+        from app.services.cupom_extractor import extract_cupom_data
+
+        # Receber arquivo da requisição
+        form = await request.form()
+        file_upload = form.get('file')
+
+        if not file_upload:
+            raise HTTPException(status_code=400, detail="Nenhum arquivo enviado")
+
+        # Ler conteúdo do arquivo
+        file_content = await file_upload.read()
+
+        # Extrair dados do cupom
+        data = extract_cupom_data(file_content)
+
+        # Log para debug
+        logger.info(f"OCR extraction completed")
+        logger.info(f"Extracted data keys: {list(data.keys())}")
+        logger.info(f"Posto: {data.get('posto')}")
+        logger.info(f"Litros: {data.get('litros')}")
+        logger.info(f"Valor litro: {data.get('valor_litro')}")
+        logger.info(f"Valor total: {data.get('valor_total')}")
+        logger.info(f"Has raw_text: {bool(data.get('raw_text'))}")
+        if data.get('raw_text'):
+            logger.info(f"Raw text length: {len(data.get('raw_text', ''))}")
+            logger.info(f"Raw text preview (first 200 chars): {data.get('raw_text', '')[:200]}")
+
+        # Verificar qualidade da extração
+        campos_importantes = ['litros', 'valor_litro', 'valor_total', 'data_abastecimento']
+        campos_extraidos = sum(1 for campo in campos_importantes if data.get(campo))
+
+        message = "Cupom processado com sucesso"
+        warning = None
+
+        if campos_extraidos == 0:
+            warning = "Não foi possível extrair dados importantes do cupom. Verifique a qualidade da imagem e tente novamente com uma foto mais nítida e bem iluminada."
+        elif campos_extraidos < len(campos_importantes):
+            warning = f"Apenas {campos_extraidos} de {len(campos_importantes)} campos foram extraídos. Revise os dados e preencha os campos faltantes manualmente."
+
+        return {
+            "success": True,
+            "data": data,
+            "message": message,
+            "warning": warning,
+            "campos_extraidos": campos_extraidos,
+            "total_campos": len(campos_importantes)
+        }
+
+    except ImportError as e:
+        logger.error(f"Erro de importação OCR: {str(e)}")
+        raise HTTPException(
+            status_code=503,
+            detail="OCR não disponível. Instale as dependências: pip install pytesseract pillow"
+        )
+    except Exception as e:
+        logger.error(f"Erro ao processar cupom: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Erro ao processar cupom: {str(e)}")
+
 @api_router.get("/abastecimentos")
 def list_abastecimentos(
     skip: int = Query(0, ge=0),
@@ -993,6 +1061,7 @@ def create_abastecimento(abastecimento_data: dict, db: Session = Depends(get_db)
         abastecimento = models.Abastecimento(
             veiculo_id=abastecimento_data["veiculo_id"],
             motorista_id=abastecimento_data["motorista_id"],
+            fornecedor_id=abastecimento_data.get("fornecedor_id"),
             data_abastecimento=datetime.fromisoformat(abastecimento_data.get("data_abastecimento", datetime.now().isoformat())),
             odometro=abastecimento_data["odometro"],
             litros=str(abastecimento_data["litros"]),
@@ -1541,6 +1610,9 @@ def delete_checklist_v1(checklist_id: int, db: Session = Depends(get_db)):
 # Include Checklist router
 api_router.include_router(checklist_router.router, prefix="/checklist")
 
+# Include Fornecedores router
+api_router.include_router(fornecedores.router, prefix="/fornecedores", tags=["fornecedores"])
+
 # ===============================
 # M?DULO DE CONTROLE DE ACESSO AVAN?ADO
 # ===============================
@@ -2058,3 +2130,4 @@ def get_maintenance_alerts(db: Session = Depends(get_db)):
 
 
 
+ 
