@@ -4272,11 +4272,15 @@ def create_app():
                 # Remove empty values
                 fornecedor_data = {k: v for k, v in fornecedor_data.items() if v not in ['', None]}
 
-                response = api_request('/api/v1/fornecedores', 'POST', fornecedor_data)
-                if response:
-                    return jsonify({'message': 'Fornecedor cadastrado com sucesso!', 'fornecedor': response})
-                else:
-                    return jsonify({'message': 'Erro ao cadastrar fornecedor na API'}), 500
+                try:
+                    response = api_request('/api/v1/fornecedores', 'POST', fornecedor_data)
+                    if response:
+                        return jsonify({'message': 'Fornecedor cadastrado com sucesso!', 'fornecedor': response})
+                    else:
+                        return jsonify({'message': 'Erro ao cadastrar fornecedor na API. Verifique se a API está rodando.'}), 500
+                except Exception as e:
+                    print(f"Erro ao cadastrar fornecedor: {str(e)}")
+                    return jsonify({'message': f'Erro ao cadastrar fornecedor: {str(e)}'}), 500
 
             # Handle form submissions
             else:

@@ -11,7 +11,7 @@ from app import models, schemas
 
 router = APIRouter()
 
-@router.get("/fornecedores", response_model=List[schemas.FornecedorResponse])
+@router.get("", response_model=List[schemas.FornecedorResponse])
 def list_fornecedores(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
@@ -39,7 +39,7 @@ def list_fornecedores(
     fornecedores = query.order_by(models.Fornecedor.nome).offset(skip).limit(limit).all()
     return fornecedores
 
-@router.get("/fornecedores/{fornecedor_id}", response_model=schemas.FornecedorResponse)
+@router.get("/{fornecedor_id}", response_model=schemas.FornecedorResponse)
 def get_fornecedor(fornecedor_id: int, db: Session = Depends(get_db)):
     """Busca fornecedor por ID"""
     fornecedor = db.query(models.Fornecedor).filter(models.Fornecedor.id == fornecedor_id).first()
@@ -47,7 +47,7 @@ def get_fornecedor(fornecedor_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Fornecedor não encontrado")
     return fornecedor
 
-@router.post("/fornecedores", response_model=schemas.FornecedorResponse, status_code=201)
+@router.post("", response_model=schemas.FornecedorResponse, status_code=201)
 def create_fornecedor(fornecedor_data: schemas.FornecedorCreate, db: Session = Depends(get_db)):
     """Cria novo fornecedor"""
     try:
@@ -72,7 +72,7 @@ def create_fornecedor(fornecedor_data: schemas.FornecedorCreate, db: Session = D
         db.rollback()
         raise HTTPException(status_code=400, detail=f"Erro ao criar fornecedor: {str(e)}")
 
-@router.put("/fornecedores/{fornecedor_id}", response_model=schemas.FornecedorResponse)
+@router.put("/{fornecedor_id}", response_model=schemas.FornecedorResponse)
 def update_fornecedor(
     fornecedor_id: int,
     fornecedor_data: schemas.FornecedorUpdate,
@@ -112,7 +112,7 @@ def update_fornecedor(
         db.rollback()
         raise HTTPException(status_code=400, detail=f"Erro ao atualizar fornecedor: {str(e)}")
 
-@router.delete("/fornecedores/{fornecedor_id}")
+@router.delete("/{fornecedor_id}")
 def delete_fornecedor(fornecedor_id: int, db: Session = Depends(get_db)):
     """Excluir fornecedor"""
     fornecedor = db.query(models.Fornecedor).filter(
