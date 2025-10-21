@@ -207,6 +207,7 @@ class ChecklistFinishRequest(BaseSchema):
 
 class ChecklistResponse(BaseSchema):
     id: int
+    codigo: Optional[str] = None
     veiculo_id: int
     motorista_id: int
     modelo_id: int
@@ -219,6 +220,63 @@ class ChecklistResponse(BaseSchema):
 class UploadResponse(BaseSchema):
     filename: str
 
+# Fornecedor
+class FornecedorBase(BaseSchema):
+    nome: str
+    tipo: Optional[str] = "posto"  # posto, oficina, loja_pecas, outros
+    cnpj: Optional[str] = None
+    inscricao_estadual: Optional[str] = None
+    telefone: Optional[str] = None
+    email: Optional[str] = None
+    # Endereço
+    cep: Optional[str] = None
+    endereco: Optional[str] = None
+    numero: Optional[str] = None
+    complemento: Optional[str] = None
+    bairro: Optional[str] = None
+    cidade: Optional[str] = None
+    estado: Optional[str] = None
+    # Dados bancários
+    banco: Optional[str] = None
+    agencia: Optional[str] = None
+    conta: Optional[str] = None
+    # Informações adicionais
+    contato_nome: Optional[str] = None
+    contato_telefone: Optional[str] = None
+    observacoes: Optional[str] = None
+    ativo: Optional[bool] = True
+
+class FornecedorCreate(FornecedorBase):
+    pass
+
+class FornecedorUpdate(BaseSchema):
+    nome: Optional[str] = None
+    tipo: Optional[str] = None
+    cnpj: Optional[str] = None
+    inscricao_estadual: Optional[str] = None
+    telefone: Optional[str] = None
+    email: Optional[str] = None
+    cep: Optional[str] = None
+    endereco: Optional[str] = None
+    numero: Optional[str] = None
+    complemento: Optional[str] = None
+    bairro: Optional[str] = None
+    cidade: Optional[str] = None
+    estado: Optional[str] = None
+    banco: Optional[str] = None
+    agencia: Optional[str] = None
+    conta: Optional[str] = None
+    contato_nome: Optional[str] = None
+    contato_telefone: Optional[str] = None
+    observacoes: Optional[str] = None
+    ativo: Optional[bool] = None
+
+class FornecedorResponse(FornecedorBase):
+    id: int
+    criado_em: datetime
+
 # Pydantic forward refs
 Token.model_rebuild()
+MotoristaResponse.model_rebuild()
+FornecedorResponse.model_rebuild()
 
