@@ -14,3 +14,6 @@ openpyxl>=3.1.0
 python-dotenv>=1.0.0
 requests>=2.31.0
 werkzeug>=2.0.0
+
+# OCR para extração de cupons fiscais
+pytesseract>=0.3.10

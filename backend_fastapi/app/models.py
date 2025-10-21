@@ -203,8 +203,9 @@ class ChecklistItem(Base):
 class Checklist(Base):
     """Modelo principal para checklists executados"""
     __tablename__ = "checklists"
-    
+
     id = Column(Integer, primary_key=True)
+    codigo = Column(String(50), unique=True)
     veiculo_id = Column(Integer, ForeignKey("veiculos.id"), nullable=False)
     motorista_id = Column(Integer, ForeignKey("motoristas.id"), nullable=False)
     modelo_id = Column(Integer, ForeignKey("checklist_modelos.id"), nullable=False)
@@ -243,6 +244,7 @@ class Abastecimento(Base):
     id = Column(Integer, primary_key=True)
     veiculo_id = Column(Integer, ForeignKey("veiculos.id"), nullable=False)
     motorista_id = Column(Integer, ForeignKey("motoristas.id"), nullable=False)
+    fornecedor_id = Column(Integer, ForeignKey("fornecedores_frotas.id"), nullable=True)
     data_abastecimento = Column(DateTime, default=func.now(), nullable=False)
     odometro = Column(BigInteger, nullable=False)
     litros = Column(String(20), nullable=False)  # Decimal como string
@@ -257,6 +259,40 @@ class Abastecimento(Base):
     # Relacionamentos
     veiculo = relationship("Veiculo")
     motorista = relationship("Motorista")
+    fornecedor = relationship("Fornecedor")
+
+class Fornecedor(Base):
+    """Modelo para fornecedores (postos de combustível, oficinas, etc.)"""
+    __tablename__ = "fornecedores_frotas"
+
+    id = Column(Integer, primary_key=True)
+    nome = Column(String(200), nullable=False)
+    tipo = Column(String(50), default="posto")  # posto, oficina, loja_pecas, outros
+    cnpj = Column(String(18), unique=True)
+    inscricao_estadual = Column(String(20))
+    telefone = Column(String(20))
+    email = Column(String(200))
+
+    # Endereço
+    cep = Column(String(10))
+    endereco = Column(String(300))
+    numero = Column(String(20))
+    complemento = Column(String(100))
+    bairro = Column(String(100))
+    cidade = Column(String(100))
+    estado = Column(String(2))
+
+    # Dados bancários
+    banco = Column(String(100))
+    agencia = Column(String(20))
+    conta = Column(String(30))
+
+    # Informações adicionais
+    contato_nome = Column(String(200))  # Nome do contato principal
+    contato_telefone = Column(String(20))
+    observacoes = Column(Text)
+    ativo = Column(Boolean, default=True, nullable=False)
+    criado_em = Column(DateTime, default=func.now(), nullable=False)
 
 class OrdemServico(Base):
     """Modelo para ordens de serviço de manutenção"""
