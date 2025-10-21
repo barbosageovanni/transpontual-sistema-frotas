@@ -82,6 +82,8 @@ def start_fastapi_backend():
 
 def start_flask_dashboard():
     """Start Flask Dashboard with API proxy"""
+    from flask import Flask, jsonify
+
     try:
         print("Starting Flask Dashboard...")
 
@@ -162,7 +164,6 @@ def start_flask_dashboard():
                 return {"error": "Internal Server Error", "status": 500}, 500
         else:
             print("ERROR: dashboard.py not found, using simple Flask app...")
-            from flask import Flask, jsonify
             app = Flask(__name__)
 
             @app.route('/')
@@ -173,10 +174,9 @@ def start_flask_dashboard():
                     "dashboard": "dashboard.py not found"
                 })
 
-        # Add health check endpoint for Render
+        # Add health check endpoint for Render (always available)
         @app.route('/health')
         def health_check():
-            from flask import jsonify
             return jsonify({
                 "status": "healthy",
                 "service": "transpontual-unified-server",
@@ -201,6 +201,32 @@ def start_flask_dashboard():
         print(f"ERROR: Flask Dashboard failed: {e}")
         import traceback
         traceback.print_exc()
+
+        # Fallback: Start minimal Flask server even if dashboard fails
+        print("FALLBACK: Starting minimal Flask server...")
+        app = Flask(__name__)
+
+        @app.route('/')
+        def home():
+            return jsonify({
+                "message": "Transpontual - Minimal Mode",
+                "status": "running",
+                "error": str(e),
+                "note": "Dashboard failed to load"
+            })
+
+        @app.route('/health')
+        def health():
+            return jsonify({
+                "status": "healthy",
+                "service": "transpontual-minimal",
+                "mode": "fallback",
+                "timestamp": time.time()
+            }), 200
+
+        port = int(os.getenv("PORT", 10000))
+        print(f"FALLBACK: Starting on port {port}")
+        app.run(host="0.0.0.0", port=port, debug=False)
 
 if __name__ == "__main__":
     print("Transpontual Unified Server Starting... [DATABASE-FIX-ACTIVE]")
