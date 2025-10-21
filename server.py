@@ -173,6 +173,18 @@ def start_flask_dashboard():
                     "dashboard": "dashboard.py not found"
                 })
 
+        # Add health check endpoint for Render
+        @app.route('/health')
+        def health_check():
+            from flask import jsonify
+            return jsonify({
+                "status": "healthy",
+                "service": "transpontual-unified-server",
+                "dashboard": "online",
+                "api": "online" if threading.active_count() > 1 else "starting",
+                "timestamp": time.time()
+            }), 200
+
         # Configure API proxy (Flask Dashboard will proxy /api/* to FastAPI)
         port = int(os.getenv("PORT", 10000))  # Render default port
         host = "0.0.0.0"
@@ -180,6 +192,7 @@ def start_flask_dashboard():
         print(f"Starting Unified Server on {host}:{port}")
         print(f"Dashboard: http://{host}:{port}/")
         print(f"API: http://{host}:{port}/api/*")
+        print(f"Health Check: http://{host}:{port}/health")
 
         # Start Flask Dashboard
         app.run(host=host, port=port, debug=False)

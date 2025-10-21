@@ -2,7 +2,11 @@ services:
   - type: web
     name: transpontual-sistema-frotas
     env: python
-    buildCommand: pip install -r requirements.txt
+    buildCommand: |
+      pip install --upgrade pip && \
+      pip install -r requirements.txt && \
+      pip install -r backend_fastapi/requirements.txt || true && \
+      pip install -r flask_dashboard/requirements.txt || true
     startCommand: python server.py
     plan: free
     region: oregon
@@ -33,6 +37,8 @@ services:
         value: 10000
       - key: API_BASE
         value: http://127.0.0.1:8005
+      - key: INTERNAL_API_PORT
+        value: 8005
       # Python Configuration
       - key: PYTHONPATH
         value: /opt/render/project/src
