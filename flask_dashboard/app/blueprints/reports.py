@@ -50,11 +50,6 @@ def abastecimentos():
     data_inicio = request.args.get('data_inicio')
     data_fim = request.args.get('data_fim')
 
-    # Se não há filtro de data, usar últimos 30 dias
-    if not data_inicio and not data_fim:
-        data_fim = datetime.now().strftime('%Y-%m-%d')
-        data_inicio = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
-
     # Montar parâmetros da API
     params = {}
     if veiculo_id:

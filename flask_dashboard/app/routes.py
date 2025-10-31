@@ -212,6 +212,180 @@ def driver_edit(driver_id):
         return redirect(url_for('main.drivers_list'))
 
 # ==============================
+# GESTÃO DE FORNECEDORES
+# ==============================
+
+@bp.route("/fornecedores")
+def fornecedores_list():
+    """Listar fornecedores"""
+    try:
+        fornecedores = make_api_request('GET', '/fornecedores')
+        if not fornecedores:
+            fornecedores = []
+            flash("Erro ao carregar fornecedores da API", "warning")
+
+        return render_template("fornecedores/list.html", fornecedores=fornecedores)
+
+    except Exception as e:
+        flash(f"Erro interno: {str(e)}", "danger")
+        return render_template("fornecedores/list.html", fornecedores=[])
+
+@bp.route("/fornecedores/new", methods=["GET", "POST"])
+def fornecedor_new():
+    """Cadastrar novo fornecedor"""
+    if request.method == "POST":
+        try:
+            # Handle JSON (AJAX) requests
+            if request.is_json:
+                json_data = request.get_json()
+                current_app.logger.info(f"Received fornecedor data: {json_data}")
+
+                if not json_data or not json_data.get('nome'):
+                    return jsonify({'message': 'Nome é obrigatório'}), 400
+
+                # Prepare data for API
+                fornecedor_data = {
+                    'nome': json_data['nome'],
+                    'tipo': json_data.get('tipo', 'posto'),
+                    'cnpj': json_data.get('cnpj', ''),
+                    'inscricao_estadual': json_data.get('inscricao_estadual', ''),
+                    'telefone': json_data.get('telefone', ''),
+                    'email': json_data.get('email', ''),
+                    'cep': json_data.get('cep', ''),
+                    'endereco': json_data.get('endereco', ''),
+                    'numero': json_data.get('numero', ''),
+                    'complemento': json_data.get('complemento', ''),
+                    'bairro': json_data.get('bairro', ''),
+                    'cidade': json_data.get('cidade', ''),
+                    'estado': json_data.get('estado', ''),
+                    'banco': json_data.get('banco', ''),
+                    'agencia': json_data.get('agencia', ''),
+                    'conta': json_data.get('conta', ''),
+                    'contato_nome': json_data.get('contato_nome', ''),
+                    'contato_telefone': json_data.get('contato_telefone', ''),
+                    'observacoes': json_data.get('observacoes', ''),
+                    'ativo': json_data.get('ativo', True)
+                }
+
+                # Remove empty values
+                fornecedor_data = {k: v for k, v in fornecedor_data.items() if v not in ['', None]}
+
+                current_app.logger.info(f"Sending to API: {fornecedor_data}")
+                response = make_api_request('POST', '/fornecedores', json=fornecedor_data)
+                current_app.logger.info(f"API response: {response}")
+
+                if response:
+                    return jsonify({'message': 'Fornecedor cadastrado com sucesso!', 'fornecedor': response})
+                else:
+                    return jsonify({'message': 'Erro ao cadastrar fornecedor na API'}), 500
+
+            # Handle form submissions
+            else:
+                fornecedor_data = {
+                    'nome': request.form['nome'],
+                    'tipo': request.form.get('tipo', 'posto'),
+                    'cnpj': request.form.get('cnpj', ''),
+                    'inscricao_estadual': request.form.get('inscricao_estadual', ''),
+                    'telefone': request.form.get('telefone', ''),
+                    'email': request.form.get('email', ''),
+                    'cep': request.form.get('cep', ''),
+                    'endereco': request.form.get('endereco', ''),
+                    'numero': request.form.get('numero', ''),
+                    'complemento': request.form.get('complemento', ''),
+                    'bairro': request.form.get('bairro', ''),
+                    'cidade': request.form.get('cidade', ''),
+                    'estado': request.form.get('estado', ''),
+                    'banco': request.form.get('banco', ''),
+                    'agencia': request.form.get('agencia', ''),
+                    'conta': request.form.get('conta', ''),
+                    'contato_nome': request.form.get('contato_nome', ''),
+                    'contato_telefone': request.form.get('contato_telefone', ''),
+                    'observacoes': request.form.get('observacoes', ''),
+                    'ativo': request.form.get('ativo', 'true') == 'true'
+                }
+
+                # Remove empty values
+                fornecedor_data = {k: v for k, v in fornecedor_data.items() if v not in ['', None]}
+
+                response = make_api_request('POST', '/fornecedores', json=fornecedor_data)
+                if response:
+                    flash('Fornecedor cadastrado com sucesso!', 'success')
+                    return redirect(url_for('routes.fornecedores_list'))
+                else:
+                    flash('Erro ao cadastrar fornecedor', 'danger')
+
+        except Exception as e:
+            current_app.logger.error(f"Error in fornecedor_new: {str(e)}")
+            if request.is_json:
+                return jsonify({'message': f'Erro interno: {str(e)}'}), 500
+            else:
+                flash(f'Erro interno: {str(e)}', 'danger')
+
+    return render_template('fornecedores/form.html', fornecedor=None)
+
+@bp.route("/fornecedores/<int:fornecedor_id>", methods=["PUT"])
+def fornecedor_update(fornecedor_id):
+    """Atualizar fornecedor via AJAX"""
+    try:
+        if not request.is_json:
+            return jsonify({'message': 'Content-Type deve ser application/json'}), 400
+
+        json_data = request.get_json()
+        current_app.logger.info(f"Updating fornecedor {fornecedor_id}: {json_data}")
+
+        fornecedor_data = {
+            'nome': json_data.get('nome'),
+            'tipo': json_data.get('tipo'),
+            'cnpj': json_data.get('cnpj'),
+            'inscricao_estadual': json_data.get('inscricao_estadual'),
+            'telefone': json_data.get('telefone'),
+            'email': json_data.get('email'),
+            'cep': json_data.get('cep'),
+            'endereco': json_data.get('endereco'),
+            'numero': json_data.get('numero'),
+            'complemento': json_data.get('complemento'),
+            'bairro': json_data.get('bairro'),
+            'cidade': json_data.get('cidade'),
+            'estado': json_data.get('estado'),
+            'banco': json_data.get('banco'),
+            'agencia': json_data.get('agencia'),
+            'conta': json_data.get('conta'),
+            'contato_nome': json_data.get('contato_nome'),
+            'contato_telefone': json_data.get('contato_telefone'),
+            'observacoes': json_data.get('observacoes'),
+            'ativo': json_data.get('ativo', True)
+        }
+
+        # Remove empty values
+        fornecedor_data = {k: v for k, v in fornecedor_data.items() if v not in ['', None]}
+
+        response = make_api_request('PUT', f'/fornecedores/{fornecedor_id}', json=fornecedor_data)
+
+        if response:
+            return jsonify({'message': 'Fornecedor atualizado com sucesso!', 'fornecedor': response})
+        else:
+            return jsonify({'message': 'Erro ao atualizar fornecedor na API'}), 500
+
+    except Exception as e:
+        current_app.logger.error(f"Error updating fornecedor {fornecedor_id}: {str(e)}")
+        return jsonify({'message': f'Erro interno: {str(e)}'}), 500
+
+@bp.route("/fornecedores/<int:fornecedor_id>/edit")
+def fornecedor_edit(fornecedor_id):
+    """Formulário para editar fornecedor"""
+    try:
+        fornecedor = make_api_request('GET', f'/fornecedores/{fornecedor_id}')
+        if not fornecedor:
+            flash('Fornecedor não encontrado', 'warning')
+            return redirect(url_for('routes.fornecedores_list'))
+
+        return render_template('fornecedores/form.html', fornecedor=fornecedor)
+
+    except Exception as e:
+        flash(f'Erro ao carregar fornecedor: {str(e)}', 'danger')
+        return redirect(url_for('routes.fornecedores_list'))
+
+# ==============================
 # API ENDPOINTS
 # ==============================
 

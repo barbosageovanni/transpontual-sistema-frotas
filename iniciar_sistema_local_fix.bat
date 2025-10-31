@@ -61,10 +61,10 @@ echo.
 echo Backend:     http://localhost:8005/docs
 echo Dashboard:   http://localhost:8050
 echo.
-echo Pressione qualquer tecla para abrir os navegadores...
-pause >nul
+echo Aguardando servicos carregarem completamente...
+timeout /t 8 /nobreak >nul
 
-echo Abrindo navegadores...
+echo Abrindo navegadores automaticamente...
 start http://localhost:8005/docs
 start http://localhost:8050
 

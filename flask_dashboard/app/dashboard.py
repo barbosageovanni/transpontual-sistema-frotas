@@ -4518,6 +4518,10 @@ def create_app():
                 'observacoes': request.form.get('observacoes', '')
             }
 
+            # Adicionar fornecedor_id se fornecido
+            if request.form.get('fornecedor_id'):
+                abastecimento_data['fornecedor_id'] = int(request.form['fornecedor_id'])
+
             # Tentar atualizar via API
             response = api_request(f'/api/v1/abastecimentos/{abastecimento_id}',
                                  method='PUT', data=abastecimento_data)
@@ -4537,11 +4541,13 @@ def create_app():
 
         veiculos = api_request('/api/v1/vehicles') or []
         motoristas = api_request('/api/v1/drivers') or []
+        fornecedores = api_request('/api/v1/fornecedores') or []
 
         return render_template('abastecimentos/edit.html',
                              abastecimento=abastecimento,
                              veiculos=veiculos,
-                             motoristas=motoristas)
+                             motoristas=motoristas,
+                             fornecedores=fornecedores)
 
     @app.route('/abastecimentos/<int:abastecimento_id>/delete', methods=['POST'])
     @login_required
