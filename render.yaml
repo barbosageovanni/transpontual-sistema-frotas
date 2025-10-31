@@ -6,8 +6,9 @@ services:
       pip install --upgrade pip && \
       pip install -r requirements.txt && \
       pip install -r backend_fastapi/requirements.txt || true && \
-      pip install -r flask_dashboard/requirements.txt || true
-    startCommand: python server.py
+      pip install -r flask_dashboard/requirements.txt || true && \
+      pip install gunicorn
+    startCommand: gunicorn app:app --workers 2 --threads 4 --bind 0.0.0.0:$PORT --timeout 120 --access-logfile - --error-logfile -
     plan: free
     region: oregon
     branch: main
