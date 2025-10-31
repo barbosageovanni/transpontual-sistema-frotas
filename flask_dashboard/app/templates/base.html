@@ -32,7 +32,22 @@
         
         /* Sidebar Styles */
         .offcanvas {
-            width: 280px;
+            width: 240px;
+        }
+
+        .offcanvas-header {
+            background-color: #495057 !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 0.75rem 1rem;
+        }
+
+        .offcanvas-title {
+            color: #ffffff !important;
+            font-size: 1rem;
+        }
+
+        .offcanvas-body {
+            background-color: #495057;
         }
 
         .navbar-brand {
@@ -41,45 +56,66 @@
         }
 
         .nav-section {
-            margin-bottom: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .section-title {
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #adb5bd;
+            padding: 0.75rem 1rem 0.4rem;
+            margin: 0;
+            margin-top: 0.4rem;
+            list-style: none;
+            background-color: rgba(0, 0, 0, 0.15);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .section-title:first-child {
+            margin-top: 0;
+            border-top: none;
         }
 
         .nav-section-title {
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.05em;
-            color: #6c757d;
-            padding: 0.75rem 1.5rem 0.5rem;
+            color: #adb5bd;
+            padding: 0.6rem 1rem 0.4rem;
             margin: 0;
-            border-bottom: 1px solid #dee2e6;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .nav-link {
-            color: #495057;
-            padding: 0.75rem 1.5rem;
+            color: #e9ecef;
+            padding: 0.6rem 1rem;
             border: none;
             border-radius: 0;
             transition: all 0.2s ease;
             border-left: 3px solid transparent;
+            font-size: 0.875rem;
         }
 
         .nav-link:hover {
-            background-color: rgba(13, 71, 161, 0.05);
-            color: var(--bs-primary);
-            border-left-color: var(--bs-primary);
+            background-color: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            border-left-color: #0d47a1;
         }
 
         .nav-link.active {
-            background-color: rgba(13, 71, 161, 0.1);
-            color: var(--bs-primary);
-            border-left-color: var(--bs-primary);
+            background-color: rgba(13, 71, 161, 0.3);
+            color: #ffffff;
+            border-left-color: #0d47a1;
             font-weight: 500;
         }
 
         .nav-link i {
-            width: 20px;
+            width: 18px;
             text-align: center;
+            font-size: 0.875rem;
         }
 
         /* Header improvements */
@@ -186,112 +222,101 @@
 
     <!-- Sidebar Offcanvas -->
     <div class="offcanvas offcanvas-start" tabindex="-1" id="sidebarOffcanvas" aria-labelledby="sidebarOffcanvasLabel">
-        <div class="offcanvas-header bg-primary text-white">
+        <div class="offcanvas-header text-white">
             <h5 class="offcanvas-title" id="sidebarOffcanvasLabel">
-                <i class="bi bi-truck me-2"></i>Menu
+                <i class="bi bi-truck me-2"></i>Transpontual
             </h5>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
         </div>
         <div class="offcanvas-body p-0">
             <nav class="navbar-nav">
-                {% if session.get('user_role') == 'motorista' %}
-                <!-- Navegação para Motoristas -->
-                <div class="nav-section">
-                    <h6 class="nav-section-title">Checklist</h6>
-                    <a class="nav-link {% if request.endpoint and 'checklist' in request.endpoint %}active{% endif %}"
-                       href="{{ url_for('checklist_new') }}">
-                        <i class="bi bi-clipboard-check me-3"></i>Novo Checklist
-                    </a>
-                </div>
-                {% else %}
-                <!-- Navegação para Administradores e Gerentes -->
-                <div class="nav-section">
-                    <h6 class="nav-section-title">Principal</h6>
-                    <a class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}"
-                       href="{{ url_for('dashboard') }}">
-                        <i class="bi bi-speedometer2 me-3"></i>Dashboard
-                    </a>
-                </div>
+                <!-- PRINCIPAL -->
+                <li class="section-title">PRINCIPAL</li>
+                <a class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}"
+                   href="{{ url_for('dashboard') }}">
+                    <i class="bi bi-speedometer2 me-3"></i>Dashboard
+                </a>
 
-                <div class="nav-section">
-                    <h6 class="nav-section-title">Sistema Financeiro</h6>
-                    <a class="nav-link" href="/billing" target="_blank">
-                        <i class="bi bi-currency-dollar me-3"></i>Dashboard Financeiro
-                    </a>
-                </div>
+                <!-- GESTÃO Comercial -->
+                <li class="section-title">GESTÃO COMERCIAL</li>
+                <a class="nav-link" href="/billing" target="_blank">
+                    <i class="bi bi-calculator me-3"></i>Dashboard Financeiro
+                </a>
+                <a class="nav-link {% if request.endpoint and 'reports_abastecimentos' in request.endpoint %}active{% endif %}"
+                   href="{{ url_for('reports_abastecimentos') }}">
+                    <i class="bi bi-graph-up me-3"></i>Relatórios
+                </a>
 
-                <div class="nav-section">
-                    <h6 class="nav-section-title">Gestão</h6>
-                    <a class="nav-link {% if request.endpoint and 'vehicle' in request.endpoint %}active{% endif %}"
-                       href="{{ url_for('vehicles_list') }}">
-                        <i class="bi bi-truck-flatbed me-3"></i>Veículos
-                    </a>
-                    <a class="nav-link {% if request.endpoint and 'odometer' in request.endpoint %}active{% endif %}"
-                       href="{{ url_for('vehicles_odometer') }}">
-                        <i class="bi bi-speedometer2 me-3"></i>Odômetro
-                    </a>
-                    <a class="nav-link {% if request.endpoint and 'driver' in request.endpoint %}active{% endif %}"
-                       href="{{ url_for('drivers_list') }}">
-                        <i class="bi bi-person-badge me-3"></i>Motoristas
-                    </a>
-                    <a class="nav-link {% if request.endpoint == 'checklists_list' %}active{% endif %}"
-                       href="{{ url_for('checklists_list') }}">
-                        <i class="bi bi-clipboard-check me-3"></i>Checklists
-                    </a>
-                    <a class="nav-link {% if request.endpoint == 'checklist_approve_page' %}active{% endif %}"
-                       href="{{ url_for('checklist_approve_page') }}">
-                        <i class="bi bi-clipboard2-check me-3"></i>Aprovar Checklists
-                    </a>
-                    <a class="nav-link {% if request.endpoint and 'abastecimento' in request.endpoint %}active{% endif %}"
-                       href="{{ url_for('abastecimentos_list') }}">
-                        <i class="bi bi-fuel-pump me-3"></i>Abastecimentos
-                    </a>
-                    <a class="nav-link {% if request.endpoint and 'fornecedor' in request.endpoint %}active{% endif %}"
-                       href="{{ url_for('fornecedores_list') }}">
-                        <i class="bi bi-shop me-3"></i>Fornecedores
-                    </a>
-                </div>
+                <!-- GESTÃO DE FROTAS -->
+                <li class="section-title">GESTÃO DE FROTAS</li>
+                <a class="nav-link {% if request.endpoint and 'vehicle' in request.endpoint %}active{% endif %}"
+                   href="{{ url_for('vehicles_list') }}">
+                    <i class="bi bi-truck-flatbed me-3"></i>Gestão de Veículos
+                </a>
+                <a class="nav-link {% if request.endpoint and 'odometer' in request.endpoint %}active{% endif %}"
+                   href="{{ url_for('vehicles_odometer') }}">
+                    <i class="bi bi-speedometer2 me-3"></i>Odômetro
+                </a>
+                <a class="nav-link {% if request.endpoint == 'checklists_list' %}active{% endif %}"
+                   href="{{ url_for('checklists_list') }}">
+                    <i class="bi bi-clipboard-check me-3"></i>Checklists
+                </a>
+                <a class="nav-link {% if request.endpoint == 'checklist_approve_page' %}active{% endif %}"
+                   href="{{ url_for('checklist_approve_page') }}">
+                    <i class="bi bi-clipboard2-check me-3"></i>Aprovar Checklists
+                </a>
+                <a class="nav-link {% if request.endpoint and 'abastecimento' in request.endpoint %}active{% endif %}"
+                   href="{{ url_for('abastecimentos_list') }}">
+                    <i class="bi bi-fuel-pump me-3"></i>Abastecimentos
+                </a>
 
-                <div class="nav-section">
-                    <h6 class="nav-section-title">Manutenção</h6>
-                    <a class="nav-link {% if request.endpoint and 'ordem_servico' in request.endpoint %}active{% endif %}"
-                       href="{{ url_for('service_orders_list') }}">
-                        <i class="bi bi-tools me-3"></i>Ordens de Serviço
-                    </a>
-                    <a class="nav-link {% if request.endpoint and 'maintenance_plans' in request.endpoint %}active{% endif %}"
-                       href="{{ url_for('maintenance_plans') }}">
-                        <i class="bi bi-list-check me-3"></i>Planos de Manutenção
-                    </a>
-                    <a class="nav-link {% if request.endpoint and 'maintenance_forecast' in request.endpoint %}active{% endif %}"
-                       href="{{ url_for('maintenance_forecast') }}">
-                        <i class="bi bi-calendar-event me-3"></i>Previsão de Alertas
-                    </a>
-                    <a class="nav-link {% if request.endpoint and 'alerts' in request.endpoint %}active{% endif %}"
-                       href="{{ url_for('alerts_list') }}">
-                        <i class="bi bi-exclamation-triangle me-3"></i>Alertas do Sistema
-                    </a>
-                </div>
+                <!-- MANUTENÇÃO -->
+                <li class="section-title">MANUTENÇÃO</li>
+                <a class="nav-link {% if request.endpoint and 'ordem_servico' in request.endpoint %}active{% endif %}"
+                   href="{{ url_for('service_orders_list') }}">
+                    <i class="bi bi-tools me-3"></i>Ordens de Serviço
+                </a>
+                <a class="nav-link {% if request.endpoint and 'maintenance_plans' in request.endpoint %}active{% endif %}"
+                   href="{{ url_for('maintenance_plans') }}">
+                    <i class="bi bi-list-check me-3"></i>Planos de Manutenção
+                </a>
+                <a class="nav-link {% if request.endpoint and 'maintenance_forecast' in request.endpoint %}active{% endif %}"
+                   href="{{ url_for('maintenance_forecast') }}">
+                    <i class="bi bi-calendar-event me-3"></i>Previsão de Alertas
+                </a>
+                <a class="nav-link {% if request.endpoint and 'alerts' in request.endpoint %}active{% endif %}"
+                   href="{{ url_for('alerts_list') }}">
+                    <i class="bi bi-exclamation-triangle me-3"></i>Alertas do Sistema
+                </a>
 
-                <div class="nav-section">
-                    <h6 class="nav-section-title">Multas</h6>
-                    <a class="nav-link {% if request.endpoint == 'multas_dashboard' %}active{% endif %}"
-                       href="{{ url_for('multas_dashboard') }}">
-                        <i class="bi bi-graph-up me-3"></i>Dashboard de Multas
-                    </a>
-                    <a class="nav-link {% if request.endpoint == 'multas_lista' %}active{% endif %}"
-                       href="{{ url_for('multas_lista') }}">
-                        <i class="bi bi-list-ul me-3"></i>Lista de Multas
-                    </a>
-                </div>
+                <!-- MULTAS -->
+                <li class="section-title">MULTAS</li>
+                <a class="nav-link {% if request.endpoint == 'multas_dashboard' %}active{% endif %}"
+                   href="{{ url_for('multas_dashboard') }}">
+                    <i class="bi bi-graph-up me-3"></i>Dashboard de Multas
+                </a>
+                <a class="nav-link {% if request.endpoint == 'multas_lista' %}active{% endif %}"
+                   href="{{ url_for('multas_lista') }}">
+                    <i class="bi bi-list-ul me-3"></i>Lista de Multas
+                </a>
 
-                <div class="nav-section">
-                    <h6 class="nav-section-title">Relatórios</h6>
-                    <a class="nav-link {% if request.endpoint and 'reports_abastecimentos' in request.endpoint %}active{% endif %}"
-                       href="{{ url_for('reports_abastecimentos') }}">
-                        <i class="bi bi-fuel-pump-fill me-3"></i>Abastecimentos
-                    </a>
-                </div>
-                {% endif %}
+                <!-- CADASTROS -->
+                <li class="section-title">CADASTROS</li>
+                <a class="nav-link {% if request.endpoint and 'driver' in request.endpoint %}active{% endif %}"
+                   href="{{ url_for('drivers_list') }}">
+                    <i class="bi bi-person-badge me-3"></i>Motoristas
+                </a>
+                <a class="nav-link {% if request.endpoint and 'fornecedor' in request.endpoint %}active{% endif %}"
+                   href="{{ url_for('fornecedores_list') }}">
+                    <i class="bi bi-shop me-3"></i>Fornecedores
+                </a>
+
+                <!-- ADMINISTRAÇÃO -->
+                <li class="section-title">ADMINISTRAÇÃO</li>
+                <a class="nav-link {% if request.endpoint and 'users' in request.endpoint %}active{% endif %}"
+                   href="{{ url_for('users_list') }}">
+                    <i class="bi bi-people me-3"></i>Usuários
+                </a>
             </nav>
         </div>
     </div>

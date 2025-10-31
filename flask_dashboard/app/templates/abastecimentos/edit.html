@@ -101,12 +101,34 @@
 
                         <div class="row mb-3">
                             <div class="col-md-6">
-                                <label for="posto" class="form-label">Posto</label>
+                                <label for="fornecedor_id" class="form-label">
+                                    Fornecedor/Posto
+                                    <a href="{{ url_for('fornecedor_new') }}" class="btn btn-sm btn-link p-0 ms-2" title="Novo Fornecedor" target="_blank">
+                                        <i class="bi bi-plus-circle"></i>
+                                    </a>
+                                </label>
+                                <select class="form-select" id="fornecedor_id" name="fornecedor_id">
+                                    <option value="">Selecione um fornecedor</option>
+                                    {% for fornecedor in fornecedores %}
+                                    <option value="{{ fornecedor.id }}"
+                                            data-nome="{{ fornecedor.nome }}"
+                                            {{ 'selected' if (request.form.get('fornecedor_id') or abastecimento.fornecedor_id)|string == fornecedor.id|string }}>
+                                        {{ fornecedor.nome }} {% if fornecedor.cidade %}({{ fornecedor.cidade }}){% endif %}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text">Selecione o posto/fornecedor cadastrado</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="posto" class="form-label">Nome do Posto (Manual)</label>
                                 <input type="text" class="form-control" id="posto" name="posto"
                                        value="{{ request.form.get('posto') or abastecimento.posto or '' }}"
-                                       placeholder="Nome do posto">
-                                <div class="form-text">Nome ou rede do posto de combustível</div>
+                                       placeholder="Ou digite o nome do posto">
+                                <div class="form-text">Campo preenchido automaticamente ao selecionar fornecedor</div>
                             </div>
+                        </div>
+
+                        <div class="row mb-3">
                             <div class="col-md-6">
                                 <label for="tipo_combustivel" class="form-label">Tipo de Combustível</label>
                                 <select class="form-select" id="tipo_combustivel" name="tipo_combustivel">
@@ -300,6 +322,16 @@ $(document).ready(function() {
             `;
         }
     }
+
+    // Auto-preencher posto ao selecionar fornecedor
+    document.getElementById('fornecedor_id').addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        const nomeFornecedor = selectedOption.dataset.nome;
+
+        if (nomeFornecedor) {
+            document.getElementById('posto').value = nomeFornecedor;
+        }
+    });
 
     // Event listeners
     document.getElementById('litros').addEventListener('input', calcularTotal);

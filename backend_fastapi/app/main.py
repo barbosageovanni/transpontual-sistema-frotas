@@ -2,8 +2,23 @@
 """
 Transpontual - FastAPI application
 """
+import sys
 import os
+
+# Configure UTF-8 encoding for Windows console
+if sys.platform == 'win32':
+    try:
+        # Reconfigure stdout/stderr to handle UTF-8
+        sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+        sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+    except AttributeError:
+        # Python < 3.7 fallback
+        import codecs
+        sys.stdout = codecs.getwriter('utf-8')(sys.stdout.buffer, 'replace')
+        sys.stderr = codecs.getwriter('utf-8')(sys.stderr.buffer, 'replace')
+
 import asyncio
+import logging
 from datetime import datetime
 from fastapi import FastAPI, Request, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -17,6 +32,12 @@ from app.core.config import get_settings
 from app.core.database import create_tables, test_connection, get_db, SessionLocal
 from app.api_v1 import api_router
 from app import models
+
+# Configure logging to show INFO level messages
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(levelname)s: %(message)s'
+)
 
 
 settings = get_settings()
@@ -33,7 +54,9 @@ app = FastAPI(
 # CORS configuration for Render deployment
 allowed_origins = [
     "http://localhost:3000",  # Local development
+    "http://localhost:8050",  # Local Flask dashboard
     "http://localhost:8080",  # Local Flask
+    "http://127.0.0.1:8050",  # Local Flask dashboard (IP)
     "http://localhost:10000", # Render port
     "https://*.onrender.com", # Render domains
     "https://web-production-3d416.up.railway.app",  # Current Railway
@@ -986,6 +1009,10 @@ async def not_found_handler(request: Request, exc):
 
 @app.exception_handler(500)
 async def internal_error_handler(request: Request, exc):
+    # Log the actual error for debugging
+    print(f"ERROR 500: {exc}")
+    import traceback
+    traceback.print_exc()
     return JSONResponse(status_code=500, content={"message": "Erro interno do servidor"})
 
 

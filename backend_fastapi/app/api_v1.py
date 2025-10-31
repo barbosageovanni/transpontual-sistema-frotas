@@ -3,7 +3,7 @@
 Router principal da API v1 - Vers?o simplificada com SSO
 """
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import text
 from sqlalchemy.sql import func
 from typing import List, Optional
@@ -1002,8 +1002,12 @@ def list_abastecimentos(
     data_fim: str = Query(None),
     db: Session = Depends(get_db)
 ):
-    """Lista abastecimentos com filtros"""
-    query = db.query(models.Abastecimento).join(models.Veiculo).join(models.Motorista)
+    """Lista abastecimentos com filtros e relacionamentos"""
+    query = db.query(models.Abastecimento).options(
+        joinedload(models.Abastecimento.veiculo),
+        joinedload(models.Abastecimento.motorista),
+        joinedload(models.Abastecimento.fornecedor)
+    )
 
     if veiculo_id:
         query = query.filter(models.Abastecimento.veiculo_id == veiculo_id)
@@ -1031,11 +1035,12 @@ def list_abastecimentos(
 
     result = []
     for abast in abastecimentos:
-        result.append({
+        item = {
             "id": abast.id,
             "data_abastecimento": abast.data_abastecimento.isoformat() if abast.data_abastecimento else None,
             "veiculo_id": abast.veiculo_id,
             "motorista_id": abast.motorista_id,
+            # Manter campos legacy para compatibilidade
             "veiculo_placa": abast.veiculo.placa if abast.veiculo else None,
             "veiculo_marca": abast.veiculo.marca if abast.veiculo else None,
             "veiculo_modelo": abast.veiculo.modelo if abast.veiculo else None,
@@ -1047,8 +1052,37 @@ def list_abastecimentos(
             "posto": abast.posto,
             "tipo_combustivel": abast.tipo_combustivel,
             "numero_cupom": abast.numero_cupom,
-            "observacoes": abast.observacoes
-        })
+            "observacoes": abast.observacoes,
+            "criado_em": abast.criado_em.isoformat() if abast.criado_em else None
+        }
+
+        # Adicionar objetos completos dos relacionamentos
+        if abast.veiculo:
+            item["veiculo"] = {
+                "id": abast.veiculo.id,
+                "placa": abast.veiculo.placa,
+                "marca": abast.veiculo.marca,
+                "modelo": abast.veiculo.modelo,
+                "ano": abast.veiculo.ano,
+                "km_atual": abast.veiculo.km_atual
+            }
+
+        if abast.motorista:
+            item["motorista"] = {
+                "id": abast.motorista.id,
+                "nome": abast.motorista.nome,
+                "cnh": abast.motorista.cnh,
+                "categoria": abast.motorista.categoria
+            }
+
+        if abast.fornecedor:
+            item["fornecedor"] = {
+                "id": abast.fornecedor.id,
+                "nome": abast.fornecedor.nome,
+                "tipo": abast.fornecedor.tipo
+            }
+
+        result.append(item)
 
     return result
 
@@ -1084,12 +1118,18 @@ def create_abastecimento(abastecimento_data: dict, db: Session = Depends(get_db)
 
 @api_router.get("/abastecimentos/{abastecimento_id}")
 def get_abastecimento(abastecimento_id: int, db: Session = Depends(get_db)):
-    """Busca abastecimento por ID"""
-    abast = db.query(models.Abastecimento).filter(models.Abastecimento.id == abastecimento_id).first()
-    if not abast:
-        raise HTTPException(status_code=404, detail="Abastecimento n?o encontrado")
+    """Busca abastecimento por ID com relacionamentos"""
+    abast = db.query(models.Abastecimento).options(
+        joinedload(models.Abastecimento.veiculo),
+        joinedload(models.Abastecimento.motorista),
+        joinedload(models.Abastecimento.fornecedor)
+    ).filter(models.Abastecimento.id == abastecimento_id).first()
 
-    return {
+    if not abast:
+        raise HTTPException(status_code=404, detail="Abastecimento não encontrado")
+
+    # Montar resposta com dados completos
+    response = {
         "id": abast.id,
         "veiculo_id": abast.veiculo_id,
         "motorista_id": abast.motorista_id,
@@ -1101,8 +1141,39 @@ def get_abastecimento(abastecimento_id: int, db: Session = Depends(get_db)):
         "posto": abast.posto,
         "tipo_combustivel": abast.tipo_combustivel,
         "numero_cupom": abast.numero_cupom,
-        "observacoes": abast.observacoes
+        "observacoes": abast.observacoes,
+        "criado_em": abast.criado_em.isoformat() if abast.criado_em else None
     }
+
+    # Adicionar dados do veículo se existir
+    if abast.veiculo:
+        response["veiculo"] = {
+            "id": abast.veiculo.id,
+            "placa": abast.veiculo.placa,
+            "marca": abast.veiculo.marca,
+            "modelo": abast.veiculo.modelo,
+            "ano": abast.veiculo.ano,
+            "km_atual": abast.veiculo.km_atual
+        }
+
+    # Adicionar dados do motorista se existir
+    if abast.motorista:
+        response["motorista"] = {
+            "id": abast.motorista.id,
+            "nome": abast.motorista.nome,
+            "cnh": abast.motorista.cnh,
+            "categoria": abast.motorista.categoria
+        }
+
+    # Adicionar dados do fornecedor se existir
+    if abast.fornecedor:
+        response["fornecedor"] = {
+            "id": abast.fornecedor.id,
+            "nome": abast.fornecedor.nome,
+            "tipo": abast.fornecedor.tipo
+        }
+
+    return response
 
 @api_router.put("/abastecimentos/{abastecimento_id}")
 def update_abastecimento(
