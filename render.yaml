@@ -42,7 +42,7 @@ services:
         value: 8005
       # Python Configuration
       - key: PYTHONPATH
-        value: /opt/render/project/src
+        value: /opt/render/project/src:/opt/render/project/src/flask_dashboard:/opt/render/project/src/backend_fastapi
       - key: PYTHONIOENCODING
         value: utf-8
       # Flask Configuration
