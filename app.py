@@ -17,12 +17,12 @@ from dotenv import load_dotenv
 env_file = project_dir / ".env"
 if env_file.exists():
     load_dotenv(env_file)
-    print("✓ .env file loaded")
+    print("[OK] .env file loaded")
 
 render_env = project_dir / ".env.render"
 if render_env.exists():
     load_dotenv(render_env, override=True)
-    print("✓ .env.render file loaded")
+    print("[OK] .env.render file loaded")
 
 # Set environment defaults for production
 os.environ.setdefault('ENV', 'production')
@@ -37,7 +37,7 @@ sys.path.insert(0, str(dashboard_dir))
 # Import and create Flask app
 try:
     print("Importing Flask dashboard...")
-    from app.dashboard import create_app
+    from flask_dashboard.app.dashboard import create_app
 
     # Create the Flask application
     app = create_app()
@@ -51,12 +51,12 @@ try:
             "mode": "gunicorn"
         }, 200
 
-    print("✓ Flask app created successfully!")
-    print(f"✓ Template folder: {app.template_folder}")
-    print(f"✓ Static folder: {app.static_folder}")
+    print("[OK] Flask app created successfully!")
+    print(f"[OK] Template folder: {app.template_folder}")
+    print(f"[OK] Static folder: {app.static_folder}")
 
 except Exception as e:
-    print(f"✗ Error creating Flask app: {e}")
+    print(f"[ERROR] Error creating Flask app: {e}")
     import traceback
     traceback.print_exc()
 
