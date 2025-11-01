@@ -1,0 +1,3 @@
+# Force Render redeploy - 2025-10-31 21:15
+# Trigger redeploy to use dashboard_app.py instead of app.py
+# Commit: 7d40592 - Fixed PYTHONPATH and namespace conflict
