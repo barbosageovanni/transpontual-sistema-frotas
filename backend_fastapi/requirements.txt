@@ -1,6 +1,6 @@
 fastapi>=0.104.0
 uvicorn[standard]>=0.24.0
-sqlalchemy>=2.0.0
+sqlalchemy>=2.0.36
 psycopg2-binary>=2.9.0
 alembic>=1.12.0
 pydantic[email]>=2.5.0
@@ -17,3 +17,4 @@ werkzeug>=2.0.0
 
 # OCR para extração de cupons fiscais
 pytesseract>=0.3.10
+PyMuPDF>=1.23.0  # Para processar arquivos PDF

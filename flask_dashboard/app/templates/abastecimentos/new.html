@@ -73,7 +73,7 @@
                             <div class="col-md-4">
                                 <label for="litros" class="form-label">Litros *</label>
                                 <input type="number" class="form-control" id="litros" name="litros"
-                                       value="{{ request.form.get('litros') or '' }}" step="0.01" min="0" required>
+                                       value="{{ request.form.get('litros') or '' }}" step="0.001" min="0" required>
                                 <div class="form-text">Quantidade de combustível</div>
                             </div>
                             <div class="col-md-4">
@@ -179,8 +179,8 @@
                     <p class="text-muted">Tire uma foto do cupom fiscal e os dados serão preenchidos automaticamente!</p>
 
                     <div class="mb-3">
-                        <input type="file" class="form-control" id="cupom_file" accept="image/*" capture="environment">
-                        <div class="form-text">Formatos: JPG, PNG</div>
+                        <input type="file" class="form-control" id="cupom_file" accept="image/*,application/pdf" capture="environment">
+                        <div class="form-text">Formatos: JPG, PNG, PDF</div>
                     </div>
 
                     <button type="button" class="btn btn-success w-100" id="btn-processar-cupom" disabled>
@@ -310,6 +310,8 @@ $(document).ready(function() {
                 console.log('Tipo Combustível:', data.tipo_combustivel);
                 console.log('Número Cupom:', data.numero_cupom);
                 console.log('Data Abastecimento:', data.data_abastecimento);
+                console.log('Placa:', data.placa);
+                console.log('Odômetro:', data.odometro);
 
                 if (data.posto) {
                     document.getElementById('posto').value = data.posto;
@@ -325,6 +327,30 @@ $(document).ready(function() {
 
                 if (data.valor_total) {
                     document.getElementById('valor_total').value = data.valor_total;
+                }
+
+                // Preencher odômetro se extraído
+                if (data.odometro) {
+                    document.getElementById('odometro').value = data.odometro;
+                    // Validar odômetro
+                    validarOdometro();
+                }
+
+                // Tentar selecionar veículo pela placa
+                if (data.placa) {
+                    const veiculoSelect = document.getElementById('veiculo_id');
+                    const options = veiculoSelect.options;
+
+                    for (let i = 0; i < options.length; i++) {
+                        const optionText = options[i].textContent.toUpperCase();
+                        if (optionText.includes(data.placa.toUpperCase())) {
+                            veiculoSelect.value = options[i].value;
+                            // Mostrar informações do veículo
+                            mostrarInfoVeiculo();
+                            console.log('Veículo selecionado automaticamente pela placa:', data.placa);
+                            break;
+                        }
+                    }
                 }
 
                 if (data.tipo_combustivel) {

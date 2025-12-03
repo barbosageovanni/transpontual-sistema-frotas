@@ -74,23 +74,58 @@ def abastecimentos():
     total_valor = sum(float(a.get('valor_total', 0)) for a in abastecimentos)
     media_preco_litro = total_valor / total_litros if total_litros > 0 else 0
 
-    # Agrupar por veículo
+    # Agrupar por veículo e calcular consumo
     por_veiculo = {}
+    abastecimentos_por_veiculo = {}
+
+    # Agrupar abastecimentos por veículo
     for abastecimento in abastecimentos:
         veiculo = abastecimento.get('veiculo', {})
         placa = veiculo.get('placa', 'N/A')
 
-        if placa not in por_veiculo:
-            por_veiculo[placa] = {
-                'veiculo': veiculo,
-                'total_litros': 0,
-                'total_valor': 0,
-                'total_abastecimentos': 0
-            }
+        if placa not in abastecimentos_por_veiculo:
+            abastecimentos_por_veiculo[placa] = []
+        abastecimentos_por_veiculo[placa].append(abastecimento)
 
-        por_veiculo[placa]['total_litros'] += float(abastecimento.get('litros', 0))
-        por_veiculo[placa]['total_valor'] += float(abastecimento.get('valor_total', 0))
-        por_veiculo[placa]['total_abastecimentos'] += 1
+    # Calcular estatísticas por veículo
+    for placa, veic_abastecimentos in abastecimentos_por_veiculo.items():
+        veiculo = veic_abastecimentos[0].get('veiculo', {})
+
+        # Ordenar por odômetro
+        veic_abastecimentos_ordenados = sorted(
+            veic_abastecimentos,
+            key=lambda x: float(x.get('odometro', 0))
+        )
+
+        total_litros = sum(float(a.get('litros', 0)) for a in veic_abastecimentos)
+        total_valor = sum(float(a.get('valor_total', 0)) for a in veic_abastecimentos)
+
+        # Calcular consumo médio (km/L)
+        consumos = []
+        for i in range(1, len(veic_abastecimentos_ordenados)):
+            abast_anterior = veic_abastecimentos_ordenados[i-1]
+            abast_atual = veic_abastecimentos_ordenados[i]
+
+            km_anterior = float(abast_anterior.get('odometro', 0))
+            km_atual = float(abast_atual.get('odometro', 0))
+            litros = float(abast_anterior.get('litros', 0))
+
+            if litros > 0 and km_atual > km_anterior:
+                km_rodados = km_atual - km_anterior
+                consumo = km_rodados / litros
+                # Filtrar consumos absurdos (< 0.5 km/L ou > 50 km/L)
+                if 0.5 <= consumo <= 50:
+                    consumos.append(consumo)
+
+        consumo_medio = sum(consumos) / len(consumos) if consumos else 0
+
+        por_veiculo[placa] = {
+            'veiculo': veiculo,
+            'total_litros': total_litros,
+            'total_valor': total_valor,
+            'total_abastecimentos': len(veic_abastecimentos),
+            'consumo_medio': consumo_medio
+        }
 
     # Agrupar por mês
     por_mes = {}
@@ -115,11 +150,16 @@ def abastecimentos():
             except:
                 pass
 
+    # Calcular consumo médio geral
+    todos_consumos = [v['consumo_medio'] for v in por_veiculo.values() if v['consumo_medio'] > 0]
+    consumo_medio_geral = sum(todos_consumos) / len(todos_consumos) if todos_consumos else 0
+
     estatisticas = {
         'total_abastecimentos': total_abastecimentos,
         'total_litros': total_litros,
         'total_valor': total_valor,
         'media_preco_litro': media_preco_litro,
+        'consumo_medio_geral': consumo_medio_geral,
         'por_veiculo': list(por_veiculo.values()),
         'por_mes': list(por_mes.values())
     }

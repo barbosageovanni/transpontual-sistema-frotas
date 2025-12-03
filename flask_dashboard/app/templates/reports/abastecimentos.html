@@ -82,7 +82,7 @@
 
     <!-- Estatísticas Gerais -->
     <div class="row mb-4">
-        <div class="col-xl-3 col-md-6 mb-4">
+        <div class="col-xl col-md-6 mb-4">
             <div class="card border-left-primary shadow h-100 py-2">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
@@ -140,7 +140,7 @@
             </div>
         </div>
 
-        <div class="col-xl-3 col-md-6 mb-4">
+        <div class="col-xl col-md-6 mb-4">
             <div class="card border-left-warning shadow h-100 py-2">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
@@ -159,6 +159,26 @@
                 </div>
             </div>
         </div>
+
+        <div class="col-xl col-md-6 mb-4">
+            <div class="card border-left-danger shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs fw-bold text-danger text-uppercase mb-1">
+                                Consumo Médio
+                            </div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">
+                                {{ "{:.2f}".format(estatisticas.consumo_medio_geral) if estatisticas.consumo_medio_geral > 0 else 'N/A' }} km/L
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-speedometer2 fs-2 text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Gráficos e Tabelas -->
@@ -172,12 +192,13 @@
                 <div class="card-body">
                     {% if estatisticas.por_veiculo %}
                     <div class="table-responsive">
-                        <table class="table table-striped table-sm">
+                        <table class="table table-striped table-sm" style="font-size: 0.70rem;">
                             <thead>
                                 <tr>
                                     <th>Veículo</th>
                                     <th>Abastec.</th>
                                     <th>Litros</th>
+                                    <th>Consumo</th>
                                     <th>Valor Total</th>
                                 </tr>
                             </thead>
@@ -190,6 +211,15 @@
                                     </td>
                                     <td>{{ item.total_abastecimentos }}</td>
                                     <td>{{ "{:.1f}".format(item.total_litros) }}L</td>
+                                    <td>
+                                        {% if item.consumo_medio > 0 %}
+                                            <span class="badge bg-{% if item.consumo_medio >= 3 %}success{% elif item.consumo_medio >= 2 %}warning{% else %}danger{% endif %}">
+                                                {{ "{:.2f}".format(item.consumo_medio) }} km/L
+                                            </span>
+                                        {% else %}
+                                            <span class="text-muted">N/A</span>
+                                        {% endif %}
+                                    </td>
                                     <td>R$ {{ "{:.2f}".format(item.total_valor) }}</td>
                                 </tr>
                                 {% endfor %}
@@ -219,7 +249,7 @@
                         <canvas id="chartMensal" width="400" height="200"></canvas>
                     </div>
                     <div class="table-responsive">
-                        <table class="table table-striped table-sm">
+                        <table class="table table-striped table-sm" style="font-size: 0.70rem;">
                             <thead>
                                 <tr>
                                     <th>Mês</th>
@@ -251,6 +281,27 @@
         </div>
     </div>
 
+    <!-- Gráfico de Consumo por Veículo -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 fw-bold text-primary">Consumo Médio por Veículo</h6>
+                </div>
+                <div class="card-body">
+                    {% if estatisticas.por_veiculo %}
+                    <canvas id="chartConsumo" width="400" height="100"></canvas>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-speedometer2 display-3 text-muted"></i>
+                        <p class="text-muted mt-2">Nenhum dado de consumo disponível</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Lista Detalhada de Abastecimentos -->
     <div class="card shadow mb-4">
         <div class="card-header py-3">
@@ -259,7 +310,7 @@
         <div class="card-body">
             {% if abastecimentos %}
             <div class="table-responsive">
-                <table class="table table-striped table-hover" id="abastecimentosTable">
+                <table class="table table-striped table-hover" id="abastecimentosTable" style="font-size: 0.70rem;">
                     <thead class="table-dark">
                         <tr>
                             <th>Data</th>
@@ -416,6 +467,77 @@ $(document).ready(function() {
             }
         }
     });
+    {% endif %}
+
+    // Gráfico de barras - Consumo por Veículo
+    {% if estatisticas.por_veiculo %}
+    const dadosConsumo = {{ estatisticas.por_veiculo | tojson }};
+    const veiculosComConsumo = dadosConsumo.filter(item => item.consumo_medio > 0);
+
+    if (veiculosComConsumo.length > 0) {
+        const ctxConsumo = document.getElementById('chartConsumo').getContext('2d');
+        const chartConsumo = new Chart(ctxConsumo, {
+            type: 'bar',
+            data: {
+                labels: veiculosComConsumo.map(item => item.veiculo.placa || 'N/A'),
+                datasets: [{
+                    label: 'Consumo Médio (km/L)',
+                    data: veiculosComConsumo.map(item => item.consumo_medio),
+                    backgroundColor: veiculosComConsumo.map(item => {
+                        if (item.consumo_medio >= 3) return 'rgba(40, 167, 69, 0.7)';  // Verde
+                        if (item.consumo_medio >= 2) return 'rgba(255, 193, 7, 0.7)';  // Amarelo
+                        return 'rgba(220, 53, 69, 0.7)';  // Vermelho
+                    }),
+                    borderColor: veiculosComConsumo.map(item => {
+                        if (item.consumo_medio >= 3) return 'rgb(40, 167, 69)';
+                        if (item.consumo_medio >= 2) return 'rgb(255, 193, 7)';
+                        return 'rgb(220, 53, 69)';
+                    }),
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Consumo (km/L)'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Veículo'
+                        }
+                    }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Consumo Médio por Veículo'
+                    },
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const item = veiculosComConsumo[context.dataIndex];
+                                return [
+                                    `Consumo: ${context.parsed.y.toFixed(2)} km/L`,
+                                    `Abastecimentos: ${item.total_abastecimentos}`,
+                                    `Total Litros: ${item.total_litros.toFixed(1)}L`
+                                ];
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
     {% endif %}
 });
 </script>
