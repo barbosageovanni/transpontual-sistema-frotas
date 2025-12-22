@@ -1,383 +1,240 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 
-{% block title %}Relatório de Abastecimentos{% endblock %}
+{% block title %}Relatorio de Abastecimentos - Transpontual{% endblock %}
+
+{% block extra_css %}
+<style>
+    .abastecimentos-page * { box-sizing: border-box !important; }
+    .abastecimentos-page { --primary-color: #2563eb !important; --secondary-color: #64748b !important; --success-color: #10b981 !important; --warning-color: #f59e0b !important; --danger-color: #ef4444 !important; --info-color: #06b6d4 !important; --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important; --card-radius: 12px !important; --gradient-primary: linear-gradient(135deg, #2563eb, #1e40af) !important; --gradient-success: linear-gradient(135deg, #10b981, #059669) !important; --gradient-warning: linear-gradient(135deg, #f59e0b, #d97706) !important; --gradient-danger: linear-gradient(135deg, #ef4444, #dc2626) !important; --gradient-info: linear-gradient(135deg, #06b6d4, #0891b2) !important; }
+    .abastecimentos-page .page-header { background: var(--gradient-primary) !important; color: white !important; padding: 2rem !important; border-radius: var(--card-radius) !important; margin-bottom: 2rem !important; box-shadow: var(--card-shadow) !important; }
+    .abastecimentos-page .page-header h1 { font-size: 2rem !important; font-weight: 700 !important; margin-bottom: 0.5rem !important; color: white !important; }
+    .abastecimentos-page .page-header p { color: rgba(255, 255, 255, 0.9) !important; margin: 0 !important; }
+    .abastecimentos-page .action-bar { background: white !important; padding: 1.5rem !important; border-radius: var(--card-radius) !important; box-shadow: var(--card-shadow) !important; margin-bottom: 1.5rem !important; display: flex !important; justify-content: space-between !important; align-items: center !important; flex-wrap: wrap !important; gap: 1rem !important; border: 1px solid #e5e7eb !important; }
+    .abastecimentos-page .btn-gradient { background: var(--gradient-primary) !important; color: white !important; border: none !important; border-radius: 8px !important; padding: 0.6rem 1.2rem !important; font-weight: 600 !important; transition: all 0.3s ease !important; text-decoration: none !important; display: inline-flex !important; align-items: center !important; gap: 0.5rem !important; font-size: 0.875rem !important; cursor: pointer !important; }
+    .abastecimentos-page .btn-gradient:hover { transform: translateY(-2px) !important; box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15) !important; color: white !important; }
+    .abastecimentos-page .btn-success-gradient { background: var(--gradient-success) !important; }
+    .abastecimentos-page .btn-warning-gradient { background: var(--gradient-warning) !important; }
+    .abastecimentos-page .btn-danger-gradient { background: var(--gradient-danger) !important; }
+    .abastecimentos-page .btn-info-gradient { background: var(--gradient-info) !important; }
+    .abastecimentos-page .stats-section { margin-bottom: 1.5rem !important; }
+    .abastecimentos-page .stats-grid { display: grid !important; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important; gap: 1.5rem !important; }
+    .abastecimentos-page .stat-card { background: white !important; border-radius: var(--card-radius) !important; padding: 1.5rem !important; box-shadow: var(--card-shadow) !important; border: 1px solid #e5e7eb !important; position: relative !important; overflow: hidden !important; transition: transform 0.2s ease, box-shadow 0.2s ease !important; }
+    .abastecimentos-page .stat-card:hover { transform: translateY(-2px) !important; box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15) !important; }
+    .abastecimentos-page .stat-card::before { content: '' !important; position: absolute !important; top: 0 !important; left: 0 !important; right: 0 !important; height: 4px !important; }
+    .abastecimentos-page .stat-card.total::before { background: var(--primary-color) !important; }
+    .abastecimentos-page .stat-card.litros::before { background: var(--success-color) !important; }
+    .abastecimentos-page .stat-card.valor::before { background: var(--info-color) !important; }
+    .abastecimentos-page .stat-card.preco::before { background: var(--warning-color) !important; }
+    .abastecimentos-page .stat-card.consumo::before { background: var(--danger-color) !important; }
+    .abastecimentos-page .stat-icon { width: 50px !important; height: 50px !important; border-radius: 12px !important; display: flex !important; align-items: center !important; justify-content: center !important; margin-bottom: 1rem !important; font-size: 1.5rem !important; }
+    .abastecimentos-page .stat-card.total .stat-icon { background: rgba(37, 99, 235, 0.1) !important; color: var(--primary-color) !important; }
+    .abastecimentos-page .stat-card.litros .stat-icon { background: rgba(16, 185, 129, 0.1) !important; color: var(--success-color) !important; }
+    .abastecimentos-page .stat-card.valor .stat-icon { background: rgba(6, 182, 212, 0.1) !important; color: var(--info-color) !important; }
+    .abastecimentos-page .stat-card.preco .stat-icon { background: rgba(245, 158, 11, 0.1) !important; color: var(--warning-color) !important; }
+    .abastecimentos-page .stat-card.consumo .stat-icon { background: rgba(239, 68, 68, 0.1) !important; color: var(--danger-color) !important; }
+    .abastecimentos-page .stat-value { font-size: 2rem !important; font-weight: 700 !important; margin-bottom: 0.5rem !important; color: #1f2937 !important; line-height: 1 !important; }
+    .abastecimentos-page .stat-label { color: #6b7280 !important; font-size: 0.875rem !important; font-weight: 500 !important; }
+    .abastecimentos-page .filters-section { background: white !important; border-radius: var(--card-radius) !important; box-shadow: var(--card-shadow) !important; overflow: hidden !important; margin-bottom: 1.5rem !important; border: 1px solid #e5e7eb !important; }
+    .abastecimentos-page .filters-header { background: #f8fafc !important; padding: 1rem 1.5rem !important; border-bottom: 1px solid #e5e7eb !important; display: flex !important; justify-content: space-between !important; align-items: center !important; }
+    .abastecimentos-page .filters-header h6 { margin: 0 !important; font-weight: 600 !important; color: #374151 !important; }
+    .abastecimentos-page .filters-body { padding: 1.5rem !important; }
+    .abastecimentos-page .filters-grid { display: grid !important; grid-template-columns: repeat(5, 1fr) !important; gap: 1rem !important; align-items: end !important; }
+    .abastecimentos-page .filter-group label { display: block !important; font-size: 0.75rem !important; font-weight: 600 !important; color: #374151 !important; margin-bottom: 0.5rem !important; text-transform: uppercase !important; }
+    .abastecimentos-page .form-control, .abastecimentos-page .form-select { border-radius: 8px !important; border: 1px solid #d1d5db !important; padding: 0.6rem 0.75rem !important; font-size: 0.875rem !important; }
+    .abastecimentos-page .form-control:focus, .abastecimentos-page .form-select:focus { border-color: var(--primary-color) !important; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important; outline: none !important; }
+    .abastecimentos-page .table-section { background: white !important; border-radius: var(--card-radius) !important; box-shadow: var(--card-shadow) !important; overflow: hidden !important; margin-bottom: 1.5rem !important; border: 1px solid #e5e7eb !important; }
+    .abastecimentos-page .table-header { background: #f8fafc !important; padding: 1rem 1.5rem !important; border-bottom: 1px solid #e5e7eb !important; display: flex !important; justify-content: space-between !important; align-items: center !important; flex-wrap: wrap !important; gap: 1rem !important; }
+    .abastecimentos-page .table-header h6 { margin: 0 !important; font-weight: 600 !important; color: #374151 !important; }
+    .abastecimentos-page .dataTables_wrapper { font-size: 0.70rem !important; }
+    .abastecimentos-page .dataTables_wrapper .dataTables_length, .abastecimentos-page .dataTables_wrapper .dataTables_filter, .abastecimentos-page .dataTables_wrapper .dataTables_info, .abastecimentos-page .dataTables_wrapper .dataTables_paginate { font-size: 0.70rem !important; }
+    .abastecimentos-page .dataTables_wrapper .dataTables_length select, .abastecimentos-page .dataTables_wrapper .dataTables_filter input { font-size: 0.70rem !important; padding: 0.3rem 0.5rem !important; }
+    .abastecimentos-page .dataTables_wrapper .dataTables_paginate .paginate_button { font-size: 0.70rem !important; padding: 0.3rem 0.6rem !important; }
+    .abastecimentos-page .abastecimentos-table { width: 100% !important; border-collapse: collapse !important; font-size: 0.70rem !important; }
+    .abastecimentos-page .abastecimentos-table th { background: #f8fafc !important; padding: 1rem !important; text-align: left !important; font-weight: 700 !important; color: #1f2937 !important; border-bottom: 1px solid #e5e7eb !important; text-transform: uppercase !important; font-size: 0.75rem !important; letter-spacing: 0.05em !important; }
+    .abastecimentos-page .abastecimentos-table td { padding: 1rem !important; border-bottom: 1px solid #f3f4f6 !important; vertical-align: middle !important; }
+    .abastecimentos-page .abastecimentos-table tbody tr:hover { background: rgba(37, 99, 235, 0.02) !important; }
+    .abastecimentos-page .badge-fuel { display: inline-block !important; padding: 0.35rem 0.75rem !important; border-radius: 20px !important; font-size: 0.75rem !important; font-weight: 600 !important; text-transform: uppercase !important; }
+    .abastecimentos-page .badge-fuel.diesel { background: rgba(245, 158, 11, 0.1) !important; color: var(--warning-color) !important; border: 1px solid rgba(245, 158, 11, 0.2) !important; }
+    .abastecimentos-page .badge-fuel.gasolina { background: rgba(37, 99, 235, 0.1) !important; color: var(--primary-color) !important; border: 1px solid rgba(37, 99, 235, 0.2) !important; }
+    .abastecimentos-page .badge-fuel.etanol { background: rgba(16, 185, 129, 0.1) !important; color: var(--success-color) !important; border: 1px solid rgba(16, 185, 129, 0.2) !important; }
+    .abastecimentos-page .valor-total { color: var(--success-color) !important; font-weight: 700 !important; }
+    .abastecimentos-page .report-grid { display: grid !important; grid-template-columns: repeat(2, 1fr) !important; gap: 1.5rem !important; margin-bottom: 1.5rem !important; }
+    .abastecimentos-page .report-card { background: white !important; border-radius: var(--card-radius) !important; box-shadow: var(--card-shadow) !important; overflow: hidden !important; border: 1px solid #e5e7eb !important; }
+    .abastecimentos-page .report-card-header { background: var(--gradient-primary) !important; color: white !important; padding: 1rem 1.5rem !important; font-weight: 600 !important; }
+    .abastecimentos-page .report-card-body { padding: 1.5rem !important; }
+    .abastecimentos-page .report-table { width: 100% !important; font-size: 0.8rem !important; border-collapse: collapse !important; }
+    .abastecimentos-page .report-table th { background: #f8fafc !important; padding: 0.75rem !important; text-align: left !important; font-weight: 600 !important; color: #374151 !important; border-bottom: 2px solid #e5e7eb !important; font-size: 0.7rem !important; text-transform: uppercase !important; }
+    .abastecimentos-page .report-table td { padding: 0.75rem !important; border-bottom: 1px solid #f3f4f6 !important; }
+    .abastecimentos-page .chart-card { background: white !important; border-radius: var(--card-radius) !important; box-shadow: var(--card-shadow) !important; margin-bottom: 1.5rem !important; overflow: hidden !important; border: 1px solid #e5e7eb !important; }
+    .abastecimentos-page .chart-header { background: var(--gradient-info) !important; color: white !important; padding: 1rem 1.5rem !important; font-weight: 600 !important; }
+    .abastecimentos-page .chart-body { padding: 1.5rem !important; }
+    .abastecimentos-page .empty-state { text-align: center !important; padding: 3rem !important; color: #6b7280 !important; }
+    .abastecimentos-page .empty-state i { font-size: 3rem !important; opacity: 0.3 !important; margin-bottom: 1rem !important; display: block !important; }
+    .abastecimentos-page .mobile-cards { display: none !important; padding: 1rem !important; }
+    .abastecimentos-page .mobile-card { background: white !important; border-radius: var(--card-radius) !important; padding: 1.25rem !important; margin-bottom: 1rem !important; box-shadow: var(--card-shadow) !important; border: 1px solid #e5e7eb !important; border-left: 4px solid var(--primary-color) !important; }
+    .abastecimentos-page .mobile-card-header { display: flex !important; justify-content: space-between !important; align-items: flex-start !important; margin-bottom: 1rem !important; padding-bottom: 1rem !important; border-bottom: 1px solid #f3f4f6 !important; }
+    .abastecimentos-page .mobile-card-title { font-weight: 700 !important; font-size: 1rem !important; color: #1f2937 !important; }
+    .abastecimentos-page .mobile-card-subtitle { font-size: 0.8rem !important; color: #6b7280 !important; }
+    .abastecimentos-page .mobile-card-body { display: grid !important; grid-template-columns: repeat(2, 1fr) !important; gap: 0.75rem !important; }
+    .abastecimentos-page .mobile-card-item label { display: block !important; color: #6b7280 !important; font-size: 0.7rem !important; text-transform: uppercase !important; margin-bottom: 0.25rem !important; font-weight: 600 !important; }
+    .abastecimentos-page .mobile-card-item span { color: #1f2937 !important; font-weight: 500 !important; }
+    @media (max-width: 992px) { .abastecimentos-page .filters-grid { grid-template-columns: repeat(3, 1fr) !important; } .abastecimentos-page .report-grid { grid-template-columns: 1fr !important; } }
+    @media (max-width: 768px) { .abastecimentos-page .page-header { padding: 1.5rem !important; text-align: center !important; } .abastecimentos-page .page-header h1 { font-size: 1.5rem !important; } .abastecimentos-page .action-bar { flex-direction: column !important; align-items: stretch !important; } .abastecimentos-page .stats-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 1rem !important; } .abastecimentos-page .stat-card { padding: 1rem !important; } .abastecimentos-page .stat-value { font-size: 1.5rem !important; } .abastecimentos-page .filters-grid { grid-template-columns: 1fr !important; gap: 0.75rem !important; } .abastecimentos-page .desktop-view { display: none !important; } .abastecimentos-page .mobile-cards { display: block !important; } }
+    @media (max-width: 480px) { .abastecimentos-page .stats-grid { grid-template-columns: 1fr !important; } .abastecimentos-page .mobile-card-body { grid-template-columns: 1fr !important; } }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h4 mb-0 text-gray-800">Relatório de Abastecimentos</h1>
-        <div>
-            <div class="btn-group" role="group" aria-label="Exportar">
-                <a href="{{ url_for('reports_abastecimentos_csv', **request.args) }}"
-                   class="btn btn-success">
-                    <i class="bi bi-file-earmark-csv"></i> CSV
-                </a>
-                <a href="{{ url_for('reports_abastecimentos_excel', **request.args) }}"
-                   class="btn btn-success">
-                    <i class="bi bi-file-earmark-excel"></i> Excel
-                </a>
-                <a href="{{ url_for('reports_abastecimentos_pdf', **request.args) }}"
-                   class="btn btn-success">
-                    <i class="bi bi-file-earmark-pdf"></i> PDF
-                </a>
+<div class="abastecimentos-page">
+    <div class="page-header">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+                <h1> Gestao de Abastecimentos</h1>
+                <p>Controle inteligente de combustivel e consumo da frota</p>
             </div>
-            <a href="{{ url_for('abastecimentos_list') }}" class="btn btn-outline-secondary ms-2">
-                <i class="bi bi-arrow-left"></i> Voltar à Lista
-            </a>
+            <div class="d-flex gap-2 flex-wrap">
+                <button class="btn btn-light btn-sm" onclick="location.reload()"><i class="fas fa-sync-alt me-1"></i>Atualizar</button>
+                <div class="dropdown">
+                    <button class="btn btn-light btn-sm dropdown-toggle" data-bs-toggle="dropdown"><i class="fas fa-download me-1"></i>Exportar</button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="{{ url_for('reports_abastecimentos_csv', **request.args) }}"><i class="fas fa-file-csv me-2 text-success"></i>CSV</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('reports_abastecimentos_excel', **request.args) }}"><i class="fas fa-file-excel me-2 text-success"></i>Excel</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('reports_abastecimentos_pdf', **request.args) }}"><i class="fas fa-file-pdf me-2 text-danger"></i>PDF</a></li>
+                    </ul>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Filtros -->
-    <div class="card shadow mb-4">
-        <div class="card-header py-3">
-            <h6 class="m-0 fw-bold text-primary">Filtros do Relatório</h6>
+    <div class="action-bar">
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="{{ url_for('abastecimento_new') }}" class="btn-gradient"><i class="fas fa-plus"></i>Novo Abastecimento</a>
+            <a href="{{ url_for('abastecimentos_list') }}" class="btn-gradient btn-success-gradient"><i class="fas fa-list"></i>Lista Completa</a>
         </div>
-        <div class="card-body">
-            <form method="GET" class="row g-3" id="filtros-relatorio">
-                <div class="col-md-3">
-                    <label for="veiculo_id" class="form-label">Veículo</label>
-                    <select class="form-select" id="veiculo_id" name="veiculo_id">
-                        <option value="">Todos os veículos</option>
-                        {% for veiculo in veiculos %}
-                        <option value="{{ veiculo.id }}"
-                                {{ 'selected' if request.args.get('veiculo_id') == veiculo.id|string }}>
-                            {{ veiculo.placa }} - {{ veiculo.marca }} {{ veiculo.modelo }}
-                        </option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label for="motorista_id" class="form-label">Motorista</label>
-                    <select class="form-select" id="motorista_id" name="motorista_id">
-                        <option value="">Todos os motoristas</option>
-                        {% for motorista in motoristas %}
-                        <option value="{{ motorista.id }}"
-                                {{ 'selected' if request.args.get('motorista_id') == motorista.id|string }}>
-                            {{ motorista.nome }}
-                        </option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <label for="data_inicio" class="form-label">Data Início</label>
-                    <input type="date" class="form-control" id="data_inicio" name="data_inicio"
-                           value="{{ data_inicio or '' }}">
-                </div>
-                <div class="col-md-2">
-                    <label for="data_fim" class="form-label">Data Fim</label>
-                    <input type="date" class="form-control" id="data_fim" name="data_fim"
-                           value="{{ data_fim or '' }}">
-                </div>
-                <div class="col-md-2 d-flex align-items-end">
-                    <button type="submit" class="btn btn-primary me-2">
-                        <i class="bi bi-funnel"></i> Atualizar
-                    </button>
-                    <a href="{{ url_for('reports_abastecimentos') }}" class="btn btn-outline-secondary">
-                        <i class="bi bi-x-circle"></i> Limpar
-                    </a>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('reports_abastecimentos_csv', **request.args) }}" class="btn-gradient btn-success-gradient" title="Exportar CSV"><i class="fas fa-file-csv"></i><span class="d-none d-md-inline">CSV</span></a>
+            <a href="{{ url_for('reports_abastecimentos_excel', **request.args) }}" class="btn-gradient btn-info-gradient" title="Exportar Excel"><i class="fas fa-file-excel"></i><span class="d-none d-md-inline">Excel</span></a>
+            <a href="{{ url_for('reports_abastecimentos_pdf', **request.args) }}" class="btn-gradient btn-danger-gradient" title="Exportar PDF"><i class="fas fa-file-pdf"></i><span class="d-none d-md-inline">PDF</span></a>
+        </div>
+    </div>
+
+    <div class="stats-section">
+        <div class="stats-grid">
+            <div class="stat-card total"><div class="stat-icon"><i class="fas fa-gas-pump"></i></div><div class="stat-value">{{ estatisticas.total_abastecimentos }}</div><div class="stat-label">Total Abastecimentos</div></div>
+            <div class="stat-card litros"><div class="stat-icon"><i class="fas fa-tint"></i></div><div class="stat-value">{{ "{:,.1f}".format(estatisticas.total_litros) }}L</div><div class="stat-label">Total Litros</div></div>
+            <div class="stat-card valor"><div class="stat-icon"><i class="fas fa-dollar-sign"></i></div><div class="stat-value">R$ {{ "{:,.2f}".format(estatisticas.total_valor) }}</div><div class="stat-label">Valor Total</div></div>
+            <div class="stat-card preco"><div class="stat-icon"><i class="fas fa-chart-line"></i></div><div class="stat-value">R$ {{ "{:.2f}".format(estatisticas.media_preco_litro) }}</div><div class="stat-label">Preco Medio/L</div></div>
+            <div class="stat-card consumo"><div class="stat-icon"><i class="fas fa-tachometer-alt"></i></div><div class="stat-value">{{ "{:.2f}".format(estatisticas.consumo_medio_geral) if estatisticas.consumo_medio_geral > 0 else 'N/A' }}</div><div class="stat-label">Consumo Medio (km/L)</div></div>
+        </div>
+    </div>
+
+    <div class="filters-section">
+        <div class="filters-header"><h6><i class="fas fa-filter me-2"></i>Filtros Inteligentes</h6></div>
+        <div class="filters-body">
+            <form method="GET" id="filtros-relatorio">
+                <div class="filters-grid">
+                    <div class="filter-group">
+                        <label for="veiculo_id">Veiculo</label>
+                        <select id="veiculo_id" name="veiculo_id" class="form-select">
+                            <option value="">Todos os veiculos</option>
+                            {% for veiculo in veiculos %}<option value="{{ veiculo.id }}" {{ 'selected' if request.args.get('veiculo_id') == veiculo.id|string }}>{{ veiculo.placa }} - {{ veiculo.marca }} {{ veiculo.modelo }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="motorista_id">Motorista</label>
+                        <select id="motorista_id" name="motorista_id" class="form-select">
+                            <option value="">Todos os motoristas</option>
+                            {% for motorista in motoristas %}<option value="{{ motorista.id }}" {{ 'selected' if request.args.get('motorista_id') == motorista.id|string }}>{{ motorista.nome }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="filter-group"><label for="data_inicio">Data Inicio</label><input type="date" id="data_inicio" name="data_inicio" class="form-control" value="{{ data_inicio or '' }}"></div>
+                    <div class="filter-group"><label for="data_fim">Data Fim</label><input type="date" id="data_fim" name="data_fim" class="form-control" value="{{ data_fim or '' }}"></div>
+                    <div class="filter-group filter-actions"><label>&nbsp;</label><div class="d-flex gap-2"><button type="submit" class="btn-gradient"><i class="fas fa-search"></i>Filtrar</button><a href="{{ url_for('reports_abastecimentos') }}" class="btn-gradient btn-warning-gradient"><i class="fas fa-times"></i>Limpar</a></div></div>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Estatísticas Gerais -->
-    <div class="row mb-4">
-        <div class="col-xl col-md-6 mb-4">
-            <div class="card border-left-primary shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs fw-bold text-primary text-uppercase mb-1">
-                                Total Abastecimentos
-                            </div>
-                            <div class="h5 mb-0 fw-bold text-gray-800">{{ estatisticas.total_abastecimentos }}</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="bi bi-fuel-pump fs-2 text-gray-300"></i>
-                        </div>
-                    </div>
+    <div class="report-grid">
+        <div class="report-card">
+            <div class="report-card-header"><i class="fas fa-truck me-2"></i>Relatorio por Veiculo</div>
+            <div class="report-card-body">
+                {% if estatisticas.por_veiculo %}
+                <div class="table-responsive">
+                    <table class="report-table">
+                        <thead><tr><th>Veiculo</th><th>Abast.</th><th>Litros</th><th>Consumo</th><th>Total</th></tr></thead>
+                        <tbody>{% for item in estatisticas.por_veiculo %}<tr><td><strong>{{ item.veiculo.placa or 'N/A' }}</strong><br><small style="color: #6b7280;">{{ item.veiculo.marca }} {{ item.veiculo.modelo }}</small></td><td>{{ item.total_abastecimentos }}</td><td>{{ "{:.1f}".format(item.total_litros) }}L</td><td>{% if item.consumo_medio > 0 %}<span class="badge bg-{% if item.consumo_medio >= 3 %}success{% elif item.consumo_medio >= 2 %}warning{% else %}danger{% endif %}">{{ "{:.2f}".format(item.consumo_medio) }} km/L</span>{% else %}<span style="color: #9ca3af;">N/A</span>{% endif %}</td><td class="valor-total">R$ {{ "{:.2f}".format(item.total_valor) }}</td></tr>{% endfor %}</tbody>
+                    </table>
                 </div>
+                {% else %}<div class="empty-state"><i class="fas fa-truck"></i><p>Nenhum dado disponivel</p></div>{% endif %}
             </div>
         </div>
-
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-success shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs fw-bold text-success text-uppercase mb-1">
-                                Total Litros
-                            </div>
-                            <div class="h5 mb-0 fw-bold text-gray-800">
-                                {{ "{:,.2f}".format(estatisticas.total_litros) }}L
-                            </div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="bi bi-droplet fs-2 text-gray-300"></i>
-                        </div>
-                    </div>
+        <div class="report-card">
+            <div class="report-card-header"><i class="fas fa-calendar-alt me-2"></i>Relatorio por Mes</div>
+            <div class="report-card-body">
+                {% if estatisticas.por_mes %}
+                <div style="margin-bottom: 1rem;"><canvas id="chartMensal" height="150"></canvas></div>
+                <div class="table-responsive">
+                    <table class="report-table">
+                        <thead><tr><th>Mes</th><th>Abast.</th><th>Litros</th><th>Total</th></tr></thead>
+                        <tbody>{% for item in estatisticas.por_mes %}<tr><td>{{ item.mes }}</td><td>{{ item.total_abastecimentos }}</td><td>{{ "{:.1f}".format(item.total_litros) }}L</td><td class="valor-total">R$ {{ "{:.2f}".format(item.total_valor) }}</td></tr>{% endfor %}</tbody>
+                    </table>
                 </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-info shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs fw-bold text-info text-uppercase mb-1">
-                                Valor Total
-                            </div>
-                            <div class="h5 mb-0 fw-bold text-gray-800">
-                                R$ {{ "{:,.2f}".format(estatisticas.total_valor) }}
-                            </div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="bi bi-currency-dollar fs-2 text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl col-md-6 mb-4">
-            <div class="card border-left-warning shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs fw-bold text-warning text-uppercase mb-1">
-                                Preço Médio/L
-                            </div>
-                            <div class="h5 mb-0 fw-bold text-gray-800">
-                                R$ {{ "{:.2f}".format(estatisticas.media_preco_litro) }}
-                            </div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="bi bi-graph-up fs-2 text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl col-md-6 mb-4">
-            <div class="card border-left-danger shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs fw-bold text-danger text-uppercase mb-1">
-                                Consumo Médio
-                            </div>
-                            <div class="h5 mb-0 fw-bold text-gray-800">
-                                {{ "{:.2f}".format(estatisticas.consumo_medio_geral) if estatisticas.consumo_medio_geral > 0 else 'N/A' }} km/L
-                            </div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="bi bi-speedometer2 fs-2 text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
+                {% else %}<div class="empty-state"><i class="fas fa-calendar"></i><p>Nenhum dado disponivel</p></div>{% endif %}
             </div>
         </div>
     </div>
 
-    <!-- Gráficos e Tabelas -->
-    <div class="row">
-        <!-- Relatório por Veículo -->
-        <div class="col-lg-6 mb-4">
-            <div class="card shadow">
-                <div class="card-header py-3">
-                    <h6 class="m-0 fw-bold text-primary">Relatório por Veículo</h6>
-                </div>
-                <div class="card-body">
-                    {% if estatisticas.por_veiculo %}
-                    <div class="table-responsive">
-                        <table class="table table-striped table-sm" style="font-size: 0.70rem;">
-                            <thead>
-                                <tr>
-                                    <th>Veículo</th>
-                                    <th>Abastec.</th>
-                                    <th>Litros</th>
-                                    <th>Consumo</th>
-                                    <th>Valor Total</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for item in estatisticas.por_veiculo %}
-                                <tr>
-                                    <td>
-                                        <strong>{{ item.veiculo.placa or 'N/A' }}</strong><br>
-                                        <small class="text-muted">{{ item.veiculo.marca }} {{ item.veiculo.modelo }}</small>
-                                    </td>
-                                    <td>{{ item.total_abastecimentos }}</td>
-                                    <td>{{ "{:.1f}".format(item.total_litros) }}L</td>
-                                    <td>
-                                        {% if item.consumo_medio > 0 %}
-                                            <span class="badge bg-{% if item.consumo_medio >= 3 %}success{% elif item.consumo_medio >= 2 %}warning{% else %}danger{% endif %}">
-                                                {{ "{:.2f}".format(item.consumo_medio) }} km/L
-                                            </span>
-                                        {% else %}
-                                            <span class="text-muted">N/A</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>R$ {{ "{:.2f}".format(item.total_valor) }}</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    {% else %}
-                    <div class="text-center py-4">
-                        <i class="bi bi-fuel-pump display-3 text-muted"></i>
-                        <p class="text-muted mt-2">Nenhum dado disponível</p>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
+    {% if estatisticas.por_veiculo %}
+    <div class="chart-card"><div class="chart-header"><i class="fas fa-chart-bar me-2"></i>Consumo Medio por Veiculo</div><div class="chart-body"><canvas id="chartConsumo" height="100"></canvas></div></div>
+    {% endif %}
 
-        <!-- Relatório por Mês -->
-        <div class="col-lg-6 mb-4">
-            <div class="card shadow">
-                <div class="card-header py-3">
-                    <h6 class="m-0 fw-bold text-primary">Relatório por Mês</h6>
-                </div>
-                <div class="card-body">
-                    {% if estatisticas.por_mes %}
-                    <!-- Gráfico de Linhas -->
-                    <div class="mb-4">
-                        <canvas id="chartMensal" width="400" height="200"></canvas>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="table table-striped table-sm" style="font-size: 0.70rem;">
-                            <thead>
-                                <tr>
-                                    <th>Mês</th>
-                                    <th>Abastec.</th>
-                                    <th>Litros</th>
-                                    <th>Valor Total</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for item in estatisticas.por_mes %}
-                                <tr>
-                                    <td>{{ item.mes }}</td>
-                                    <td>{{ item.total_abastecimentos }}</td>
-                                    <td>{{ "{:.1f}".format(item.total_litros) }}L</td>
-                                    <td>R$ {{ "{:.2f}".format(item.total_valor) }}</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    {% else %}
-                    <div class="text-center py-4">
-                        <i class="bi bi-calendar display-3 text-muted"></i>
-                        <p class="text-muted mt-2">Nenhum dado disponível</p>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Gráfico de Consumo por Veículo -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card shadow">
-                <div class="card-header py-3">
-                    <h6 class="m-0 fw-bold text-primary">Consumo Médio por Veículo</h6>
-                </div>
-                <div class="card-body">
-                    {% if estatisticas.por_veiculo %}
-                    <canvas id="chartConsumo" width="400" height="100"></canvas>
-                    {% else %}
-                    <div class="text-center py-4">
-                        <i class="bi bi-speedometer2 display-3 text-muted"></i>
-                        <p class="text-muted mt-2">Nenhum dado de consumo disponível</p>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Lista Detalhada de Abastecimentos -->
-    <div class="card shadow mb-4">
-        <div class="card-header py-3">
-            <h6 class="m-0 fw-bold text-primary">Lista Detalhada de Abastecimentos</h6>
-        </div>
-        <div class="card-body">
-            {% if abastecimentos %}
+    <div class="table-section">
+        <div class="table-header"><h6><i class="fas fa-list-ul me-2"></i>Lista Detalhada de Abastecimentos</h6><span class="text-muted" id="recordsInfo">{{ abastecimentos|length }} registro(s)</span></div>
+        {% if abastecimentos %}
+        <div class="desktop-view">
             <div class="table-responsive">
-                <table class="table table-striped table-hover" id="abastecimentosTable" style="font-size: 0.70rem;">
-                    <thead class="table-dark">
-                        <tr>
-                            <th>Data</th>
-                            <th>Veículo</th>
-                            <th>Motorista</th>
-                            <th>Posto</th>
-                            <th>Odômetro</th>
-                            <th>Litros</th>
-                            <th>R$/L</th>
-                            <th>Total</th>
-                            <th>Combustível</th>
-                        </tr>
-                    </thead>
+                <table class="abastecimentos-table" id="abastecimentosTable">
+                    <thead><tr><th>Data</th><th>Veiculo</th><th>Motorista</th><th>Posto</th><th>Odometro</th><th>Litros</th><th>R$/L</th><th>Total</th><th>Combustivel</th></tr></thead>
                     <tbody>
                         {% for abastecimento in abastecimentos %}
                         <tr>
-                            <td>
-                                {{ abastecimento.data_abastecimento|datetime if abastecimento.data_abastecimento else '-' }}
-                            </td>
-                            <td>
-                                {% if abastecimento.veiculo and abastecimento.veiculo.placa %}
-                                    <span class="fw-bold">{{ abastecimento.veiculo.placa }}</span><br>
-                                    <small class="text-muted">{{ abastecimento.veiculo.marca or '' }} {{ abastecimento.veiculo.modelo or '' }}</small>
-                                {% elif abastecimento.veiculo_id %}
-                                    <span class="text-muted">Veículo ID: {{ abastecimento.veiculo_id }}</span>
-                                {% else %}
-                                    -
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if abastecimento.motorista and abastecimento.motorista.nome %}
-                                    {{ abastecimento.motorista.nome }}
-                                {% elif abastecimento.motorista_id %}
-                                    <span class="text-muted">Motorista ID: {{ abastecimento.motorista_id }}</span>
-                                {% else %}
-                                    -
-                                {% endif %}
-                            </td>
+                            <td data-order="{{ abastecimento.data_abastecimento or '0000-00-00' }}">{{ abastecimento.data_abastecimento or '-' }}</td>
+                            <td>{% if abastecimento.veiculo and abastecimento.veiculo.placa %}<strong>{{ abastecimento.veiculo.placa }}</strong><br><small style="color: #6b7280;">{{ abastecimento.veiculo.marca or '' }} {{ abastecimento.veiculo.modelo or '' }}</small>{% else %}-{% endif %}</td>
+                            <td>{{ abastecimento.motorista.nome if abastecimento.motorista else '-' }}</td>
                             <td>{{ abastecimento.posto or '-' }}</td>
                             <td>{{ "{:,}".format(abastecimento.odometro).replace(',', '.') if abastecimento.odometro else '-' }} km</td>
                             <td>{{ abastecimento.litros }}L</td>
                             <td>R$ {{ abastecimento.valor_litro }}</td>
-                            <td class="fw-bold">R$ {{ abastecimento.valor_total }}</td>
-                            <td>{{ abastecimento.tipo_combustivel or '-' }}</td>
+                            <td class="valor-total">R$ {{ abastecimento.valor_total }}</td>
+                            <td>{% set fuel = abastecimento.tipo_combustivel|lower if abastecimento.tipo_combustivel else '' %}<span class="badge-fuel {% if 'diesel' in fuel %}diesel{% elif 'gasolina' in fuel %}gasolina{% elif 'etanol' in fuel %}etanol{% endif %}">{{ abastecimento.tipo_combustivel or '-' }}</span></td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
-            {% else %}
-            <div class="text-center py-5">
-                <i class="bi bi-fuel-pump display-1 text-muted"></i>
-                <h4 class="mt-3 text-muted">Nenhum abastecimento encontrado</h4>
-                <p class="text-muted">
-                    {% if request.args %}
-                        Nenhum abastecimento corresponde aos filtros aplicados.
-                        <a href="{{ url_for('reports_abastecimentos') }}" class="btn btn-link">Limpar filtros</a>
-                    {% else %}
-                        Não há abastecimentos registrados para este período.
-                    {% endif %}
-                </p>
-                <a href="{{ url_for('abastecimento_new') }}" class="btn btn-primary">
-                    <i class="bi bi-plus-circle"></i> Registrar Abastecimento
-                </a>
-            </div>
-            {% endif %}
         </div>
+        <div class="mobile-cards">
+            {% for abastecimento in abastecimentos %}
+            <div class="mobile-card">
+                <div class="mobile-card-header">
+                    <div><div class="mobile-card-title">{% if abastecimento.veiculo and abastecimento.veiculo.placa %}{{ abastecimento.veiculo.placa }}{% else %}Veiculo N/A{% endif %}</div><div class="mobile-card-subtitle">{{ abastecimento.data_abastecimento|datetime if abastecimento.data_abastecimento else '-' }}</div></div>
+                    <div>{% set fuel = abastecimento.tipo_combustivel|lower if abastecimento.tipo_combustivel else '' %}<span class="badge-fuel {% if 'diesel' in fuel %}diesel{% elif 'gasolina' in fuel %}gasolina{% elif 'etanol' in fuel %}etanol{% endif %}">{{ abastecimento.tipo_combustivel or '-' }}</span></div>
+                </div>
+                <div class="mobile-card-body">
+                    <div class="mobile-card-item"><label>Motorista</label><span>{{ abastecimento.motorista.nome if abastecimento.motorista else '-' }}</span></div>
+                    <div class="mobile-card-item"><label>Posto</label><span>{{ abastecimento.posto or '-' }}</span></div>
+                    <div class="mobile-card-item"><label>Litros</label><span>{{ abastecimento.litros }}L</span></div>
+                    <div class="mobile-card-item"><label>R$/Litro</label><span>R$ {{ abastecimento.valor_litro }}</span></div>
+                    <div class="mobile-card-item"><label>Odometro</label><span>{{ "{:,}".format(abastecimento.odometro).replace(',', '.') if abastecimento.odometro else '-' }} km</span></div>
+                    <div class="mobile-card-item"><label>Valor Total</label><span class="valor-total" style="font-size: 1rem;">R$ {{ abastecimento.valor_total }}</span></div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state"><i class="fas fa-gas-pump"></i><h4>Nenhum abastecimento encontrado</h4><p>{% if request.args %}Nenhum abastecimento corresponde aos filtros aplicados. <a href="{{ url_for('reports_abastecimentos') }}" style="color: var(--primary-color);">Limpar filtros</a>{% else %}Nao ha abastecimentos registrados para este periodo.{% endif %}</p><a href="{{ url_for('abastecimento_new') }}" class="btn-gradient" style="margin-top: 1rem;"><i class="fas fa-plus-circle me-1"></i>Registrar Abastecimento</a></div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}
@@ -386,159 +243,60 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 $(document).ready(function() {
-    // Inicializar DataTable
-    $('#abastecimentosTable').DataTable({
-        "pageLength": 25,
-        "language": {
-            "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Portuguese-Brasil.json"
-        },
-        "order": [[0, "desc"]], // Ordenar por data decrescente
-        "columnDefs": [
-            { "orderable": false, "targets": -1 } // Última coluna não ordenável
-        ]
-    });
-
-    // Gráfico de linha mensal
+    const isMobile = window.innerWidth < 768;
+    if (!isMobile) {
+        $('#abastecimentosTable').DataTable({
+            "pageLength": 25,
+            "language": {"url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Portuguese-Brasil.json"},
+            "order": [[0, "desc"]],
+            "columnDefs": [{"targets": 0, "type": "string"}],
+            "responsive": true,
+            "dom": '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rtip'
+        });
+    }
     {% if estatisticas.por_mes %}
     const dadosMensais = {{ estatisticas.por_mes | tojson }};
-
-    const ctx = document.getElementById('chartMensal').getContext('2d');
-    const chartMensal = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: dadosMensais.map(item => item.mes),
-            datasets: [{
-                label: 'Valor Total (R$)',
-                data: dadosMensais.map(item => item.total_valor),
-                borderColor: 'rgb(54, 162, 235)',
-                backgroundColor: 'rgba(54, 162, 235, 0.1)',
-                tension: 0.1,
-                yAxisID: 'y'
-            }, {
-                label: 'Litros',
-                data: dadosMensais.map(item => item.total_litros),
-                borderColor: 'rgb(255, 99, 132)',
-                backgroundColor: 'rgba(255, 99, 132, 0.1)',
-                tension: 0.1,
-                yAxisID: 'y1'
-            }]
-        },
-        options: {
-            responsive: true,
-            interaction: {
-                mode: 'index',
-                intersect: false,
-            },
-            scales: {
-                x: {
-                    display: true,
-                    title: {
-                        display: true,
-                        text: 'Mês'
-                    }
-                },
-                y: {
-                    type: 'linear',
-                    display: true,
-                    position: 'left',
-                    title: {
-                        display: true,
-                        text: 'Valor Total (R$)'
-                    }
-                },
-                y1: {
-                    type: 'linear',
-                    display: true,
-                    position: 'right',
-                    title: {
-                        display: true,
-                        text: 'Litros'
-                    },
-                    grid: {
-                        drawOnChartArea: false,
-                    },
-                }
-            },
-            plugins: {
-                title: {
-                    display: true,
-                    text: 'Evolução Mensal de Abastecimentos'
-                }
-            }
-        }
-    });
-    {% endif %}
-
-    // Gráfico de barras - Consumo por Veículo
-    {% if estatisticas.por_veiculo %}
-    const dadosConsumo = {{ estatisticas.por_veiculo | tojson }};
-    const veiculosComConsumo = dadosConsumo.filter(item => item.consumo_medio > 0);
-
-    if (veiculosComConsumo.length > 0) {
-        const ctxConsumo = document.getElementById('chartConsumo').getContext('2d');
-        const chartConsumo = new Chart(ctxConsumo, {
-            type: 'bar',
+    const ctx = document.getElementById('chartMensal');
+    if (ctx) {
+        new Chart(ctx.getContext('2d'), {
+            type: 'line',
             data: {
-                labels: veiculosComConsumo.map(item => item.veiculo.placa || 'N/A'),
-                datasets: [{
-                    label: 'Consumo Médio (km/L)',
-                    data: veiculosComConsumo.map(item => item.consumo_medio),
-                    backgroundColor: veiculosComConsumo.map(item => {
-                        if (item.consumo_medio >= 3) return 'rgba(40, 167, 69, 0.7)';  // Verde
-                        if (item.consumo_medio >= 2) return 'rgba(255, 193, 7, 0.7)';  // Amarelo
-                        return 'rgba(220, 53, 69, 0.7)';  // Vermelho
-                    }),
-                    borderColor: veiculosComConsumo.map(item => {
-                        if (item.consumo_medio >= 3) return 'rgb(40, 167, 69)';
-                        if (item.consumo_medio >= 2) return 'rgb(255, 193, 7)';
-                        return 'rgb(220, 53, 69)';
-                    }),
-                    borderWidth: 1
-                }]
+                labels: dadosMensais.map(item => item.mes),
+                datasets: [{label: 'Valor Total (R$)', data: dadosMensais.map(item => item.total_valor), borderColor: '#2563eb', backgroundColor: 'rgba(37, 99, 235, 0.1)', tension: 0.4, fill: true, yAxisID: 'y'}, {label: 'Litros', data: dadosMensais.map(item => item.total_litros), borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', tension: 0.4, fill: true, yAxisID: 'y1'}]
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        title: {
-                            display: true,
-                            text: 'Consumo (km/L)'
-                        }
-                    },
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'Veículo'
-                        }
-                    }
-                },
-                plugins: {
-                    title: {
-                        display: true,
-                        text: 'Consumo Médio por Veículo'
-                    },
-                    legend: {
-                        display: false
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                const item = veiculosComConsumo[context.dataIndex];
-                                return [
-                                    `Consumo: ${context.parsed.y.toFixed(2)} km/L`,
-                                    `Abastecimentos: ${item.total_abastecimentos}`,
-                                    `Total Litros: ${item.total_litros.toFixed(1)}L`
-                                ];
-                            }
-                        }
-                    }
-                }
-            }
+            options: {responsive: true, maintainAspectRatio: true, interaction: {mode: 'index', intersect: false}, plugins: {legend: {position: 'top', labels: {font: {size: 11}, usePointStyle: true}}}, scales: {x: {grid: {display: false}, ticks: {font: {size: 10}}}, y: {type: 'linear', display: true, position: 'left', grid: {color: 'rgba(0,0,0,0.05)'}, ticks: {font: {size: 10}}}, y1: {type: 'linear', display: true, position: 'right', grid: {drawOnChartArea: false}, ticks: {font: {size: 10}}}}}
         });
     }
     {% endif %}
+    {% if estatisticas.por_veiculo %}
+    const dadosConsumo = {{ estatisticas.por_veiculo | tojson }};
+    const veiculosComConsumo = dadosConsumo.filter(item => item.consumo_medio > 0);
+    if (veiculosComConsumo.length > 0) {
+        const ctxConsumo = document.getElementById('chartConsumo');
+        if (ctxConsumo) {
+            new Chart(ctxConsumo.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: veiculosComConsumo.map(item => item.veiculo.placa || 'N/A'),
+                    datasets: [{label: 'Consumo Medio (km/L)', data: veiculosComConsumo.map(item => item.consumo_medio), backgroundColor: veiculosComConsumo.map(item => {if (item.consumo_medio >= 3) return 'rgba(16, 185, 129, 0.8)'; if (item.consumo_medio >= 2) return 'rgba(245, 158, 11, 0.8)'; return 'rgba(239, 68, 68, 0.8)';}), borderColor: veiculosComConsumo.map(item => {if (item.consumo_medio >= 3) return '#10b981'; if (item.consumo_medio >= 2) return '#f59e0b'; return '#ef4444';}), borderWidth: 2, borderRadius: 6}]
+                },
+                options: {responsive: true, maintainAspectRatio: true, plugins: {legend: {display: false}, tooltip: {backgroundColor: 'rgba(0,0,0,0.8)', padding: 12, cornerRadius: 8, callbacks: {label: function(context) {const item = veiculosComConsumo[context.dataIndex]; return ['Consumo: ' + context.parsed.y.toFixed(2) + ' km/L', 'Abastecimentos: ' + item.total_abastecimentos, 'Total Litros: ' + item.total_litros.toFixed(1) + 'L'];}}}}, scales: {y: {beginAtZero: true, grid: {color: 'rgba(0,0,0,0.05)'}, ticks: {font: {size: 11}}, title: {display: true, text: 'km/L', font: {size: 11}}}, x: {grid: {display: false}, ticks: {font: {size: 10}}}}}
+            });
+        }
+    }
+    {% endif %}
+    let resizeTimer;
+    let lastWidth = window.innerWidth;
+    window.addEventListener('resize', function() {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(function() {
+            const currentWidth = window.innerWidth;
+            const wasMobile = lastWidth < 768;
+            const isMobileNow = currentWidth < 768;
+            if (wasMobile !== isMobileNow) location.reload();
+            lastWidth = currentWidth;
+        }, 300);
+    });
 });
 </script>
 {% endblock %}

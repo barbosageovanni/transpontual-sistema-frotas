@@ -1,136 +1,527 @@
 {% extends "base.html" %}
 
-{% block title %}Editar Abastecimento{% endblock %}
+{% block title %}Editar Abastecimento #{{ abastecimento.id }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ===== ESTILOS MODERNOS - PADRÃO TRANSPONTUAL ===== */
+    .edit-page * {
+        box-sizing: border-box !important;
+    }
+    
+    .edit-page {
+        --primary-color: #2563eb;
+        --secondary-color: #64748b;
+        --success-color: #10b981;
+        --warning-color: #f59e0b;
+        --danger-color: #ef4444;
+        --info-color: #06b6d4;
+        --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        --card-radius: 10px;
+        --gradient-primary: linear-gradient(135deg, #2563eb, #1e40af);
+        --gradient-success: linear-gradient(135deg, #10b981, #059669);
+        --gradient-warning: linear-gradient(135deg, #f59e0b, #d97706);
+        --gradient-danger: linear-gradient(135deg, #ef4444, #dc2626);
+        --gradient-info: linear-gradient(135deg, #06b6d4, #0891b2);
+    }
+
+    /* Page Header Compacto */
+    .edit-page .page-header {
+        background: white;
+        color: #1f2937;
+        padding: 1rem 1.5rem;
+        border-radius: var(--card-radius);
+        margin-bottom: 1rem;
+        box-shadow: var(--card-shadow);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        border: 1px solid #e5e7eb;
+    }
+
+    .edit-page .page-header h1 {
+        font-size: 1.1rem;
+        font-weight: 700;
+        margin: 0;
+        color: #1f2937;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .edit-page .page-header h1 i {
+        color: var(--warning-color);
+    }
+
+    .edit-page .page-header .header-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .edit-page .btn-header {
+        background: #f3f4f6;
+        color: #374151;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        padding: 0.4rem 0.75rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        transition: all 0.2s ease;
+    }
+
+    .edit-page .btn-header:hover {
+        background: #e5e7eb;
+        color: #1f2937;
+        text-decoration: none;
+    }
+
+    /* Cards */
+    .edit-page .form-card {
+        background: white;
+        border-radius: var(--card-radius);
+        box-shadow: var(--card-shadow);
+        border: 1px solid #e5e7eb;
+        overflow: hidden;
+        margin-bottom: 1rem;
+    }
+
+    .edit-page .form-card-header {
+        background: #f8fafc;
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #e5e7eb;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .edit-page .form-card-header h6 {
+        margin: 0;
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: #374151;
+        text-transform: uppercase;
+        letter-spacing: 0.025em;
+    }
+
+    .edit-page .form-card-header i {
+        color: var(--warning-color);
+        font-size: 0.9rem;
+    }
+
+    .edit-page .form-card-body {
+        padding: 1rem;
+    }
+
+    /* Form Fields Compactos */
+    .edit-page .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 0.75rem;
+    }
+
+    .edit-page .form-grid-2 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .edit-page .form-grid-3 {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .edit-page .form-grid-4 {
+        grid-template-columns: repeat(4, 1fr);
+    }
+
+    .edit-page .form-group {
+        margin-bottom: 0;
+    }
+
+    .edit-page .form-group label {
+        display: block;
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 0.25rem;
+        text-transform: uppercase;
+        letter-spacing: 0.025em;
+    }
+
+    .edit-page .form-group label .required {
+        color: var(--danger-color);
+    }
+
+    .edit-page .form-control,
+    .edit-page .form-select {
+        font-size: 0.8rem;
+        padding: 0.5rem 0.65rem;
+        border-radius: 6px;
+        border: 1px solid #d1d5db;
+        transition: all 0.2s ease;
+        width: 100%;
+    }
+
+    .edit-page .form-control:focus,
+    .edit-page .form-select:focus {
+        border-color: var(--warning-color);
+        box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+        outline: none;
+    }
+
+    .edit-page .form-text {
+        font-size: 0.65rem;
+        color: #9ca3af;
+        margin-top: 0.2rem;
+    }
+
+    .edit-page textarea.form-control {
+        min-height: 60px;
+        resize: vertical;
+    }
+
+    /* Sidebar Cards */
+    .edit-page .sidebar-card {
+        background: white;
+        border-radius: var(--card-radius);
+        box-shadow: var(--card-shadow);
+        border: 1px solid #e5e7eb;
+        overflow: hidden;
+        margin-bottom: 0.75rem;
+    }
+
+    .edit-page .sidebar-card-header {
+        padding: 0.6rem 0.75rem;
+        border-bottom: 1px solid #e5e7eb;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    .edit-page .sidebar-card-header.info {
+        background: var(--gradient-info);
+        color: white;
+    }
+
+    .edit-page .sidebar-card-header.warning {
+        background: var(--gradient-warning);
+        color: white;
+    }
+
+    .edit-page .sidebar-card-header.primary {
+        background: var(--gradient-primary);
+        color: white;
+    }
+
+    .edit-page .sidebar-card-header h6 {
+        margin: 0;
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.025em;
+    }
+
+    .edit-page .sidebar-card-header i {
+        font-size: 0.8rem;
+    }
+
+    .edit-page .sidebar-card-body {
+        padding: 0.75rem;
+    }
+
+    .edit-page .info-table {
+        width: 100%;
+        font-size: 0.75rem;
+    }
+
+    .edit-page .info-table td {
+        padding: 0.3rem 0;
+        vertical-align: top;
+    }
+
+    .edit-page .info-table td:first-child {
+        font-weight: 600;
+        color: #6b7280;
+        width: 40%;
+    }
+
+    .edit-page .info-table td:last-child {
+        color: #1f2937;
+    }
+
+    .edit-page .info-table .value-highlight {
+        color: var(--success-color);
+        font-weight: 700;
+    }
+
+    /* Tips */
+    .edit-page .tip-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.5rem;
+        font-size: 0.7rem;
+        margin-bottom: 0.5rem;
+        padding: 0.4rem;
+        background: #f8fafc;
+        border-radius: 6px;
+    }
+
+    .edit-page .tip-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .edit-page .tip-item i {
+        font-size: 0.75rem;
+        margin-top: 0.1rem;
+    }
+
+    .edit-page .tip-item.warning i { color: var(--warning-color); }
+    .edit-page .tip-item.info i { color: var(--info-color); }
+    .edit-page .tip-item.primary i { color: var(--primary-color); }
+
+    /* Buttons */
+    .edit-page .btn-gradient {
+        border: none;
+        border-radius: 6px;
+        padding: 0.5rem 1rem;
+        font-weight: 600;
+        font-size: 0.8rem;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        cursor: pointer;
+    }
+
+    .edit-page .btn-gradient:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .edit-page .btn-warning-gradient {
+        background: var(--gradient-warning);
+        color: white;
+    }
+
+    .edit-page .btn-secondary-gradient {
+        background: linear-gradient(135deg, #6b7280, #4b5563);
+        color: white;
+    }
+
+    .edit-page .form-actions {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid #e5e7eb;
+    }
+
+    /* Warning Alert */
+    .edit-page .km-warning {
+        display: none;
+        font-size: 0.7rem;
+        color: var(--warning-color);
+        margin-top: 0.25rem;
+    }
+
+    .edit-page .km-warning i {
+        margin-right: 0.25rem;
+    }
+
+    /* Veiculo Info */
+    .edit-page .veiculo-info-box {
+        text-align: center;
+        padding: 0.5rem;
+    }
+
+    .edit-page .veiculo-info-box i {
+        font-size: 2rem;
+        color: var(--primary-color);
+        opacity: 0.5;
+    }
+
+    .edit-page .veiculo-info-box p {
+        font-size: 0.75rem;
+        color: #9ca3af;
+        margin: 0.5rem 0 0;
+    }
+
+    .edit-page .veiculo-info-details p {
+        font-size: 0.75rem;
+        margin: 0.25rem 0;
+    }
+
+    .edit-page .alert-compact {
+        font-size: 0.7rem;
+        padding: 0.5rem 0.75rem;
+        border-radius: 6px;
+        margin-top: 0.5rem;
+    }
+
+    /* Responsive */
+    @media (max-width: 992px) {
+        .edit-page .form-grid-4 {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        .edit-page .form-grid-3 {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @media (max-width: 768px) {
+        .edit-page .page-header {
+            flex-direction: column;
+            text-align: center;
+        }
+        .edit-page .form-grid,
+        .edit-page .form-grid-2,
+        .edit-page .form-grid-3,
+        .edit-page .form-grid-4 {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h4 mb-0 text-gray-800">Editar Abastecimento #{{ abastecimento.id }}</h1>
-        <div>
-            <a href="{{ url_for('abastecimento_detail', abastecimento_id=abastecimento.id) }}" class="btn btn-outline-secondary">
-                <i class="bi bi-eye"></i> Ver Detalhes
+<div class="edit-page">
+    <!-- Page Header -->
+    <div class="page-header">
+        <h1><i class="fas fa-edit"></i> Editar Abastecimento #{{ abastecimento.id }}</h1>
+        <div class="header-actions">
+            <a href="{{ url_for('abastecimento_detail', abastecimento_id=abastecimento.id) }}" class="btn-header">
+                <i class="fas fa-eye"></i> Ver
             </a>
-            <a href="{{ url_for('abastecimentos_list') }}" class="btn btn-secondary">
-                <i class="bi bi-arrow-left"></i> Voltar à Lista
+            <a href="{{ url_for('abastecimentos_list') }}" class="btn-header">
+                <i class="fas fa-arrow-left"></i> Voltar
             </a>
         </div>
     </div>
 
-    <div class="row">
+    <div class="row g-3">
+        <!-- Formulário Principal -->
         <div class="col-lg-8">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3">
-                    <h6 class="m-0 fw-bold text-warning">Editar Dados do Abastecimento</h6>
-                </div>
-                <div class="card-body">
-                    <form method="POST" id="abastecimento-form">
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label for="veiculo_id" class="form-label">Veículo *</label>
+            <form method="POST" id="abastecimento-form">
+                <!-- Veículo e Motorista -->
+                <div class="form-card">
+                    <div class="form-card-header">
+                        <i class="fas fa-truck"></i>
+                        <h6>Veículo e Motorista</h6>
+                    </div>
+                    <div class="form-card-body">
+                        <div class="form-grid form-grid-2">
+                            <div class="form-group">
+                                <label>Veículo <span class="required">*</span></label>
                                 <select class="form-select" id="veiculo_id" name="veiculo_id" required>
-                                    <option value="">Selecione um veículo</option>
+                                    <option value="">Selecione...</option>
                                     {% for veiculo in veiculos %}
-                                    <option value="{{ veiculo.id }}"
-                                            data-km="{{ veiculo.km_atual }}"
-                                            {{ 'selected' if (request.form.get('veiculo_id') or abastecimento.veiculo_id)|string == veiculo.id|string }}>
+                                    <option value="{{ veiculo.id }}" data-km="{{ veiculo.km_atual }}"
+                                        {{ 'selected' if (request.form.get('veiculo_id') or abastecimento.veiculo_id)|string == veiculo.id|string }}>
                                         {{ veiculo.placa }} - {{ veiculo.marca }} {{ veiculo.modelo }}
                                     </option>
                                     {% endfor %}
                                 </select>
-                                <div class="form-text">Selecione o veículo abastecido</div>
                             </div>
-                            <div class="col-md-6">
-                                <label for="motorista_id" class="form-label">Motorista *</label>
+                            <div class="form-group">
+                                <label>Motorista <span class="required">*</span></label>
                                 <select class="form-select" id="motorista_id" name="motorista_id" required>
-                                    <option value="">Selecione um motorista</option>
+                                    <option value="">Selecione...</option>
                                     {% for motorista in motoristas %}
                                     <option value="{{ motorista.id }}"
-                                            {{ 'selected' if (request.form.get('motorista_id') or abastecimento.motorista_id)|string == motorista.id|string }}>
+                                        {{ 'selected' if (request.form.get('motorista_id') or abastecimento.motorista_id)|string == motorista.id|string }}>
                                         {{ motorista.nome }}
                                     </option>
                                     {% endfor %}
                                 </select>
-                                <div class="form-text">Motorista responsável pelo abastecimento</div>
                             </div>
                         </div>
+                    </div>
+                </div>
 
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label for="data_abastecimento" class="form-label">Data e Hora *</label>
-                                <input type="datetime-local" class="form-control" id="data_abastecimento"
-                                       name="data_abastecimento"
-                                       value="{{ request.form.get('data_abastecimento') or (abastecimento.data_abastecimento|datetime_input) if abastecimento.data_abastecimento else '' }}"
-                                       required>
-                                <div class="form-text">Data e hora do abastecimento</div>
+                <!-- Data e Odômetro -->
+                <div class="form-card">
+                    <div class="form-card-header">
+                        <i class="fas fa-calendar-alt"></i>
+                        <h6>Data e Quilometragem</h6>
+                    </div>
+                    <div class="form-card-body">
+                        <div class="form-grid form-grid-2">
+                            <div class="form-group">
+                                <label>Data <span class="required">*</span></label>
+                                <input type="date" class="form-control" id="data_abastecimento" name="data_abastecimento"
+                                    value="{{ request.form.get('data_abastecimento') or (abastecimento.data_abastecimento[:10] if abastecimento.data_abastecimento else '') }}" required>
                             </div>
-                            <div class="col-md-6">
-                                <label for="odometro" class="form-label">Odômetro (km) *</label>
+                            <div class="form-group">
+                                <label>Odômetro (km) <span class="required">*</span></label>
                                 <input type="number" class="form-control" id="odometro" name="odometro"
-                                       value="{{ request.form.get('odometro') or abastecimento.odometro }}"
-                                       min="0" required>
-                                <div class="form-text">Quilometragem atual do veículo</div>
-                                <div id="km-warning" class="text-warning" style="display: none;">
-                                    <small><i class="bi bi-exclamation-triangle"></i> Verifique a quilometragem informada</small>
+                                    value="{{ request.form.get('odometro') or abastecimento.odometro }}" min="0" required>
+                                <div class="km-warning" id="km-warning">
+                                    <i class="fas fa-exclamation-triangle"></i> <span></span>
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
 
-                        <div class="row mb-3">
-                            <div class="col-md-4">
-                                <label for="litros" class="form-label">Litros *</label>
+                <!-- Valores -->
+                <div class="form-card">
+                    <div class="form-card-header">
+                        <i class="fas fa-dollar-sign"></i>
+                        <h6>Valores do Abastecimento</h6>
+                    </div>
+                    <div class="form-card-body">
+                        <div class="form-grid form-grid-3">
+                            <div class="form-group">
+                                <label>Litros <span class="required">*</span></label>
                                 <input type="number" class="form-control" id="litros" name="litros"
-                                       value="{{ request.form.get('litros') or abastecimento.litros }}"
-                                       step="0.01" min="0" required>
-                                <div class="form-text">Quantidade de combustível</div>
+                                    value="{{ request.form.get('litros') or abastecimento.litros }}" step="0.01" min="0" required>
                             </div>
-                            <div class="col-md-4">
-                                <label for="valor_litro" class="form-label">Valor por Litro (R$) *</label>
+                            <div class="form-group">
+                                <label>Valor/Litro (R$) <span class="required">*</span></label>
                                 <input type="number" class="form-control" id="valor_litro" name="valor_litro"
-                                       value="{{ request.form.get('valor_litro') or abastecimento.valor_litro }}"
-                                       step="0.001" min="0" required>
-                                <div class="form-text">Preço por litro</div>
+                                    value="{{ request.form.get('valor_litro') or abastecimento.valor_litro }}" step="0.001" min="0" required>
                             </div>
-                            <div class="col-md-4">
-                                <label for="valor_total" class="form-label">Valor Total (R$) *</label>
+                            <div class="form-group">
+                                <label>Valor Total (R$)</label>
                                 <input type="number" class="form-control" id="valor_total" name="valor_total"
-                                       value="{{ request.form.get('valor_total') or abastecimento.valor_total }}"
-                                       step="0.01" min="0" required readonly>
+                                    value="{{ request.form.get('valor_total') or abastecimento.valor_total }}" step="0.01" readonly style="background:#f3f4f6;">
                                 <div class="form-text">Calculado automaticamente</div>
                             </div>
                         </div>
+                    </div>
+                </div>
 
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label for="fornecedor_id" class="form-label">
-                                    Fornecedor/Posto
-                                    <a href="{{ url_for('fornecedor_new') }}" class="btn btn-sm btn-link p-0 ms-2" title="Novo Fornecedor" target="_blank">
-                                        <i class="bi bi-plus-circle"></i>
-                                    </a>
-                                </label>
+                <!-- Posto e Combustível -->
+                <div class="form-card">
+                    <div class="form-card-header">
+                        <i class="fas fa-gas-pump"></i>
+                        <h6>Posto e Combustível</h6>
+                    </div>
+                    <div class="form-card-body">
+                        <div class="form-grid form-grid-3">
+                            <div class="form-group">
+                                <label>Fornecedor/Posto</label>
                                 <select class="form-select" id="fornecedor_id" name="fornecedor_id">
-                                    <option value="">Selecione um fornecedor</option>
+                                    <option value="">Selecione...</option>
                                     {% for fornecedor in fornecedores %}
-                                    <option value="{{ fornecedor.id }}"
-                                            data-nome="{{ fornecedor.nome }}"
-                                            {{ 'selected' if (request.form.get('fornecedor_id') or abastecimento.fornecedor_id)|string == fornecedor.id|string }}>
-                                        {{ fornecedor.nome }} {% if fornecedor.cidade %}({{ fornecedor.cidade }}){% endif %}
+                                    <option value="{{ fornecedor.id }}" data-nome="{{ fornecedor.nome }}"
+                                        {{ 'selected' if (request.form.get('fornecedor_id') or abastecimento.fornecedor_id)|string == fornecedor.id|string }}>
+                                        {{ fornecedor.nome }}{% if fornecedor.cidade %} ({{ fornecedor.cidade }}){% endif %}
                                     </option>
                                     {% endfor %}
                                 </select>
-                                <div class="form-text">Selecione o posto/fornecedor cadastrado</div>
                             </div>
-                            <div class="col-md-6">
-                                <label for="posto" class="form-label">Nome do Posto (Manual)</label>
+                            <div class="form-group">
+                                <label>Nome Posto (Manual)</label>
                                 <input type="text" class="form-control" id="posto" name="posto"
-                                       value="{{ request.form.get('posto') or abastecimento.posto or '' }}"
-                                       placeholder="Ou digite o nome do posto">
-                                <div class="form-text">Campo preenchido automaticamente ao selecionar fornecedor</div>
+                                    value="{{ request.form.get('posto') or abastecimento.posto or '' }}" placeholder="Nome do posto">
                             </div>
-                        </div>
-
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label for="tipo_combustivel" class="form-label">Tipo de Combustível</label>
+                            <div class="form-group">
+                                <label>Combustível</label>
                                 <select class="form-select" id="tipo_combustivel" name="tipo_combustivel">
                                     {% set tipo_atual = request.form.get('tipo_combustivel') or abastecimento.tipo_combustivel or 'Diesel' %}
                                     <option value="Diesel" {{ 'selected' if tipo_atual == 'Diesel' }}>Diesel</option>
@@ -141,119 +532,94 @@
                                 </select>
                             </div>
                         </div>
-
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label for="numero_cupom" class="form-label">Número do Cupom</label>
-                                <input type="text" class="form-control" id="numero_cupom" name="numero_cupom"
-                                       value="{{ request.form.get('numero_cupom') or abastecimento.numero_cupom or '' }}"
-                                       placeholder="Número do cupom fiscal">
-                                <div class="form-text">Número do cupom fiscal (opcional)</div>
-                            </div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="observacoes" class="form-label">Observações</label>
-                            <textarea class="form-control" id="observacoes" name="observacoes" rows="3"
-                                      placeholder="Observações adicionais sobre o abastecimento">{{ request.form.get('observacoes') or abastecimento.observacoes or '' }}</textarea>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-12">
-                                <button type="submit" class="btn btn-warning">
-                                    <i class="bi bi-check-circle"></i> Salvar Alterações
-                                </button>
-                                <a href="{{ url_for('abastecimento_detail', abastecimento_id=abastecimento.id) }}" class="btn btn-secondary ms-2">
-                                    <i class="bi bi-x-circle"></i> Cancelar
-                                </a>
-                            </div>
-                        </div>
-                    </form>
+                    </div>
                 </div>
-            </div>
+
+                <!-- Cupom e Observações -->
+                <div class="form-card">
+                    <div class="form-card-header">
+                        <i class="fas fa-file-alt"></i>
+                        <h6>Informações Adicionais</h6>
+                    </div>
+                    <div class="form-card-body">
+                        <div class="form-grid form-grid-2">
+                            <div class="form-group">
+                                <label>Número do Cupom</label>
+                                <input type="text" class="form-control" id="numero_cupom" name="numero_cupom"
+                                    value="{{ request.form.get('numero_cupom') or abastecimento.numero_cupom or '' }}" placeholder="Cupom fiscal">
+                            </div>
+                            <div class="form-group">
+                                <label>Observações</label>
+                                <textarea class="form-control" id="observacoes" name="observacoes" rows="2" placeholder="Observações">{{ request.form.get('observacoes') or abastecimento.observacoes or '' }}</textarea>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn-gradient btn-warning-gradient">
+                                <i class="fas fa-save"></i> Salvar Alterações
+                            </button>
+                            <a href="{{ url_for('abastecimento_detail', abastecimento_id=abastecimento.id) }}" class="btn-gradient btn-secondary-gradient">
+                                <i class="fas fa-times"></i> Cancelar
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </form>
         </div>
 
+        <!-- Sidebar -->
         <div class="col-lg-4">
             <!-- Dados Originais -->
-            <div class="card shadow mb-4">
-                <div class="card-header py-3">
-                    <h6 class="m-0 fw-bold text-info">Dados Originais</h6>
+            <div class="sidebar-card">
+                <div class="sidebar-card-header info">
+                    <i class="fas fa-info-circle"></i>
+                    <h6>Dados Originais</h6>
                 </div>
-                <div class="card-body">
-                    <div class="text-center mb-3">
-                        <i class="bi bi-fuel-pump display-4 text-info"></i>
-                    </div>
-                    <table class="table table-sm table-borderless">
-                        <tr>
-                            <td class="fw-bold">Registro:</td>
-                            <td>#{{ abastecimento.id }}</td>
-                        </tr>
-                        <tr>
-                            <td class="fw-bold">Criado em:</td>
-                            <td>{{ abastecimento.criado_em|datetime if abastecimento.criado_em else '-' }}</td>
-                        </tr>
-                        <tr>
-                            <td class="fw-bold">Veículo:</td>
-                            <td>{{ abastecimento.veiculo.placa if abastecimento.veiculo else '-' }}</td>
-                        </tr>
-                        <tr>
-                            <td class="fw-bold">Motorista:</td>
-                            <td>{{ abastecimento.motorista.nome if abastecimento.motorista else '-' }}</td>
-                        </tr>
-                        <tr>
-                            <td class="fw-bold">Data:</td>
-                            <td>{{ abastecimento.data_abastecimento|datetime if abastecimento.data_abastecimento else '-' }}</td>
-                        </tr>
-                        <tr>
-                            <td class="fw-bold">Litros:</td>
-                            <td>{{ abastecimento.litros }}L</td>
-                        </tr>
-                        <tr>
-                            <td class="fw-bold">Total:</td>
-                            <td class="text-success fw-bold">R$ {{ abastecimento.valor_total }}</td>
-                        </tr>
+                <div class="sidebar-card-body">
+                    <table class="info-table">
+                        <tr><td>Registro:</td><td>#{{ abastecimento.id }}</td></tr>
+                        <tr><td>Criado:</td><td>{{ abastecimento.criado_em or '-' }}</td></tr>
+                        <tr><td>Veículo:</td><td>{{ abastecimento.veiculo.placa if abastecimento.veiculo else '-' }}</td></tr>
+                        <tr><td>Motorista:</td><td>{{ abastecimento.motorista.nome if abastecimento.motorista else '-' }}</td></tr>
+                        <tr><td>Data:</td><td>{{ abastecimento.data_abastecimento or '-' }}</td></tr>
+                        <tr><td>Litros:</td><td>{{ abastecimento.litros }}L</td></tr>
+                        <tr><td>Total:</td><td class="value-highlight">R$ {{ abastecimento.valor_total }}</td></tr>
                     </table>
                 </div>
             </div>
 
-            <!-- Dicas de Edição -->
-            <div class="card shadow mb-4">
-                <div class="card-header py-3">
-                    <h6 class="m-0 fw-bold text-warning">Dicas de Edição</h6>
+            <!-- Dicas -->
+            <div class="sidebar-card">
+                <div class="sidebar-card-header warning">
+                    <i class="fas fa-lightbulb"></i>
+                    <h6>Dicas de Edição</h6>
                 </div>
-                <div class="card-body">
-                    <div class="text-center mb-3">
-                        <i class="bi bi-lightbulb display-4 text-warning"></i>
+                <div class="sidebar-card-body">
+                    <div class="tip-item warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span><strong>Atenção:</strong> Verifique os dados antes de salvar</span>
                     </div>
-                    <ul class="list-unstyled">
-                        <li class="mb-2">
-                            <i class="bi bi-exclamation-triangle text-warning"></i>
-                            <strong>Atenção:</strong> Verifique se os dados estão corretos antes de salvar
-                        </li>
-                        <li class="mb-2">
-                            <i class="bi bi-calculator text-primary"></i>
-                            <strong>Cálculo:</strong> O valor total será recalculado automaticamente
-                        </li>
-                        <li class="mb-2">
-                            <i class="bi bi-speedometer2 text-info"></i>
-                            <strong>Odômetro:</strong> Confirme a quilometragem do veículo
-                        </li>
-                        <li class="mb-2">
-                            <i class="bi bi-clock-history text-secondary"></i>
-                            <strong>Histórico:</strong> Alterações são registradas no sistema
-                        </li>
-                    </ul>
+                    <div class="tip-item primary">
+                        <i class="fas fa-calculator"></i>
+                        <span><strong>Cálculo:</strong> Total é calculado automaticamente</span>
+                    </div>
+                    <div class="tip-item info">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span><strong>Odômetro:</strong> Confirme a quilometragem</span>
+                    </div>
                 </div>
             </div>
 
-            <!-- Informações do Veículo -->
-            <div class="card shadow mb-4" id="veiculo-info">
-                <div class="card-header py-3">
-                    <h6 class="m-0 fw-bold text-primary">Informações do Veículo</h6>
+            <!-- Info Veículo -->
+            <div class="sidebar-card">
+                <div class="sidebar-card-header primary">
+                    <i class="fas fa-truck"></i>
+                    <h6>Info do Veículo</h6>
                 </div>
-                <div class="card-body">
-                    <div id="veiculo-details">
-                        <!-- Preenchido via JavaScript -->
+                <div class="sidebar-card-body">
+                    <div id="veiculo-details" class="veiculo-info-box">
+                        <i class="fas fa-truck"></i>
+                        <p>Selecione um veículo</p>
                     </div>
                 </div>
             </div>
@@ -265,95 +631,73 @@
 {% block extra_js %}
 <script>
 $(document).ready(function() {
-    // Calcular valor total automaticamente
+    // Calcular valor total
     function calcularTotal() {
-        const litros = parseFloat(document.getElementById('litros').value) || 0;
-        const valorLitro = parseFloat(document.getElementById('valor_litro').value) || 0;
-        const total = litros * valorLitro;
-        document.getElementById('valor_total').value = total.toFixed(2);
+        const litros = parseFloat($('#litros').val()) || 0;
+        const valorLitro = parseFloat($('#valor_litro').val()) || 0;
+        $('#valor_total').val((litros * valorLitro).toFixed(2));
     }
 
-    // Validar odômetro com base no veículo selecionado
+    // Validar odômetro
     function validarOdometro() {
-        const veiculoSelect = document.getElementById('veiculo_id');
-        const odometroInput = document.getElementById('odometro');
-        const warning = document.getElementById('km-warning');
+        const select = $('#veiculo_id');
+        const odometro = parseInt($('#odometro').val()) || 0;
+        const warning = $('#km-warning');
 
-        if (veiculoSelect.value && odometroInput.value) {
-            const selectedOption = veiculoSelect.options[veiculoSelect.selectedIndex];
-            const kmAtual = parseInt(selectedOption.dataset.km) || 0;
-            const odometroInformado = parseInt(odometroInput.value) || 0;
-
-            if (odometroInformado < kmAtual) {
-                warning.style.display = 'block';
-                warning.innerHTML = `<small><i class="bi bi-exclamation-triangle"></i> Odômetro informado (${odometroInformado.toLocaleString()}km) é menor que o registrado (${kmAtual.toLocaleString()}km)</small>`;
+        if (select.val() && odometro) {
+            const kmAtual = parseInt(select.find(':selected').data('km')) || 0;
+            if (odometro < kmAtual) {
+                warning.show().find('span').text(`Menor que registrado (${kmAtual.toLocaleString()}km)`);
             } else {
-                warning.style.display = 'none';
+                warning.hide();
             }
         }
     }
 
-    // Mostrar informações do veículo selecionado
+    // Mostrar info do veículo
     function mostrarInfoVeiculo() {
-        const veiculoSelect = document.getElementById('veiculo_id');
-        const detailsDiv = document.getElementById('veiculo-details');
+        const select = $('#veiculo_id');
+        const div = $('#veiculo-details');
 
-        if (veiculoSelect.value) {
-            const selectedOption = veiculoSelect.options[veiculoSelect.selectedIndex];
-            const kmAtual = parseInt(selectedOption.dataset.km) || 0;
-            const texto = selectedOption.textContent;
-
-            detailsDiv.innerHTML = `
-                <div class="text-center mb-3">
-                    <i class="bi bi-truck display-4 text-primary"></i>
+        if (select.val()) {
+            const opt = select.find(':selected');
+            const km = parseInt(opt.data('km')) || 0;
+            div.html(`
+                <div class="veiculo-info-details">
+                    <p><strong>${opt.text()}</strong></p>
+                    <p>KM Atual: <strong>${km.toLocaleString()} km</strong></p>
                 </div>
-                <p><strong>Veículo:</strong> ${texto}</p>
-                <p><strong>KM Atual:</strong> ${kmAtual.toLocaleString()} km</p>
-                <div class="alert alert-info">
-                    <small><i class="bi bi-info-circle"></i> Confirme a quilometragem atual do veículo</small>
+                <div class="alert-compact alert alert-info mb-0">
+                    <i class="fas fa-info-circle"></i> Confirme a quilometragem
                 </div>
-            `;
+            `);
         } else {
-            detailsDiv.innerHTML = `
-                <div class="text-center">
-                    <i class="bi bi-truck display-4 text-muted"></i>
-                    <p class="text-muted mt-2">Selecione um veículo</p>
-                </div>
-            `;
+            div.html('<i class="fas fa-truck"></i><p>Selecione um veículo</p>').addClass('veiculo-info-box');
         }
     }
 
-    // Auto-preencher posto ao selecionar fornecedor
-    document.getElementById('fornecedor_id').addEventListener('change', function() {
-        const selectedOption = this.options[this.selectedIndex];
-        const nomeFornecedor = selectedOption.dataset.nome;
-
-        if (nomeFornecedor) {
-            document.getElementById('posto').value = nomeFornecedor;
-        }
+    // Auto-preencher posto
+    $('#fornecedor_id').on('change', function() {
+        const nome = $(this).find(':selected').data('nome');
+        if (nome) $('#posto').val(nome);
     });
 
-    // Event listeners
-    document.getElementById('litros').addEventListener('input', calcularTotal);
-    document.getElementById('valor_litro').addEventListener('input', calcularTotal);
-    document.getElementById('odometro').addEventListener('input', validarOdometro);
-    document.getElementById('veiculo_id').addEventListener('change', function() {
+    // Events
+    $('#litros, #valor_litro').on('input', calcularTotal);
+    $('#odometro').on('input', validarOdometro);
+    $('#veiculo_id').on('change', function() {
         mostrarInfoVeiculo();
         validarOdometro();
     });
 
-    // Validação do formulário
-    document.getElementById('abastecimento-form').addEventListener('submit', function(e) {
-        const odometroInput = document.getElementById('odometro');
-        const veiculoSelect = document.getElementById('veiculo_id');
-
-        if (veiculoSelect.value && odometroInput.value) {
-            const selectedOption = veiculoSelect.options[veiculoSelect.selectedIndex];
-            const kmAtual = parseInt(selectedOption.dataset.km) || 0;
-            const odometroInformado = parseInt(odometroInput.value) || 0;
-
-            if (odometroInformado < kmAtual) {
-                if (!confirm('O odômetro informado é menor que o registrado. Deseja continuar mesmo assim?')) {
+    // Validação submit
+    $('#abastecimento-form').on('submit', function(e) {
+        const select = $('#veiculo_id');
+        const odometro = parseInt($('#odometro').val()) || 0;
+        if (select.val() && odometro) {
+            const kmAtual = parseInt(select.find(':selected').data('km')) || 0;
+            if (odometro < kmAtual) {
+                if (!confirm('Odômetro menor que o registrado. Continuar?')) {
                     e.preventDefault();
                     return false;
                 }
@@ -361,7 +705,7 @@ $(document).ready(function() {
         }
     });
 
-    // Inicializar
+    // Init
     calcularTotal();
     mostrarInfoVeiculo();
     validarOdometro();

@@ -81,19 +81,28 @@ def create_app():
             return ''
         if isinstance(value, str):
             try:
-                # Parse UTC datetime
+                # Se é apenas data (YYYY-MM-DD), retorna formatado sem conversão de timezone
+                if len(value) == 10 and '-' in value:
+                    parts = value.split('-')
+                    return f"{parts[2]}/{parts[1]}/{parts[0]}"
+                # Se tem T00:00:00, é uma data sem hora real, não converter timezone
+                if 'T00:00:00' in value or 'T00:00' in value:
+                    value = datetime.fromisoformat(value.replace('Z', '+00:00').replace('T00:00:00', '').replace('T00:00', ''))
+                    return value.strftime('%d/%m/%Y')
+                # Parse datetime completo
                 value = datetime.fromisoformat(value.replace('Z', '+00:00'))
             except:
                 return value
         if hasattr(value, 'strftime'):
-            # Convert from UTC to Brazil timezone (UTC-3)
+            # Se a hora é 00:00:00, mostrar apenas a data
+            if hasattr(value, 'hour') and value.hour == 0 and value.minute == 0:
+                return value.strftime('%d/%m/%Y')
+            # Convert from UTC to Brazil timezone (UTC-3) apenas para datetime com hora real
             from datetime import timedelta
             if value.tzinfo is not None:
-                # If timezone aware, convert to Brazil time (UTC-3)
                 brazil_time = value - timedelta(hours=3)
                 return brazil_time.strftime('%d/%m/%Y %H:%M')
             else:
-                # If timezone naive, assume UTC and convert
                 brazil_time = value - timedelta(hours=3)
                 return brazil_time.strftime('%d/%m/%Y %H:%M')
         return str(value)
